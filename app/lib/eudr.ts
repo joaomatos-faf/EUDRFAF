@@ -1,6 +1,19 @@
 export type Position = [number, number];
 export type PolygonCoordinates = Position[][];
 export type GeometryData = { polygons: PolygonCoordinates[] };
+export type ShapefileAttributes = {
+  farm?: string;
+  producer?: string;
+  supplier?: string;
+  region?: string;
+  municipality?: string;
+  state?: string;
+  mappedAt?: string;
+  checkedAt?: string;
+  compliance?: string;
+  mappedBy?: string;
+  car?: string;
+};
 
 const encoder = new TextEncoder();
 
@@ -162,10 +175,28 @@ function createShapeFiles(data: GeometryData) {
   return { shp: new Uint8Array(shp), shx: new Uint8Array(shx) };
 }
 
-function createDbf(plotId: string, area: number) {
+function dbfText(value: unknown) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\x20-\x7E]/g, "?");
+}
+
+function createDbf(plotId: string, area: number, attributes: ShapefileAttributes = {}) {
   const fields = [
-    { name: "NAME", type: "C", length: 40, decimals: 0, value: plotId },
-    { name: "AREA", type: "N", length: 14, decimals: 4, value: area.toFixed(4) },
+    { name: "PLOT_ID", type: "C", length: 40, decimals: 0, value: plotId },
+    { name: "FARM", type: "C", length: 80, decimals: 0, value: attributes.farm },
+    { name: "PRODUCER", type: "C", length: 80, decimals: 0, value: attributes.producer },
+    { name: "SUPPLIER", type: "C", length: 80, decimals: 0, value: attributes.supplier },
+    { name: "REGION", type: "C", length: 60, decimals: 0, value: attributes.region },
+    { name: "MUNICIPAL", type: "C", length: 60, decimals: 0, value: attributes.municipality },
+    { name: "STATE", type: "C", length: 40, decimals: 0, value: attributes.state },
+    { name: "AREA_HA", type: "N", length: 14, decimals: 4, value: area.toFixed(4) },
+    { name: "MAP_DATE", type: "C", length: 10, decimals: 0, value: attributes.mappedAt },
+    { name: "CHECK_DATE", type: "C", length: 10, decimals: 0, value: attributes.checkedAt },
+    { name: "RESULT", type: "C", length: 30, decimals: 0, value: attributes.compliance },
+    { name: "MAPPED_BY", type: "C", length: 80, decimals: 0, value: attributes.mappedBy },
+    { name: "CAR", type: "C", length: 80, decimals: 0, value: attributes.car },
     { name: "COUNTRY", type: "C", length: 2, decimals: 0, value: "BR" },
   ];
   const headerLength = 32 + fields.length * 32 + 1;
@@ -191,7 +222,9 @@ function createDbf(plotId: string, area: number) {
   view.setUint8(headerLength, 32);
   let offset = headerLength + 1;
   fields.forEach((field) => {
-    const formatted = field.type === "N" ? String(field.value).padStart(field.length, " ") : String(field.value).slice(0, field.length).padEnd(field.length, " ");
+    const formatted = field.type === "N"
+      ? String(field.value).padStart(field.length, " ")
+      : dbfText(field.value).slice(0, field.length).padEnd(field.length, " ");
     setAscii(view, offset, formatted, field.length);
     offset += field.length;
   });
@@ -258,14 +291,19 @@ function zipStore(files: { name: string; data: Uint8Array }[]) {
   return new Blob([...localParts, ...centralParts, end], { type: "application/zip" });
 }
 
-export function buildShapefileZip(data: GeometryData, plotId: string, area: number) {
+export function buildShapefileZip(
+  data: GeometryData,
+  plotId: string,
+  area: number,
+  attributes: ShapefileAttributes = {},
+) {
   const { shp, shx } = createShapeFiles(data);
   const prj = encoder.encode('GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]');
   const cpg = encoder.encode("UTF-8");
   return zipStore([
     { name: `${plotId}.shp`, data: shp },
     { name: `${plotId}.shx`, data: shx },
-    { name: `${plotId}.dbf`, data: createDbf(plotId, area) },
+    { name: `${plotId}.dbf`, data: createDbf(plotId, area, attributes) },
     { name: `${plotId}.prj`, data: prj },
     { name: `${plotId}.cpg`, data: cpg },
   ]);

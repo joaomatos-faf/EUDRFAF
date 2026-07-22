@@ -1,0 +1,27 @@
+appId: br.com.fafcoffees.eudr
+productName: Preparador EUDR FAF
+copyright: Copyright © 2026 FAF Coffees
+directories:
+  output: release
+  buildResources: build
+files:
+  - desktop/**/*
+  - build/icon.ico
+  - package.json
+extraResources:
+  - from: dist
+    to: dist
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: Preparador-EUDR-FAF-Setup-${version}.${ext}
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Preparador EUDR FAF
+  uninstallDisplayName: Preparador EUDR FAF
