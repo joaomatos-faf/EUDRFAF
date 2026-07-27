@@ -18,7 +18,7 @@ Aplicativo local para transformar polígonos KML/GeoJSON em arquivos padronizado
 
 ## Executar no Windows
 
-Baixe e execute `Preparador-EUDR-FAF-Setup-0.2.0.exe`. O instalador permite escolher a pasta e cria atalhos na Área de Trabalho e no menu Iniciar.
+Baixe e execute `Preparador-EUDR-FAF-Setup-0.2.1.exe`. O instalador permite escolher a pasta e cria atalhos na Área de Trabalho e no menu Iniciar.
 
 Depois da instalação, abra **Preparador EUDR FAF** pelo atalho. O aplicativo funciona em uma janela própria; não é necessário iniciar comandos nem abrir manualmente o navegador.
 

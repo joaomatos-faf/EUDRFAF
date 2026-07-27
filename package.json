@@ -1,6 +1,6 @@
 {
   "name": "faf-eudr-preparador",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Aplicativo desktop para preparar e validar dossiês EUDR da FAF Coffees.",
   "author": "FAF Coffees",
   "private": true,
