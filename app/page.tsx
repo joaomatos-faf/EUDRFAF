@@ -1,6 +1,9 @@
 "use client";
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 import {
   GeometryData,
   buildEudrGeoJson,
@@ -94,78 +97,14 @@ function normalizedText(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
 }
 
-function GeometryPreview({ geometry }: { geometry: GeometryData }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+// O Leaflet interage com window, então carregamos o componente Map dinamicamente (para SSR)
+const MapPreviewComponent = dynamic(() => import("./MapPreviewComponent"), { 
+  ssr: false, 
+  loading: () => <div style={{ width: 560, height: 320, background: "#f3f6ee", borderRadius: 8 }} />
+});
 
-  const draw = (canvas: HTMLCanvasElement | null) => {
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const width = canvas.width;
-    const height = canvas.height;
-    ctx.clearRect(0, 0, width, height);
-
-    const points = geometry.polygons.flat(2);
-    const xs = points.map((point) => point[0]);
-    const ys = points.map((point) => point[1]);
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    const minY = Math.min(...ys);
-    const maxY = Math.max(...ys);
-    const spanX = Math.max(maxX - minX, 0.000001);
-    const spanY = Math.max(maxY - minY, 0.000001);
-    const scale = Math.min((width - 56) / spanX, (height - 56) / spanY);
-    const offsetX = (width - spanX * scale) / 2;
-    const offsetY = (height - spanY * scale) / 2;
-
-    ctx.fillStyle = "#f3f6ee";
-    ctx.fillRect(0, 0, width, height);
-    ctx.strokeStyle = "rgba(29, 57, 43, 0.08)";
-    ctx.lineWidth = 1;
-    for (let x = 24; x < width; x += 32) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, height);
-      ctx.stroke();
-    }
-    for (let y = 24; y < height; y += 32) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(width, y);
-      ctx.stroke();
-    }
-
-    geometry.polygons.forEach((polygon) => {
-      ctx.beginPath();
-      polygon.forEach((ring) => {
-        ring.forEach(([x, y], index) => {
-          const px = offsetX + (x - minX) * scale;
-          const py = height - (offsetY + (y - minY) * scale);
-          if (index === 0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        });
-        ctx.closePath();
-      });
-      ctx.fillStyle = "rgba(190, 92, 46, 0.22)";
-      ctx.strokeStyle = "#bd5c2e";
-      ctx.lineWidth = 2.5;
-      ctx.fill("evenodd");
-      ctx.stroke();
-    });
-  };
-
-  return (
-    <canvas
-      aria-label="Prévia do polígono"
-      className="geometry-canvas"
-      height={320}
-      ref={(node) => {
-        canvasRef.current = node;
-        draw(node);
-      }}
-      width={560}
-    />
-  );
+function MapPreview({ geometry }: { geometry: GeometryData }) {
+  return <MapPreviewComponent geometry={geometry} />;
 }
 
 export default function Home() {
@@ -223,6 +162,14 @@ export default function Home() {
     () => (geometry ? calculateAreaHectares(geometry) : 0),
     [geometry],
   );
+  const centerCoord = useMemo(() => {
+    if (!geometry) return null;
+    const points = geometry.polygons.flat(2);
+    if (!points.length) return null;
+    const xs = points.map((point) => point[0]);
+    const ys = points.map((point) => point[1]);
+    return { lng: (Math.min(...xs) + Math.max(...xs)) / 2, lat: (Math.min(...ys) + Math.max(...ys)) / 2 };
+  }, [geometry]);
   const normalizedId = sanitizePlotId(form.plotId);
   const exactMunicipalities = useMemo(() => {
     const query = normalizedText(form.municipality);
@@ -243,14 +190,16 @@ export default function Home() {
   useEffect(() => {
     if (locationsStatus !== "ready" || exactMunicipalities.length !== 1) return;
     const selected = exactMunicipalities[0];
-    if (form.state === selected.stateName && form.region === selected.region) return;
-    setForm((current) => ({
-      ...current,
-      municipality: selected.name,
-      state: selected.stateName,
-      region: selected.region,
-    }));
-  }, [exactMunicipalities, form.region, form.state, locationsStatus]);
+    setForm((current) => {
+      if (current.state || current.region) return current;
+      return {
+        ...current,
+        municipality: selected.name,
+        state: selected.stateName,
+        region: selected.region,
+      };
+    });
+  }, [exactMunicipalities, locationsStatus]);
   const mapbiomasReady = Boolean(
     geometry &&
       normalizedId &&
@@ -421,7 +370,6 @@ export default function Home() {
         </div>
         <div className="topbar-actions">
           <div className="privacy-pill"><span /> Dados locais e consulta segura</div>
-          <div className="version-pill">Desktop</div>
         </div>
       </header>
 
@@ -470,12 +418,13 @@ export default function Home() {
             {error && <p className="error-box">{error}</p>}
             {geometry && (
               <div className="geometry-result">
-                <GeometryPreview geometry={geometry} />
+                <MapPreview geometry={geometry} />
                 <div className="metrics">
                   <div><span>Área calculada</span><strong>{area.toLocaleString("pt-BR", { maximumFractionDigits: 4 })} ha</strong></div>
                   <div><span>Polígonos</span><strong>{geometry.polygons.length}</strong></div>
                   <div><span>Sistema</span><strong>WGS 84</strong></div>
                   <p>✓ Geometria fechada e pronta para exportação.</p>
+                  {centerCoord && <a className="text-link" style={{marginTop: "8px", display: "inline-block"}} href={`https://www.google.com/maps/search/?api=1&query=${centerCoord.lat},${centerCoord.lng}`} target="_blank" rel="noreferrer">Visualizar no Google Maps ↗</a>}
                 </div>
               </div>
             )}
