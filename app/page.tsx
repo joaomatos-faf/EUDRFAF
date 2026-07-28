@@ -168,25 +168,52 @@ export default function Home() {
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
   const [locationsReload, setLocationsReload] = useState(0);
 
+  const saveUsers = async (updated: Record<string, UserProfile>) => {
+    setUsersMap(updated);
+    try {
+      localStorage.setItem("faf_eudr_users", JSON.stringify(updated));
+    } catch {}
+    try {
+      await fetch("/api/users", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ users: updated }),
+      });
+    } catch {}
+  };
+
   useEffect(() => {
     const initUsers = async () => {
+      let initial: Record<string, any> = DEFAULT_USERS_DATA;
       try {
-        const saved = localStorage.getItem("faf_eudr_users");
-        let initial: Record<string, any> = DEFAULT_USERS_DATA;
-        if (saved) {
-          initial = JSON.parse(saved);
-        }
-        const hashedMap: Record<string, UserProfile> = {};
-        for (const [u, val] of Object.entries(initial)) {
-          let pass = typeof val === "string" ? val : val.pass;
-          let fullName = typeof val === "string" ? u.toUpperCase() : (val.fullName || u.toUpperCase());
-          let role: "admin" | "user" = typeof val === "object" && val.role ? val.role : (u === "faf" || u === "admin" || u === "joaomatos" ? "admin" : "user");
-          if (pass.length !== 64 || !/^[0-9a-f]+$/i.test(pass)) {
-            pass = await hashPassword(pass);
+        const res = await fetch("/api/users");
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.users && typeof data.users === "object" && Object.keys(data.users).length > 0) {
+            initial = data.users;
           }
-          hashedMap[u] = { pass, fullName, role };
         }
-        setUsersMap(hashedMap);
+      } catch {}
+
+      if (initial === DEFAULT_USERS_DATA) {
+        try {
+          const saved = localStorage.getItem("faf_eudr_users");
+          if (saved) initial = JSON.parse(saved);
+        } catch {}
+      }
+
+      const hashedMap: Record<string, UserProfile> = {};
+      for (const [u, val] of Object.entries(initial)) {
+        let pass = typeof val === "string" ? val : val.pass;
+        let fullName = typeof val === "string" ? u.toUpperCase() : (val.fullName || u.toUpperCase());
+        let role: "admin" | "user" = typeof val === "object" && val.role ? val.role : (u === "faf" || u === "admin" || u === "joaomatos" ? "admin" : "user");
+        if (pass.length !== 64 || !/^[0-9a-f]+$/i.test(pass)) {
+          pass = await hashPassword(pass);
+        }
+        hashedMap[u] = { pass, fullName, role };
+      }
+      setUsersMap(hashedMap);
+      try {
         localStorage.setItem("faf_eudr_users", JSON.stringify(hashedMap));
       } catch {}
     };
@@ -214,8 +241,11 @@ export default function Home() {
 
     let currentUsersMap = usersMap;
     try {
-      const saved = localStorage.getItem("faf_eudr_users");
-      if (saved) currentUsersMap = JSON.parse(saved);
+      const res = await fetch("/api/users");
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.users && typeof data.users === "object") currentUsersMap = data.users;
+      }
     } catch {}
 
     const profile = currentUsersMap[userKey];
@@ -254,10 +284,7 @@ export default function Home() {
     }
     const hashed = await hashPassword(newAdminPass.trim());
     const updated = { ...usersMap, [cleanUser]: { pass: hashed, fullName: cleanName, role: newAdminRole } };
-    setUsersMap(updated);
-    try {
-      localStorage.setItem("faf_eudr_users", JSON.stringify(updated));
-    } catch {}
+    await saveUsers(updated);
     setNewAdminUser("");
     setNewAdminFullName("");
     setNewAdminPass("");
@@ -286,17 +313,14 @@ export default function Home() {
     setAdminErrorMsg("");
   };
 
-  const handleDeleteUser = (userKey: string) => {
+  const handleDeleteUser = async (userKey: string) => {
     if (Object.keys(usersMap).length <= 1) {
       alert("Você não pode excluir todos os usuários!");
       return;
     }
     const updated = { ...usersMap };
     delete updated[userKey];
-    setUsersMap(updated);
-    try {
-      localStorage.setItem("faf_eudr_users", JSON.stringify(updated));
-    } catch {}
+    await saveUsers(updated);
   };
 
   const handleAdminUpdateUser = async (oldUserKey: string) => {
@@ -335,10 +359,7 @@ export default function Home() {
       role: editRoleInput,
     };
 
-    setUsersMap(updated);
-    try {
-      localStorage.setItem("faf_eudr_users", JSON.stringify(updated));
-    } catch {}
+    await saveUsers(updated);
 
     if (oldUserKey === loggedUserKey) {
       sessionStorage.setItem("faf_eudr_user_key", newCleanUser);
@@ -385,10 +406,7 @@ export default function Home() {
     const fullName = typeof profile === "string" ? userKey.toUpperCase() : profile.fullName;
     const role = typeof profile === "string" ? "user" : profile.role;
     const updated = { ...usersMap, [userKey]: { pass: hashedNew, fullName, role } };
-    setUsersMap(updated);
-    try {
-      localStorage.setItem("faf_eudr_users", JSON.stringify(updated));
-    } catch {}
+    await saveUsers(updated);
 
     setEditingUser(null);
     setEditingCurrentPassInput("");
