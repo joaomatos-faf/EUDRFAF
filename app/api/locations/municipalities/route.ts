@@ -1,5 +1,4 @@
-const IBGE_MUNICIPALITIES =
-  "https://servicodados.ibge.gov.br/api/v1/localidades/municipios?view=nivelado&orderBy=nome";
+import { APP_CONFIG } from "../../../lib/config";
 
 type IbgeMunicipality = {
   "municipio-id"?: number;
@@ -13,7 +12,7 @@ export async function GET() {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30_000);
   try {
-    const response = await fetch(IBGE_MUNICIPALITIES, {
+    const response = await fetch(APP_CONFIG.apis.ibgeMunicipalities, {
       cache: "force-cache",
       headers: { accept: "application/json" },
       signal: controller.signal,
@@ -30,12 +29,12 @@ export async function GET() {
         region: String(item["regiao-nome"] ?? ""),
       }));
     return Response.json(
-      { municipalities },
+      { success: true, municipalities },
       { headers: { "cache-control": "public, max-age=86400" } },
     );
   } catch {
     return Response.json(
-      { error: "Não foi possível carregar a lista de municípios do IBGE." },
+      { success: false, error: "Não foi possível carregar a lista de municípios do IBGE." },
       { status: 502 },
     );
   } finally {

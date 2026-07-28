@@ -38,17 +38,17 @@ export async function GET() {
     if (cfEnv?.USERS_KV && typeof cfEnv.USERS_KV.get === "function") {
       const data = await cfEnv.USERS_KV.get("faf_eudr_users", { type: "json" });
       if (data) {
-        return Response.json({ users: data }, { headers: corsHeaders });
+        return Response.json({ success: true, users: data }, { headers: corsHeaders });
       }
     }
 
     if (memoryUsersStore) {
-      return Response.json({ users: memoryUsersStore }, { headers: corsHeaders });
+      return Response.json({ success: true, users: memoryUsersStore }, { headers: corsHeaders });
     }
 
-    return Response.json({ users: DEFAULT_USERS_DATA }, { headers: corsHeaders });
+    return Response.json({ success: true, users: DEFAULT_USERS_DATA }, { headers: corsHeaders });
   } catch {
-    return Response.json({ users: memoryUsersStore || DEFAULT_USERS_DATA }, { headers: corsHeaders });
+    return Response.json({ success: true, users: memoryUsersStore || DEFAULT_USERS_DATA }, { headers: corsHeaders });
   }
 }
 

@@ -10,11 +10,60 @@ O **Preparador EUDR** permite transformar geometrias de propriedades agrícolas 
 
 ---
 
+## 📐 Arquitetura do Sistema
+
+```mermaid
+graph TD
+    Client["💻 Client (Browser / Electron Desktop App)"]
+    API_Users["🔐 API Serverless /api/users"]
+    API_IBGE["🏛️ API Serverless /api/locations/municipalities"]
+    API_MapBiomas["🛰️ API Serverless /api/mapbiomas/check"]
+    CloudflareKV[("☁️ Cloudflare Workers KV (EUDR_USERS_KV)")]
+    IBGE_Service["🌐 IBGE Localidades (Serviço Oficial)"]
+    MapBiomas_Service["🌐 MapBiomas Alerta (Coleção 10.1)"]
+
+    Client -->|Autenticação & Perfis| API_Users
+    Client -->|Autocompletar Municípios| API_IBGE
+    Client -->|Checagem Geometria| API_MapBiomas
+
+    API_Users <-->|Sincronização Global| CloudflareKV
+    API_IBGE <-->|Cache 24h| IBGE_Service
+    API_MapBiomas <-->|Análise Temporal 2020-2024| MapBiomas_Service
+```
+
+---
+
+## 🔄 Fluxo de Processamento EUDR
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Usuário
+    participant App as Preparador EUDR
+    participant RDP as Algoritmo Douglas-Peucker
+    participant IBGE as IBGE API
+    participant MB as MapBiomas API
+
+    Usuário->>App: 1. Login com Credenciais Seguras (SHA-256)
+    Usuário->>App: 2. Importa Geometria (KML / GeoJSON)
+    App->>RDP: 3. Otimização Espacial de Densidade (>100k pontos)
+    RDP-->>App: Geometria Simplificada Mantendo Anéis Fechados
+    Usuário->>App: 4. Seleciona Município
+    App->>IBGE: Consulta Estado e Região
+    App->>MB: 5. Envia Shapefile Temporário para Consulta Temporal (2020-2024)
+    MB-->>App: Tabela de Cobertura por Classe & Link de Verificação
+    App->>Usuário: 6. Exibe Resultado da Conformidade
+    Usuário->>App: 7. Solicita Pacote EUDR Final
+    App-->>Usuário: Download do ZIP (GeoJSON + Shapefile + Planilha CSV)
+```
+
+---
+
 ## ⚡ Principais Funcionalidades
 
 - 🗺️ **Importação de Geometrias**: Suporte nativo a arquivos KML, GeoJSON e JSON.
 - 📐 **Cálculo de Área de Precisão**: Cálculo geodésico de área em hectares com precisão de duas casas decimais.
-- 🪄 **Simplificação Geométrica Inteligente**: Algoritmo **Ramer-Douglas-Peucker** integrado para reduzir automaticamente polígonos gigantescos mantendo a fidelidade espacial e limite seguro para apis.
+- 🪄 **Simplificação Geométrica Inteligente**: Algoritmo **Ramer-Douglas-Peucker** integrado em `app/lib/eudr.ts` para reduzir automaticamente polígonos gigantescos mantendo a fidelidade espacial.
 - 🏛️ **Autocompletar IBGE**: Busca inteligente por municípios com preenchimento automático de Estado e Região.
 - 🛰️ **Validação MapBiomas**: Consulta automática da série temporal de cobertura vegetal classe a classe (2020 a 2024) via Coleção 10.1 (resolução 30m).
 - 🔐 **Autenticação Global & Cloudflare KV**: Sincronização Serverless de credenciais e permissões (ADM / Usuário Padrão) via Cloudflare Workers KV em tempo real.
@@ -34,7 +83,7 @@ O **Preparador EUDR** permite transformar geometrias de propriedades agrícolas 
 │   │   ├── LoginScreen.tsx
 │   │   └── AdminUserModal.tsx
 │   ├── hooks/               # Custom Hooks (useUserManagement)
-│   ├── lib/                 # Biblioteca de Geometria, Algoritmos e Exportação (eudr.ts)
+│   ├── lib/                 # Biblioteca de Geometria, Algoritmos, Configurações e Exportação (eudr.ts, config.ts)
 │   └── page.tsx             # Aplicação principal
 ├── desktop/                 # Runtime de integração Electron / Windows
 ├── scripts/                 # Scripts de automação local
@@ -69,10 +118,16 @@ pnpm run dev
 pnpm run test
 ```
 
-### Compilar para Produção (Web Serverless)
+### Compilar para Produção (Web Serverless / Cloudflare Pages)
 
 ```bash
 pnpm run build
+```
+
+### Deploy no Cloudflare Pages
+
+```bash
+npx wrangler pages deploy dist/client --project-name eudrfaf
 ```
 
 ### Gerar Instalador Desktop para Windows (.exe)
