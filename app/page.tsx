@@ -15,6 +15,7 @@ import {
   buildShapefileZip,
   buildShapefileParts,
   zipStore,
+  zipStoreBytes,
   calculateAreaHectares,
   downloadBlob,
   parseGeometryFile,
@@ -458,14 +459,15 @@ export default function Home() {
     const csvContent = producerCsv({ ...form, notes, plotId: normalizedId, area });
     const csvBytes = new TextEncoder().encode(csvContent);
 
-    // 3. Shapefile
+    // 3. Shapefile em ZIP interno
     const shapeParts = buildShapefileParts(geometry, normalizedId, area, form);
+    const shapefileZipBytes = zipStoreBytes(shapeParts);
 
-    // Junta tudo num ZIP só
+    // Junta tudo no pacote principal mantendo o shapefile.zip comprimido
     const allFiles = [
       { name: `${normalizedId}.geojson`, data: geojsonBytes },
       { name: `${normalizedId}-cadastro.csv`, data: csvBytes },
-      ...shapeParts,
+      { name: `${normalizedId}-shapefile.zip`, data: shapefileZipBytes },
     ];
 
     const zipBlob = zipStore(allFiles);

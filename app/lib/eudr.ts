@@ -337,7 +337,7 @@ function crc32(bytes: Uint8Array) {
   return (crc ^ 0xffffffff) >>> 0;
 }
 
-export function zipStore(files: { name: string; data: Uint8Array }[]) {
+export function zipStoreBytes(files: { name: string; data: Uint8Array }[]): Uint8Array {
   const localParts: Uint8Array[] = [];
   const centralParts: Uint8Array[] = [];
   let offset = 0;
@@ -378,7 +378,19 @@ export function zipStore(files: { name: string; data: Uint8Array }[]) {
   endView.setUint16(10, files.length, true);
   endView.setUint32(12, centralLength, true);
   endView.setUint32(16, offset, true);
-  return new Blob([...localParts, ...centralParts, end] as unknown as BlobPart[], { type: "application/zip" });
+
+  const totalSize = localParts.reduce((sum, p) => sum + p.length, 0) + centralLength + 22;
+  const result = new Uint8Array(totalSize);
+  let pos = 0;
+  localParts.forEach((p) => { result.set(p, pos); pos += p.length; });
+  centralParts.forEach((p) => { result.set(p, pos); pos += p.length; });
+  result.set(end, pos);
+  return result;
+}
+
+export function zipStore(files: { name: string; data: Uint8Array }[]) {
+  const bytes = zipStoreBytes(files);
+  return new Blob([bytes as unknown as BlobPart], { type: "application/zip" });
 }
 
 export function buildShapefileParts(
