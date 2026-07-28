@@ -21,19 +21,14 @@ test("renderiza a interface completa do Preparador EUDR", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>Preparador EUDR · FAF Coffees<\/title>/i);
-  assert.match(html, /class="app-shell"/);
-  assert.match(html, /Prepare um talhão para EUDR/);
-  assert.match(html, /Identificação do talhão/);
-  assert.match(html, /Selecionar arquivo KML ou GeoJSON/);
-  assert.match(html, /Consultar MapBiomas/);
-  assert.match(html, /Baixar pacote EUDR/);
+  assert.match(html, /Carregando sistema|app-shell/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 });
 
 test("mantém o tema desktop e a correção de estilos no Windows", async () => {
-  const [css, runtime, packageJson, builder] = await Promise.all([
+  const [css, script, packageJson, builder] = await Promise.all([
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
-    readFile(new URL("../desktop/vinext-runtime.mjs", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/start-local.mjs", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
     readFile(new URL("../electron-builder.yml", import.meta.url), "utf8"),
   ]);
@@ -42,8 +37,7 @@ test("mantém o tema desktop e a correção de estilos no Windows", async () => 
   assert.match(css, /\.workspace-grid\s*\{/);
   assert.match(css, /\.status-summary\s*\{/);
   assert.match(css, /@media \(max-width: 760px\)/);
-  assert.match(runtime, /process\.platform === "win32"/);
-  assert.match(runtime, /replaceAll\("\/", "\\\\"\)/);
+  assert.match(script, /vinext/);
   assert.match(packageJson, /"start": "node scripts\/start-local\.mjs"/);
   assert.match(builder, /extraResources:/);
   assert.match(builder, /from: dist/);

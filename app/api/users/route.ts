@@ -1,5 +1,3 @@
-import { env } from "cloudflare:workers";
-
 interface UserProfile {
   pass: string;
   fullName: string;
@@ -15,6 +13,15 @@ const DEFAULT_USERS_DATA: Record<string, UserProfile> = {
 
 let memoryUsersStore: Record<string, UserProfile> | null = null;
 
+async function getCloudflareEnv() {
+  try {
+    const cf = await import("cloudflare:workers");
+    return cf.env as any;
+  } catch {
+    return {} as any;
+  }
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -27,7 +34,7 @@ export async function OPTIONS() {
 
 export async function GET() {
   try {
-    const cfEnv = env as any;
+    const cfEnv = await getCloudflareEnv();
     if (cfEnv?.USERS_KV && typeof cfEnv.USERS_KV.get === "function") {
       const data = await cfEnv.USERS_KV.get("faf_eudr_users", { type: "json" });
       if (data) {
@@ -55,7 +62,7 @@ export async function POST(request: Request) {
     const newUsers = payload.users;
     memoryUsersStore = newUsers;
 
-    const cfEnv = env as any;
+    const cfEnv = await getCloudflareEnv();
     if (cfEnv?.USERS_KV && typeof cfEnv.USERS_KV.put === "function") {
       await cfEnv.USERS_KV.put("faf_eudr_users", JSON.stringify(newUsers));
     }

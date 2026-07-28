@@ -4,6 +4,8 @@ import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { LoginScreen } from "./components/LoginScreen";
+import { AdminUserModal } from "./components/AdminUserModal";
 import {
   GeometryData,
   buildEudrGeoJson,
@@ -692,61 +694,14 @@ export default function Home() {
 
   if (isAuthenticated === false) {
     return (
-      <main className="app-shell" style={{ display: "grid", minHeight: "100vh", placeItems: "center", background: "var(--canvas)", padding: "20px" }}>
-        <div style={{ width: "100%", maxWidth: "400px", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "16px", padding: "36px 32px", boxShadow: "var(--shadow-lg)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "24px" }}>
-            <div className="brand-mark" style={{ width: "46px", height: "46px", fontSize: "15px" }}>FAF</div>
-            <div>
-              <p className="eyebrow" style={{ margin: 0 }}>FAF Coffees</p>
-              <h1 style={{ margin: 0, fontSize: "20px", color: "var(--forest-950)", fontWeight: 700 }}>Acesso Restrito</h1>
-            </div>
-          </div>
-          <p style={{ margin: "0 0 24px", color: "var(--muted)", fontSize: "13.5px", lineHeight: "1.5" }}>
-            Digite suas credenciais autorizadas para acessar o Preparador EUDR.
-          </p>
-
-          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 700, color: "var(--forest-950)" }}>
-              Usuário
-              <input
-                type="text"
-                value={loginUsername}
-                onChange={(e) => setLoginUsername(e.target.value)}
-                placeholder="Informe o usuário"
-                autoFocus
-                style={{ padding: "12px 14px", borderRadius: "8px", border: "1px solid var(--line)", outline: "none", fontSize: "14px", background: "var(--canvas)" }}
-              />
-            </label>
-
-            <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 700, color: "var(--forest-950)" }}>
-              Senha
-              <input
-                type="password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                placeholder="Informe a senha"
-                style={{ padding: "12px 14px", borderRadius: "8px", border: "1px solid var(--line)", outline: "none", fontSize: "14px", background: "var(--canvas)" }}
-              />
-            </label>
-
-            {loginError && (
-              <p className="error-box" style={{ margin: 0, fontSize: "13px" }}>{loginError}</p>
-            )}
-
-            <button
-              type="submit"
-              className="primary-button"
-              style={{ width: "100%", marginTop: "6px", padding: "13px", borderRadius: "8px", background: "var(--forest-900)", color: "#fff", border: 0, fontWeight: 700, cursor: "pointer" }}
-            >
-              Entrar no Sistema →
-            </button>
-          </form>
-
-          <div style={{ marginTop: "28px", paddingTop: "20px", borderTop: "1px solid var(--line)", textAlign: "center" }}>
-            <small style={{ color: "var(--subtle)", fontSize: "11px", fontWeight: 600 }}>FAF Coffees · Sustentabilidade & EUDR</small>
-          </div>
-        </div>
-      </main>
+      <LoginScreen
+        loginUsername={loginUsername}
+        setLoginUsername={setLoginUsername}
+        loginPassword={loginPassword}
+        setLoginPassword={setLoginPassword}
+        loginError={loginError}
+        onLogin={handleLogin}
+      />
     );
   }
 
@@ -906,253 +861,40 @@ export default function Home() {
         </aside>
       </section>
 
-      {showAdminModal && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(16, 44, 36, 0.65)", backdropFilter: "blur(4px)", display: "grid", placeItems: "center", padding: "16px" }}>
-          <div className="admin-modal-card" style={{ width: "100%", maxWidth: "520px", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "16px", padding: "28px 24px", boxShadow: "var(--shadow-lg)", maxHeight: "90vh", overflowY: "auto" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: "18px", color: "var(--forest-950)", fontWeight: 700 }}>
-                  {loggedUserRole === "admin" ? "Gestão de Usuários · Painel ADM" : "Alterar Minha Senha"}
-                </h3>
-                <p style={{ margin: "2px 0 0", color: "var(--muted)", fontSize: "12px" }}>
-                  {loggedUserRole === "admin" ? "Adicione, remova ou altere permissões do sistema." : "Altere a sua senha de acesso ao sistema."}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowAdminModal(false)}
-                style={{ background: "transparent", border: "1px solid var(--line)", borderRadius: "6px", width: "30px", height: "30px", cursor: "pointer", fontWeight: 700, color: "var(--muted)" }}
-              >
-                ✕
-              </button>
-            </div>
-
-            {loggedUserRole === "admin" && (
-              <form onSubmit={handleAddUser} style={{ background: "var(--canvas)", border: "1px solid var(--line)", borderRadius: "12px", padding: "16px", marginBottom: "24px" }}>
-                <h4 style={{ margin: "0 0 12px", fontSize: "13px", color: "var(--forest-950)", fontWeight: 700 }}>➕ Cadastrar Novo Usuário</h4>
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "12px" }}>
-                  <div className="modal-grid-two">
-                    <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
-                      Usuário (login) *
-                      <input
-                        type="text"
-                        value={newAdminUser}
-                        onChange={(e) => setNewAdminUser(e.target.value)}
-                        placeholder="Ex: marcos"
-                        style={{ width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)" }}
-                      />
-                    </label>
-                    <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
-                      Senha *
-                      <input
-                        type="text"
-                        value={newAdminPass}
-                        onChange={(e) => setNewAdminPass(e.target.value)}
-                        placeholder="Ex: faf123"
-                        style={{ width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)" }}
-                      />
-                    </label>
-                  </div>
-                  <div className="modal-grid-two">
-                    <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
-                      Nome Completo *
-                      <input
-                        type="text"
-                        value={newAdminFullName}
-                        onChange={(e) => setNewAdminFullName(e.target.value)}
-                        placeholder="Ex: Marcos Oliveira"
-                        style={{ width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)" }}
-                      />
-                    </label>
-                    <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
-                      Perfil de Acesso *
-                      <select
-                        value={newAdminRole}
-                        onChange={(e) => setNewAdminRole(e.target.value as "admin" | "user")}
-                        style={{ width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)" }}
-                      >
-                        <option value="user">Usuário Padrão</option>
-                        <option value="admin">Administrador (ADM)</option>
-                      </select>
-                    </label>
-                  </div>
-                </div>
-
-                {adminErrorMsg && <p style={{ color: "var(--danger)", fontSize: "12px", margin: "0 0 10px", fontWeight: 600 }}>{adminErrorMsg}</p>}
-                {adminSuccessMsg && <p style={{ color: "var(--success)", fontSize: "12px", margin: "0 0 10px", fontWeight: 600 }}>{adminSuccessMsg}</p>}
-
-                <button
-                  type="submit"
-                  style={{ width: "100%", padding: "10px", borderRadius: "6px", background: "var(--forest-900)", color: "#fff", border: 0, fontWeight: 700, fontSize: "12px", cursor: "pointer" }}
-                >
-                  Salvar Novo Usuário
-                </button>
-              </form>
-            )}
-
-            <h4 style={{ margin: "0 0 12px", fontSize: "13px", color: "var(--forest-950)", fontWeight: 700 }}>
-              {loggedUserRole === "admin" ? `📋 Usuários Ativos (${Object.keys(usersMap).length})` : "👤 Seu Perfil"}
-            </h4>
-
-            {adminErrorMsg && loggedUserRole === "user" && <p style={{ color: "var(--danger)", fontSize: "12px", margin: "0 0 10px", fontWeight: 600 }}>{adminErrorMsg}</p>}
-            {adminSuccessMsg && loggedUserRole === "user" && <p style={{ color: "var(--success)", fontSize: "12px", margin: "0 0 10px", fontWeight: 600 }}>{adminSuccessMsg}</p>}
-
-            <div style={{ border: "1px solid var(--line)", borderRadius: "8px", overflow: "hidden" }}>
-              {Object.entries(usersMap)
-                .filter(([userKey]) => loggedUserRole === "admin" || userKey === loggedUserKey)
-                .map(([userKey, profile], idx) => (
-                  <div
-                    key={userKey}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "8px",
-                      padding: "12px 14px",
-                      background: idx % 2 === 0 ? "var(--surface)" : "var(--canvas)",
-                      borderBottom: idx === Object.keys(usersMap).length - 1 ? 0 : "1px solid var(--line)",
-                      fontSize: "13px"
-                    }}
-                  >
-                    <div className="user-item-row">
-                      <div>
-                        <strong style={{ color: "var(--forest-950)", wordBreak: "break-all" }}>{userKey}</strong>
-                        <span style={{ color: "var(--forest-800)", marginLeft: "6px", fontSize: "12px", fontWeight: 650, wordBreak: "break-word" }}>
-                          ({typeof profile === "string" ? userKey.toUpperCase() : (profile.fullName || userKey)})
-                        </span>
-                        {typeof profile === "object" && profile.role === "admin" && (
-                          <span style={{ marginLeft: "6px", fontSize: "10px", background: "var(--forest-100)", color: "var(--forest-900)", padding: "2px 6px", borderRadius: "4px", fontWeight: 800 }}>ADM</span>
-                        )}
-                      </div>
-                      <div className="user-item-actions">
-                        <button
-                          onClick={() => {
-                            if (editingUser === userKey) {
-                              setEditingUser(null);
-                            } else {
-                              handleStartEdit(userKey, profile);
-                            }
-                          }}
-                          style={{ color: "var(--forest-900)", border: 0, background: "transparent", cursor: "pointer", fontSize: "11.5px", fontWeight: 700 }}
-                        >
-                          {loggedUserRole === "admin" ? "✏️ Editar" : "🔑 Alterar Senha"}
-                        </button>
-                        {loggedUserRole === "admin" && (
-                          <button
-                            onClick={() => handleDeleteUser(userKey)}
-                            style={{ color: "var(--danger)", border: 0, background: "transparent", cursor: "pointer", fontSize: "11.5px", fontWeight: 700 }}
-                          >
-                            🗑️ Excluir
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {editingUser === userKey && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "4px", padding: "12px", background: "rgba(0,0,0,0.03)", borderRadius: "8px", border: "1px solid var(--line)" }}>
-                        {loggedUserRole === "admin" ? (
-                          <>
-                            <div className="modal-grid-two">
-                              <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
-                                Usuário (login) *
-                                <input
-                                  type="text"
-                                  value={editUsernameInput}
-                                  onChange={(e) => setEditUsernameInput(e.target.value)}
-                                  placeholder="Ex: gabi.isidoro"
-                                  style={{ width: "100%", marginTop: "4px", padding: "6px 10px", borderRadius: "4px", border: "1px solid var(--line)", fontSize: "12px", background: "var(--surface)" }}
-                                />
-                              </label>
-                              <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
-                                Nome Completo *
-                                <input
-                                  type="text"
-                                  value={editFullNameInput}
-                                  onChange={(e) => setEditFullNameInput(e.target.value)}
-                                  placeholder="Nome e Sobrenome"
-                                  style={{ width: "100%", marginTop: "4px", padding: "6px 10px", borderRadius: "4px", border: "1px solid var(--line)", fontSize: "12px", background: "var(--surface)" }}
-                                />
-                              </label>
-                            </div>
-                            <div className="modal-grid-two">
-                              <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
-                                Perfil de Acesso
-                                <select
-                                  value={editRoleInput}
-                                  onChange={(e) => setEditRoleInput(e.target.value as "admin" | "user")}
-                                  style={{ width: "100%", marginTop: "4px", padding: "6px 10px", borderRadius: "4px", border: "1px solid var(--line)", fontSize: "12px", background: "var(--surface)" }}
-                                >
-                                  <option value="user">Usuário Padrão</option>
-                                  <option value="admin">Administrador (ADM)</option>
-                                </select>
-                              </label>
-                              <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
-                                Nova Senha (opcional)
-                                <input
-                                  type="text"
-                                  value={editNewPassInput}
-                                  onChange={(e) => setEditNewPassInput(e.target.value)}
-                                  placeholder="Deixe em branco para manter"
-                                  style={{ width: "100%", marginTop: "4px", padding: "6px 10px", borderRadius: "4px", border: "1px solid var(--line)", fontSize: "12px", background: "var(--surface)" }}
-                                />
-                              </label>
-                            </div>
-                            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "4px" }}>
-                              <button
-                                onClick={() => handleAdminUpdateUser(userKey)}
-                                style={{ padding: "6px 14px", background: "var(--forest-900)", color: "#fff", border: 0, borderRadius: "4px", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}
-                              >
-                                Salvar Alterações
-                              </button>
-                              <button
-                                onClick={() => setEditingUser(null)}
-                                style={{ padding: "6px 10px", background: "transparent", color: "var(--muted)", border: "1px solid var(--line)", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}
-                              >
-                                Cancelar
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="modal-grid-two">
-                              <input
-                                type="password"
-                                placeholder="Senha Atual"
-                                value={editingCurrentPassInput}
-                                onChange={(e) => setEditingCurrentPassInput(e.target.value)}
-                                autoFocus
-                                style={{ padding: "6px 10px", borderRadius: "4px", border: "1px solid var(--line)", fontSize: "12px", background: "var(--surface)" }}
-                              />
-                              <input
-                                type="password"
-                                placeholder="Nova Senha"
-                                value={editNewPassInput}
-                                onChange={(e) => setEditNewPassInput(e.target.value)}
-                                style={{ padding: "6px 10px", borderRadius: "4px", border: "1px solid var(--line)", fontSize: "12px", background: "var(--surface)" }}
-                              />
-                            </div>
-                            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-                              <button
-                                onClick={() => handleChangePassword(userKey)}
-                                style={{ padding: "6px 12px", background: "var(--forest-900)", color: "#fff", border: 0, borderRadius: "4px", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}
-                              >
-                                Confirmar Alteração
-                              </button>
-                              <button
-                                onClick={() => setEditingUser(null)}
-                                style={{ padding: "6px 10px", background: "transparent", color: "var(--muted)", border: "1px solid var(--line)", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}
-                              >
-                                Cancelar
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-            </div>
-          </div>
-        </div>
-      )}
+      <AdminUserModal
+        showAdminModal={showAdminModal}
+        setShowAdminModal={setShowAdminModal}
+        loggedUserRole={loggedUserRole}
+        loggedUserKey={loggedUserKey}
+        usersMap={usersMap}
+        newAdminUser={newAdminUser}
+        setNewAdminUser={setNewAdminUser}
+        newAdminPass={newAdminPass}
+        setNewAdminPass={setNewAdminPass}
+        newAdminFullName={newAdminFullName}
+        setNewAdminFullName={setNewAdminFullName}
+        newAdminRole={newAdminRole}
+        setNewAdminRole={setNewAdminRole}
+        adminErrorMsg={adminErrorMsg}
+        adminSuccessMsg={adminSuccessMsg}
+        onAddUser={handleAddUser}
+        editingUser={editingUser}
+        setEditingUser={setEditingUser}
+        editUsernameInput={editUsernameInput}
+        setEditUsernameInput={setEditUsernameInput}
+        editFullNameInput={editFullNameInput}
+        setEditFullNameInput={setEditFullNameInput}
+        editRoleInput={editRoleInput}
+        setEditRoleInput={setEditRoleInput}
+        editNewPassInput={editNewPassInput}
+        setEditNewPassInput={setEditNewPassInput}
+        editingCurrentPassInput={editingCurrentPassInput}
+        setEditingCurrentPassInput={setEditingCurrentPassInput}
+        onStartEdit={handleStartEdit}
+        onDeleteUser={handleDeleteUser}
+        onAdminUpdateUser={handleAdminUpdateUser}
+        onChangePassword={handleChangePassword}
+      />
     </main>
   );
 }

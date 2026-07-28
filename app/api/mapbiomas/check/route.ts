@@ -2,6 +2,7 @@ import {
   buildShapefileZip,
   calculateAreaHectares,
   sanitizePlotId,
+  simplifyGeometry,
   type GeometryData,
   type ShapefileAttributes,
 } from "../../../lib/eudr";
@@ -102,7 +103,7 @@ async function publicApi<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 function validateGeometry(value: unknown): GeometryData {
-  const geometry = value as GeometryData;
+  let geometry = value as GeometryData;
   if (!geometry || !Array.isArray(geometry.polygons) || geometry.polygons.length === 0) {
     throw new Error("Envie primeiro um polígono válido.");
   }
@@ -121,7 +122,9 @@ function validateGeometry(value: unknown): GeometryData {
       });
     });
   });
-  if (points > MAX_POINTS) throw new Error("A geometria é grande demais para a consulta automática.");
+  if (points > MAX_POINTS) {
+    geometry = simplifyGeometry(geometry, MAX_POINTS, 0.0001);
+  }
   return geometry;
 }
 

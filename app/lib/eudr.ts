@@ -98,6 +98,65 @@ export function calculateAreaHectares(data: GeometryData): number {
   return Math.round(rawHectares * 100) / 100;
 }
 
+function perpendicularDistance(point: Position, lineStart: Position, lineEnd: Position): number {
+  const [x, y] = point;
+  const [x1, y1] = lineStart;
+  const [x2, y2] = lineEnd;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  if (dx === 0 && dy === 0) {
+    return Math.hypot(x - x1, y - y1);
+  }
+  const numerator = Math.abs(dy * x - dx * y + x2 * y1 - y2 * x1);
+  const denominator = Math.hypot(dx, dy);
+  return numerator / denominator;
+}
+
+export function douglasPeucker(points: Position[], tolerance: number): Position[] {
+  if (points.length <= 2) return points;
+  let maxDistance = 0;
+  let index = 0;
+  const end = points.length - 1;
+  for (let i = 1; i < end; i += 1) {
+    const dist = perpendicularDistance(points[i], points[0], points[end]);
+    if (dist > maxDistance) {
+      maxDistance = dist;
+      index = i;
+    }
+  }
+  if (maxDistance > tolerance) {
+    const rec1 = douglasPeucker(points.slice(0, index + 1), tolerance);
+    const rec2 = douglasPeucker(points.slice(index), tolerance);
+    return [...rec1.slice(0, rec1.length - 1), ...rec2];
+  }
+  return [points[0], points[end]];
+}
+
+export function simplifyGeometry(data: GeometryData, maxPoints = 50000, tolerance = 0.00005): GeometryData {
+  let totalPoints = 0;
+  data.polygons.forEach((p) => p.forEach((r) => (totalPoints += r.length)));
+  if (totalPoints <= maxPoints) return data;
+
+  const simplifiedPolygons = data.polygons.map((polygon) =>
+    polygon.map((ring) => {
+      if (ring.length <= 4) return ring;
+      let currentTol = tolerance;
+      let simplified = douglasPeucker(ring, currentTol);
+      let attempts = 0;
+      while (simplified.length < 4 && currentTol > 1e-9 && attempts < 10) {
+        currentTol /= 2;
+        simplified = douglasPeucker(ring, currentTol);
+        attempts += 1;
+      }
+      if (simplified.length >= 4 && simplified.length < ring.length) {
+        return closeRing(simplified);
+      }
+      return ring;
+    })
+  );
+  return { polygons: simplifiedPolygons };
+}
+
 export function sanitizePlotId(value: string): string {
   return value.trim().toUpperCase().replace(/[^A-Z0-9-]/g, "").replace(/-+/g, "-");
 }
