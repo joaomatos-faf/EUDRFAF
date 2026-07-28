@@ -889,8 +889,8 @@ export default function Home() {
       </section>
 
       {showAdminModal && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(16, 44, 36, 0.65)", backdropFilter: "blur(4px)", display: "grid", placeItems: "center", padding: "20px" }}>
-          <div style={{ width: "100%", maxWidth: "520px", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "16px", padding: "28px 24px", boxShadow: "var(--shadow-lg)", maxHeight: "90vh", overflowY: "auto" }}>
+        <div style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(16, 44, 36, 0.65)", backdropFilter: "blur(4px)", display: "grid", placeItems: "center", padding: "16px" }}>
+          <div className="admin-modal-card" style={{ width: "100%", maxWidth: "520px", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "16px", padding: "28px 24px", boxShadow: "var(--shadow-lg)", maxHeight: "90vh", overflowY: "auto" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: "18px", color: "var(--forest-950)", fontWeight: 700 }}>
@@ -912,7 +912,7 @@ export default function Home() {
               <form onSubmit={handleAddUser} style={{ background: "var(--canvas)", border: "1px solid var(--line)", borderRadius: "12px", padding: "16px", marginBottom: "24px" }}>
                 <h4 style={{ margin: "0 0 12px", fontSize: "13px", color: "var(--forest-950)", fontWeight: 700 }}>➕ Cadastrar Novo Usuário</h4>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "12px" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <div className="modal-grid-two">
                     <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
                       Usuário (login) *
                       <input
@@ -934,7 +934,7 @@ export default function Home() {
                       />
                     </label>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <div className="modal-grid-two">
                     <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
                       Nome Completo *
                       <input
@@ -994,17 +994,17 @@ export default function Home() {
                       fontSize: "13px"
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div className="user-item-row">
                       <div>
-                        <strong style={{ color: "var(--forest-950)" }}>{userKey}</strong>
-                        <span style={{ color: "var(--forest-800)", marginLeft: "8px", fontSize: "12px", fontWeight: 650 }}>
+                        <strong style={{ color: "var(--forest-950)", wordBreak: "break-all" }}>{userKey}</strong>
+                        <span style={{ color: "var(--forest-800)", marginLeft: "6px", fontSize: "12px", fontWeight: 650, wordBreak: "break-word" }}>
                           ({typeof profile === "string" ? userKey.toUpperCase() : (profile.fullName || userKey)})
                         </span>
                         {typeof profile === "object" && profile.role === "admin" && (
-                          <span style={{ marginLeft: "8px", fontSize: "10px", background: "var(--forest-100)", color: "var(--forest-900)", padding: "2px 6px", borderRadius: "4px", fontWeight: 800 }}>ADM</span>
+                          <span style={{ marginLeft: "6px", fontSize: "10px", background: "var(--forest-100)", color: "var(--forest-900)", padding: "2px 6px", borderRadius: "4px", fontWeight: 800 }}>ADM</span>
                         )}
                       </div>
-                      <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                      <div className="user-item-actions">
                         <button
                           onClick={() => {
                             if (editingUser === userKey) {
@@ -1032,7 +1032,7 @@ export default function Home() {
                       <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "4px", padding: "12px", background: "rgba(0,0,0,0.03)", borderRadius: "8px", border: "1px solid var(--line)" }}>
                         {loggedUserRole === "admin" ? (
                           <>
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                            <div className="modal-grid-two">
                               <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
                                 Usuário (login) *
                                 <input
@@ -1054,7 +1054,7 @@ export default function Home() {
                                 />
                               </label>
                             </div>
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                            <div className="modal-grid-two">
                               <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
                                 Perfil de Acesso
                                 <select
@@ -1094,7 +1094,7 @@ export default function Home() {
                           </>
                         ) : (
                           <>
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                            <div className="modal-grid-two">
                               <input
                                 type="password"
                                 placeholder="Senha Atual"
