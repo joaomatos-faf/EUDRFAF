@@ -99,7 +99,6 @@ function normalizedText(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
 }
 
-// O Leaflet interage com window, então carregamos o componente Map dinamicamente (para SSR)
 const MapPreviewComponent = dynamic(() => import("./MapPreviewComponent"), { 
   ssr: false, 
   loading: () => <div style={{ width: 560, height: 320, background: "#f3f6ee", borderRadius: 8 }} />
