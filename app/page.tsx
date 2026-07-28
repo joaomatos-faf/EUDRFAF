@@ -8,6 +8,8 @@ import {
   GeometryData,
   buildEudrGeoJson,
   buildShapefileZip,
+  buildShapefileParts,
+  zipStore,
   calculateAreaHectares,
   downloadBlob,
   parseGeometryFile,
@@ -353,9 +355,32 @@ export default function Home() {
   };
 
   const exportAll = () => {
-    downloadGeoJson();
-    window.setTimeout(downloadShape, 250);
-    window.setTimeout(downloadCsv, 500);
+    if (!geometry || !normalizedId) return;
+
+    // 1. GeoJSON
+    const geojsonContent = JSON.stringify(buildEudrGeoJson(geometry, normalizedId, area), null, 2);
+    const geojsonBytes = new TextEncoder().encode(geojsonContent);
+
+    // 2. CSV
+    const automaticNote = mapbiomasCheck.checkedAt
+      ? `MapBiomas Série temporal de Cobertura por classe, Coleção 10.1 (${new Date(mapbiomasCheck.checkedAt).toLocaleString("pt-BR")}): ${mapbiomasCheck.changes.length ? `${mapbiomasCheck.changes.length} alteração(ões) entre classes/anos de 2020 a 2024` : "nenhuma alteração entre 2020 e 2024"}.${mapbiomasCheck.verificationUrl ? ` Verificação: ${mapbiomasCheck.verificationUrl}.` : ""}`
+      : "MapBiomas Série temporal de Cobertura: consulta automática não realizada.";
+    const notes = [form.notes.trim(), automaticNote].filter(Boolean).join(" ");
+    const csvContent = producerCsv({ ...form, notes, plotId: normalizedId, area });
+    const csvBytes = new TextEncoder().encode(csvContent);
+
+    // 3. Shapefile
+    const shapeParts = buildShapefileParts(geometry, normalizedId, area, form);
+
+    // Junta tudo num ZIP só
+    const allFiles = [
+      { name: `${normalizedId}.geojson`, data: geojsonBytes },
+      { name: `${normalizedId}-cadastro.csv`, data: csvBytes },
+      ...shapeParts,
+    ];
+
+    const zipBlob = zipStore(allFiles);
+    downloadBlob(`${normalizedId}-pacote-eudr.zip`, zipBlob);
   };
 
   return (

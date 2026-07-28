@@ -247,7 +247,7 @@ function crc32(bytes: Uint8Array) {
   return (crc ^ 0xffffffff) >>> 0;
 }
 
-function zipStore(files: { name: string; data: Uint8Array }[]) {
+export function zipStore(files: { name: string; data: Uint8Array }[]) {
   const localParts: Uint8Array[] = [];
   const centralParts: Uint8Array[] = [];
   let offset = 0;
@@ -291,7 +291,7 @@ function zipStore(files: { name: string; data: Uint8Array }[]) {
   return new Blob([...localParts, ...centralParts, end], { type: "application/zip" });
 }
 
-export function buildShapefileZip(
+export function buildShapefileParts(
   data: GeometryData,
   plotId: string,
   area: number,
@@ -300,13 +300,22 @@ export function buildShapefileZip(
   const { shp, shx } = createShapeFiles(data);
   const prj = encoder.encode('GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]');
   const cpg = encoder.encode("UTF-8");
-  return zipStore([
+  return [
     { name: `${plotId}.shp`, data: shp },
     { name: `${plotId}.shx`, data: shx },
     { name: `${plotId}.dbf`, data: createDbf(plotId, area, attributes) },
     { name: `${plotId}.prj`, data: prj },
     { name: `${plotId}.cpg`, data: cpg },
-  ]);
+  ];
+}
+
+export function buildShapefileZip(
+  data: GeometryData,
+  plotId: string,
+  area: number,
+  attributes: ShapefileAttributes = {},
+) {
+  return zipStore(buildShapefileParts(data, plotId, area, attributes));
 }
 
 function csvCell(value: string | number) {
