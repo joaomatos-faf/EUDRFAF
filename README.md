@@ -1,48 +1,95 @@
-# Preparador EUDR - FAF Coffees
+# 🌿 Preparador EUDR — FAF Coffees
 
-Aplicativo local para transformar polígonos KML/GeoJSON em arquivos padronizados para o fluxo EUDR e comparar automaticamente a Série temporal de Cobertura por classe do MapBiomas.
+> Aplicativo desktop e web para preparação automatizada de dossiês de conformidade do **Regulamento Europeu de Desmatamento (EUDR)**.
 
-## O que o aplicativo faz
+---
 
-- importa arquivos KML, GeoJSON ou JSON;
-- calcula a área do polígono em hectares;
-- oferece busca de município pela lista oficial do IBGE e preenche Estado e Região automaticamente;
-- exige a escolha do Estado quando o nome do município existe em mais de uma unidade federativa;
-- converte o KML em um Shapefile com os dados preenchidos antes da consulta;
-- envia o ZIP do Shapefile e consulta a Cobertura por classe de 2020, 2021, 2022, 2023 e 2024;
-- compara todas as classes ano a ano com a precisão de duas casas decimais exibida na tabela do MapBiomas;
-- apresenta e registra no CSV o link da geometria na camada de Cobertura 2024 do MapBiomas;
-- usa a Coleção 10.1, com resolução de 30 metros;
-- gera GeoJSON, Shapefile e CSV para o processo EUDR;
-- mantém a conferência do CAR e a interpretação do resultado como validações humanas obrigatórias.
+## 📌 Visão Geral
 
-## Executar no Windows
+O **Preparador EUDR** permite transformar geometrias de propriedades agrícolas (formatos **KML, GeoJSON ou JSON**) em pacotes auditáveis completos para o ecossistema EUDR, integrando validação de série temporal de uso do solo com o **MapBiomas (Coleção 10.1, 2020–2024)** e dados oficiais do **IBGE**.
 
-Baixe e execute `Preparador-EUDR-FAF-Setup-0.2.1.exe`. O instalador permite escolher a pasta e cria atalhos na Área de Trabalho e no menu Iniciar.
+---
 
-Depois da instalação, abra **Preparador EUDR FAF** pelo atalho. O aplicativo funciona em uma janela própria; não é necessário iniciar comandos nem abrir manualmente o navegador.
+## ⚡ Principais Funcionalidades
 
-Não é necessário criar conta nem configurar senha do MapBiomas.
+- 🗺️ **Importação de Geometrias**: Suporte nativo a arquivos KML, GeoJSON e JSON.
+- 📐 **Cálculo de Área de Precisão**: Cálculo geodésico de área em hectares com precisão de duas casas decimais.
+- 🪄 **Simplificação Geométrica Inteligente**: Algoritmo **Ramer-Douglas-Peucker** integrado para reduzir automaticamente polígonos gigantescos mantendo a fidelidade espacial e limite seguro para apis.
+- 🏛️ **Autocompletar IBGE**: Busca inteligente por municípios com preenchimento automático de Estado e Região.
+- 🛰️ **Validação MapBiomas**: Consulta automática da série temporal de cobertura vegetal classe a classe (2020 a 2024) via Coleção 10.1 (resolução 30m).
+- 🔐 **Autenticação Global & Cloudflare KV**: Sincronização Serverless de credenciais e permissões (ADM / Usuário Padrão) via Cloudflare Workers KV em tempo real.
+- 📦 **Exportação em Lote**: Geração com 1 clique de pacote ZIP contendo **GeoJSON**, **Shapefile (.shp, .shx, .dbf, .prj, .cpg)** e **Planilha CSV de Cadastro**.
 
-## Privacidade
+---
 
-Para calcular a série de cobertura na área exata, o servidor local gera uma cópia temporária do polígono em Shapefile, inclui os dados preenchidos e envia o ZIP por HTTPS ao endpoint público usado pela própria plataforma MapBiomas. O KML original permanece no computador. Não há credenciais armazenadas no projeto ou no computador.
+## 🏗️ Estrutura do Projeto
 
-## Desenvolvimento
+```
+├── app/
+│   ├── api/                 # Endpoints Serverless (MapBiomas, IBGE, Users Cloudflare KV)
+│   ├── components/          # Componentes visuais modulares
+│   │   ├── admin/           # Subcomponentes do painel ADM (UserForm, UserTable, UserEditRow)
+│   │   ├── EudrHeader.tsx
+│   │   ├── EudrStepsNav.tsx
+│   │   ├── LoginScreen.tsx
+│   │   └── AdminUserModal.tsx
+│   ├── hooks/               # Custom Hooks (useUserManagement)
+│   ├── lib/                 # Biblioteca de Geometria, Algoritmos e Exportação (eudr.ts)
+│   └── page.tsx             # Aplicação principal
+├── desktop/                 # Runtime de integração Electron / Windows
+├── scripts/                 # Scripts de automação local
+├── tests/                   # Suíte de testes automatizados com Node.js Test Runner
+└── wrangler.json            # Configuração de bindings do Cloudflare Workers KV
+```
 
-Requisitos: Node.js 22 ou superior e pnpm.
+---
+
+## 💻 Desenvolvimento & Execução
+
+### Requisitos
+
+- **Node.js**: v22 ou superior
+- **Gerenciador de Pacotes**: `pnpm` (v10+)
+
+### Instalação
 
 ```bash
 pnpm install
+```
+
+### Executar em Modo de Desenvolvimento
+
+```bash
 pnpm run dev
 ```
 
-Para criar novamente o instalador do Windows:
+### Executar Suíte de Testes Automatizados
+
+```bash
+pnpm run test
+```
+
+### Compilar para Produção (Web Serverless)
+
+```bash
+pnpm run build
+```
+
+### Gerar Instalador Desktop para Windows (.exe)
 
 ```bash
 pnpm run desktop:dist
 ```
 
-## Limites da automação
+---
 
-O resultado usa a Série temporal de Cobertura por classe da Coleção 10.1, disponível até 2024. O programa compara a tabela de 2020 até 2024 e sinaliza qualquer classe cujo valor apresentado mude entre anos consecutivos. O resultado não substitui análise documental ou jurídica.
+## 🛡️ Segurança e Privacidade
+
+- **Armazenamento de Senhas**: As senhas de usuários utilizam hash **SHA-256** com *salt* exclusivo do sistema antes de qualquer armazenamento local ou remoto.
+- **Proteção dos Dados**: As geometrias são processadas localmente e enviadas via conexões seguras HTTPS diretamente aos endpoints públicos do MapBiomas sem retenção de dados sensíveis em servidores externos desnecessários.
+
+---
+
+## ⚖️ Limites da Automação
+
+O sistema utiliza a Série Temporal de Cobertura da Coleção 10.1 do MapBiomas (dados até 2024). A validação automática destaca alterações de cobertura vegetal entre anos consecutivos, atuando como ferramenta de apoio à decisão. **A validação documental e análise do CAR continuam sendo etapas humanas obrigatórias.**
