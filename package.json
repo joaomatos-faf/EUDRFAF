@@ -4,7 +4,6 @@
   "description": "Aplicativo desktop para preparar e validar dossiês EUDR da FAF Coffees.",
   "author": "FAF Coffees",
   "private": true,
-  "main": "desktop/main.mjs",
   "engines": {
     "node": ">=22.13.0"
   },
@@ -12,9 +11,6 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "node scripts/start-local.mjs",
-    "desktop:dev": "pnpm run build && electron desktop/main.mjs",
-    "desktop:pack": "pnpm run build && electron-builder --dir --win --x64",
-    "desktop:dist": "pnpm run build && electron-builder --win --x64",
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
@@ -32,8 +28,6 @@
     "@vitejs/plugin-rsc": "0.5.26",
     "drizzle-kit": "0.31.10",
     "drizzle-orm": "0.45.2",
-    "electron": "^43.2.0",
-    "electron-builder": "^26.15.3",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
     "next": "16.2.6",
