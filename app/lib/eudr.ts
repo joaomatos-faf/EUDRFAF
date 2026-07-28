@@ -94,7 +94,8 @@ export function calculateAreaHectares(data: GeometryData): number {
     const holes = polygon.slice(1).reduce((holeSum, ring) => holeSum + ringArea(ring), 0);
     return sum + Math.max(0, outer - holes);
   }, 0);
-  return squareMeters / 10000;
+  const rawHectares = squareMeters / 10000;
+  return Math.round(rawHectares * 100) / 100;
 }
 
 export function sanitizePlotId(value: string): string {
@@ -103,13 +104,13 @@ export function sanitizePlotId(value: string): string {
 
 export function buildEudrGeoJson(data: GeometryData, plotId: string, area: number) {
   const geometry = data.polygons.length === 1
-    ? { type: "Polygon", coordinates: data.polygons[0] }
-    : { type: "MultiPolygon", coordinates: data.polygons };
+    ? { type: "Polygon" as const, coordinates: data.polygons[0] }
+    : { type: "MultiPolygon" as const, coordinates: data.polygons };
   return {
-    type: "FeatureCollection",
+    type: "FeatureCollection" as const,
     name: plotId,
     crs: { type: "name", properties: { name: "urn:ogc:def:crs:OGC:1.3:CRS84" } },
-    features: [{ type: "Feature", properties: { name: plotId, area: Number(area.toFixed(4)), productioncountry: "BR" }, geometry }],
+    features: [{ type: "Feature" as const, properties: { name: plotId, area: Number(area.toFixed(2)), productioncountry: "BR" }, geometry }],
   };
 }
 
@@ -191,7 +192,7 @@ function createDbf(plotId: string, area: number, attributes: ShapefileAttributes
     { name: "REGION", type: "C", length: 60, decimals: 0, value: attributes.region },
     { name: "MUNICIPAL", type: "C", length: 60, decimals: 0, value: attributes.municipality },
     { name: "STATE", type: "C", length: 40, decimals: 0, value: attributes.state },
-    { name: "AREA_HA", type: "N", length: 14, decimals: 4, value: area.toFixed(4) },
+    { name: "AREA_HA", type: "N", length: 14, decimals: 2, value: area.toFixed(2) },
     { name: "MAP_DATE", type: "C", length: 10, decimals: 0, value: attributes.mappedAt },
     { name: "CHECK_DATE", type: "C", length: 10, decimals: 0, value: attributes.checkedAt },
     { name: "RESULT", type: "C", length: 30, decimals: 0, value: attributes.compliance },
@@ -288,7 +289,7 @@ export function zipStore(files: { name: string; data: Uint8Array }[]) {
   endView.setUint16(10, files.length, true);
   endView.setUint32(12, centralLength, true);
   endView.setUint32(16, offset, true);
-  return new Blob([...localParts, ...centralParts, end], { type: "application/zip" });
+  return new Blob([...localParts, ...centralParts, end] as unknown as BlobPart[], { type: "application/zip" });
 }
 
 export function buildShapefileParts(
@@ -331,7 +332,7 @@ function displayDate(value: string) {
 
 export function producerCsv(form: Record<string, string | number>) {
   const headers = ["Plot ID", "Nome da fazenda", "Nome do produtor", "Fornecedor", "Região", "Município", "Estado", "Área (ha)", "Data do mapeamento", "Data da verificação", "Conformidade", "Observações", "Mapeado por", "Número do CAR"];
-  const row = [form.plotId, form.farm || "NA", form.producer || "NA", form.supplier, form.region, form.municipality, form.state, Number(form.area).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 }), displayDate(String(form.mappedAt)), displayDate(String(form.checkedAt)), form.compliance, form.notes, form.mappedBy, form.car];
+  const row = [form.plotId, form.farm || "NA", form.producer || "NA", form.supplier, form.region, form.municipality, form.state, Number(form.area).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), displayDate(String(form.mappedAt)), displayDate(String(form.checkedAt)), form.compliance, form.notes, form.mappedBy, form.car];
   return `\uFEFF${headers.map(csvCell).join(";")}\r\n${row.map(csvCell).join(";")}\r\n`;
 }
 

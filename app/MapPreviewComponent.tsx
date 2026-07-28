@@ -12,7 +12,7 @@ function BoundsFitter({ geojson }: { geojson: any }) {
     const layer = L.geoJSON(geojson);
     const bounds = layer.getBounds();
     if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [20, 20], maxZoom: 18 });
+      map.fitBounds(bounds, { padding: [20, 20], maxZoom: 20 });
     }
   }, [map, geojson]);
   return null;
@@ -34,13 +34,13 @@ export default function MapPreviewComponent({ geometry }: { geometry: GeometryDa
         center={[centerCoord.lat, centerCoord.lng]}
         zoom={13}
         style={{ height: "100%", width: "100%", zIndex: 0 }}
-        zoomControl={false}
+        zoomControl={true}
         attributionControl={false}
       >
         <TileLayer
-          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-          attribution="Tiles &copy; Esri"
-          maxNativeZoom={18}
+          url="https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+          attribution="Map data &copy; Google"
+          maxNativeZoom={20}
           maxZoom={22}
         />
         <GeoJSON

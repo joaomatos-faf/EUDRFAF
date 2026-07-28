@@ -108,7 +108,54 @@ function MapPreview({ geometry }: { geometry: GeometryData }) {
   return <MapPreviewComponent geometry={geometry} />;
 }
 
+// Função para criptografar a senha usando o algoritmo SHA-256 do navegador
+async function hashPassword(password: string): Promise<string> {
+  const msgUint8 = new TextEncoder().encode("FAF_EUDR_SALT_2026_" + password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+const checkPasswordMatch = async (inputPass: string, storedValue: string): Promise<boolean> => {
+  const inputHash = await hashPassword(inputPass);
+  if (storedValue.length === 64 && /^[0-9a-f]+$/i.test(storedValue)) {
+    return inputHash === storedValue;
+  }
+  return inputPass === storedValue;
+};
+
+interface UserProfile {
+  pass: string;
+  fullName: string;
+  role: "admin" | "user";
+}
+
+// Dicionário de Usuários Padrão com Permissões (ADM vs Usuário)
+const DEFAULT_USERS_DATA: Record<string, UserProfile> = {
+  faf: { pass: "eudr2026", fullName: "FAF Coffees", role: "admin" },
+  admin: { pass: "faf2026", fullName: "Administrador FAF", role: "admin" },
+  joao: { pass: "faf1234", fullName: "João Silva", role: "user" },
+  joaomatos: { pass: "123", fullName: "João Matos", role: "admin" },
+};
+
 export default function Home() {
+  const [usersMap, setUsersMap] = useState<Record<string, UserProfile>>(DEFAULT_USERS_DATA);
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [newAdminUser, setNewAdminUser] = useState("");
+  const [newAdminFullName, setNewAdminFullName] = useState("");
+  const [newAdminPass, setNewAdminPass] = useState("");
+  const [newAdminRole, setNewAdminRole] = useState<"admin" | "user">("user");
+  const [adminSuccessMsg, setAdminSuccessMsg] = useState("");
+  const [adminErrorMsg, setAdminErrorMsg] = useState("");
+
+  const [loggedUserKey, setLoggedUserKey] = useState<string>("");
+  const [loggedUserRole, setLoggedUserRole] = useState<"admin" | "user">("user");
+
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [loginUsername, setLoginUsername] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+
   const [form, setForm] = useState<FormState>(initialForm);
   const [geometry, setGeometry] = useState<GeometryData | null>(null);
   const [fileName, setFileName] = useState("");
@@ -120,6 +167,241 @@ export default function Home() {
   const [locationsStatus, setLocationsStatus] = useState<"loading" | "ready" | "error">("loading");
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
   const [locationsReload, setLocationsReload] = useState(0);
+
+  useEffect(() => {
+    const initUsers = async () => {
+      try {
+        const saved = localStorage.getItem("faf_eudr_users");
+        let initial: Record<string, any> = DEFAULT_USERS_DATA;
+        if (saved) {
+          initial = JSON.parse(saved);
+        }
+        const hashedMap: Record<string, UserProfile> = {};
+        for (const [u, val] of Object.entries(initial)) {
+          let pass = typeof val === "string" ? val : val.pass;
+          let fullName = typeof val === "string" ? u.toUpperCase() : (val.fullName || u.toUpperCase());
+          let role: "admin" | "user" = typeof val === "object" && val.role ? val.role : (u === "faf" || u === "admin" || u === "joaomatos" ? "admin" : "user");
+          if (pass.length !== 64 || !/^[0-9a-f]+$/i.test(pass)) {
+            pass = await hashPassword(pass);
+          }
+          hashedMap[u] = { pass, fullName, role };
+        }
+        setUsersMap(hashedMap);
+        localStorage.setItem("faf_eudr_users", JSON.stringify(hashedMap));
+      } catch {}
+    };
+    initUsers();
+  }, []);
+
+  useEffect(() => {
+    const auth = sessionStorage.getItem("faf_eudr_auth");
+    if (auth === "true") {
+      setIsAuthenticated(true);
+      const savedName = sessionStorage.getItem("faf_eudr_user_name");
+      const savedKey = sessionStorage.getItem("faf_eudr_user_key");
+      const savedRole = sessionStorage.getItem("faf_eudr_user_role") as "admin" | "user";
+      if (savedName) setForm((prev) => ({ ...prev, mappedBy: savedName }));
+      if (savedKey) setLoggedUserKey(savedKey);
+      if (savedRole) setLoggedUserRole(savedRole);
+    } else {
+      setIsAuthenticated(false);
+    }
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const userKey = loginUsername.trim().toLowerCase();
+
+    let currentUsersMap = usersMap;
+    try {
+      const saved = localStorage.getItem("faf_eudr_users");
+      if (saved) currentUsersMap = JSON.parse(saved);
+    } catch {}
+
+    const profile = currentUsersMap[userKey];
+    if (!profile) {
+      setLoginError("Usuário ou senha incorretos.");
+      return;
+    }
+
+    const passToTest = typeof profile === "string" ? profile : profile.pass;
+    const isMatch = await checkPasswordMatch(loginPassword, passToTest);
+
+    if (isMatch) {
+      const fullName = typeof profile === "string" ? userKey.toUpperCase() : (profile.fullName || userKey);
+      const role = typeof profile === "string" ? "user" : (profile.role || "user");
+      sessionStorage.setItem("faf_eudr_auth", "true");
+      sessionStorage.setItem("faf_eudr_user_name", fullName);
+      sessionStorage.setItem("faf_eudr_user_key", userKey);
+      sessionStorage.setItem("faf_eudr_user_role", role);
+      setIsAuthenticated(true);
+      setLoggedUserKey(userKey);
+      setLoggedUserRole(role);
+      setForm((prev) => ({ ...prev, mappedBy: fullName }));
+      setLoginError("");
+    } else {
+      setLoginError("Usuário ou senha incorretos.");
+    }
+  };
+
+  const handleAddUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanUser = newAdminUser.trim().toLowerCase();
+    const cleanName = newAdminFullName.trim();
+    if (!cleanUser || !newAdminPass.trim() || !cleanName) {
+      setAdminErrorMsg("Preencha Usuário, Nome/Sobrenome e Senha.");
+      return;
+    }
+    const hashed = await hashPassword(newAdminPass.trim());
+    const updated = { ...usersMap, [cleanUser]: { pass: hashed, fullName: cleanName, role: newAdminRole } };
+    setUsersMap(updated);
+    try {
+      localStorage.setItem("faf_eudr_users", JSON.stringify(updated));
+    } catch {}
+    setNewAdminUser("");
+    setNewAdminFullName("");
+    setNewAdminPass("");
+    setNewAdminRole("user");
+    setAdminErrorMsg("");
+    setAdminSuccessMsg(`Usuário "${cleanUser}" (${cleanName}) criado como ${newAdminRole === "admin" ? "ADM" : "Usuário Padrão"}!`);
+    setTimeout(() => setAdminSuccessMsg(""), 3000);
+  };
+
+  const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [editUsernameInput, setEditUsernameInput] = useState("");
+  const [editFullNameInput, setEditFullNameInput] = useState("");
+  const [editRoleInput, setEditRoleInput] = useState<"admin" | "user">("user");
+  const [editNewPassInput, setEditNewPassInput] = useState("");
+  const [editingCurrentPassInput, setEditingCurrentPassInput] = useState("");
+
+  const handleStartEdit = (userKey: string, profile: UserProfile) => {
+    setEditingUser(userKey);
+    setEditUsernameInput(userKey);
+    const name = typeof profile === "string" ? userKey.toUpperCase() : (profile.fullName || userKey.toUpperCase());
+    const role = typeof profile === "string" ? "user" : (profile.role || "user");
+    setEditFullNameInput(name);
+    setEditRoleInput(role);
+    setEditNewPassInput("");
+    setEditingCurrentPassInput("");
+    setAdminErrorMsg("");
+  };
+
+  const handleDeleteUser = (userKey: string) => {
+    if (Object.keys(usersMap).length <= 1) {
+      alert("Você não pode excluir todos os usuários!");
+      return;
+    }
+    const updated = { ...usersMap };
+    delete updated[userKey];
+    setUsersMap(updated);
+    try {
+      localStorage.setItem("faf_eudr_users", JSON.stringify(updated));
+    } catch {}
+  };
+
+  const handleAdminUpdateUser = async (oldUserKey: string) => {
+    const newCleanUser = editUsernameInput.trim().toLowerCase();
+    const cleanName = editFullNameInput.trim();
+    if (!newCleanUser) {
+      setAdminErrorMsg("Informe o Usuário (login).");
+      return;
+    }
+    if (!cleanName) {
+      setAdminErrorMsg("Informe o Nome Completo.");
+      return;
+    }
+
+    if (newCleanUser !== oldUserKey && usersMap[newCleanUser]) {
+      setAdminErrorMsg(`O usuário (login) "${newCleanUser}" já existe.`);
+      return;
+    }
+
+    const profile = usersMap[oldUserKey];
+    if (!profile) return;
+
+    let newHash = typeof profile === "string" ? profile : profile.pass;
+    if (editNewPassInput.trim()) {
+      newHash = await hashPassword(editNewPassInput.trim());
+    }
+
+    const updated = { ...usersMap };
+    if (newCleanUser !== oldUserKey) {
+      delete updated[oldUserKey];
+    }
+
+    updated[newCleanUser] = {
+      pass: newHash,
+      fullName: cleanName,
+      role: editRoleInput,
+    };
+
+    setUsersMap(updated);
+    try {
+      localStorage.setItem("faf_eudr_users", JSON.stringify(updated));
+    } catch {}
+
+    if (oldUserKey === loggedUserKey) {
+      sessionStorage.setItem("faf_eudr_user_key", newCleanUser);
+      sessionStorage.setItem("faf_eudr_user_name", cleanName);
+      sessionStorage.setItem("faf_eudr_user_role", editRoleInput);
+      setLoggedUserKey(newCleanUser);
+      setLoggedUserRole(editRoleInput);
+      setForm((prev) => ({ ...prev, mappedBy: cleanName }));
+    }
+
+    setEditingUser(null);
+    setEditUsernameInput("");
+    setEditFullNameInput("");
+    setEditNewPassInput("");
+    setAdminErrorMsg("");
+    setAdminSuccessMsg(`Usuário "${newCleanUser}" atualizado com sucesso!`);
+    setTimeout(() => setAdminSuccessMsg(""), 3000);
+  };
+
+  const handleChangePassword = async (userKey: string) => {
+    if (!editingCurrentPassInput.trim()) {
+      setAdminErrorMsg("Informe a senha atual.");
+      return;
+    }
+    if (!editNewPassInput.trim()) {
+      setAdminErrorMsg("Informe a nova senha.");
+      return;
+    }
+
+    const profile = usersMap[userKey];
+    if (!profile) {
+      setAdminErrorMsg("Usuário não encontrado.");
+      return;
+    }
+
+    const storedPass = typeof profile === "string" ? profile : profile.pass;
+    const isCurrentValid = await checkPasswordMatch(editingCurrentPassInput.trim(), storedPass);
+    if (!isCurrentValid) {
+      setAdminErrorMsg("A senha atual informada está incorreta.");
+      return;
+    }
+
+    const hashedNew = await hashPassword(editNewPassInput.trim());
+    const fullName = typeof profile === "string" ? userKey.toUpperCase() : profile.fullName;
+    const role = typeof profile === "string" ? "user" : profile.role;
+    const updated = { ...usersMap, [userKey]: { pass: hashedNew, fullName, role } };
+    setUsersMap(updated);
+    try {
+      localStorage.setItem("faf_eudr_users", JSON.stringify(updated));
+    } catch {}
+
+    setEditingUser(null);
+    setEditingCurrentPassInput("");
+    setEditNewPassInput("");
+    setAdminErrorMsg("");
+    setAdminSuccessMsg(`Sua senha foi alterada com sucesso!`);
+    setTimeout(() => setAdminSuccessMsg(""), 3000);
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("faf_eudr_auth");
+    setIsAuthenticated(false);
+  };
 
   useEffect(() => {
     let active = true;
@@ -382,6 +664,74 @@ export default function Home() {
     downloadBlob(`${normalizedId}-pacote-eudr.zip`, zipBlob);
   };
 
+  if (isAuthenticated === null) {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--canvas)", display: "grid", placeItems: "center" }}>
+        <p style={{ color: "var(--muted)", fontWeight: 600 }}>Carregando sistema...</p>
+      </div>
+    );
+  }
+
+  if (isAuthenticated === false) {
+    return (
+      <main className="app-shell" style={{ display: "grid", minHeight: "100vh", placeItems: "center", background: "var(--canvas)", padding: "20px" }}>
+        <div style={{ width: "100%", maxWidth: "400px", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "16px", padding: "36px 32px", boxShadow: "var(--shadow-lg)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "24px" }}>
+            <div className="brand-mark" style={{ width: "46px", height: "46px", fontSize: "15px" }}>FAF</div>
+            <div>
+              <p className="eyebrow" style={{ margin: 0 }}>FAF Coffees</p>
+              <h1 style={{ margin: 0, fontSize: "20px", color: "var(--forest-950)", fontWeight: 700 }}>Acesso Restrito</h1>
+            </div>
+          </div>
+          <p style={{ margin: "0 0 24px", color: "var(--muted)", fontSize: "13.5px", lineHeight: "1.5" }}>
+            Digite suas credenciais autorizadas para acessar o Preparador EUDR.
+          </p>
+
+          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 700, color: "var(--forest-950)" }}>
+              Usuário
+              <input
+                type="text"
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+                placeholder="Informe o usuário"
+                autoFocus
+                style={{ padding: "12px 14px", borderRadius: "8px", border: "1px solid var(--line)", outline: "none", fontSize: "14px", background: "var(--canvas)" }}
+              />
+            </label>
+
+            <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 700, color: "var(--forest-950)" }}>
+              Senha
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder="Informe a senha"
+                style={{ padding: "12px 14px", borderRadius: "8px", border: "1px solid var(--line)", outline: "none", fontSize: "14px", background: "var(--canvas)" }}
+              />
+            </label>
+
+            {loginError && (
+              <p className="error-box" style={{ margin: 0, fontSize: "13px" }}>{loginError}</p>
+            )}
+
+            <button
+              type="submit"
+              className="primary-button"
+              style={{ width: "100%", marginTop: "6px", padding: "13px", borderRadius: "8px", background: "var(--forest-900)", color: "#fff", border: 0, fontWeight: 700, cursor: "pointer" }}
+            >
+              Entrar no Sistema →
+            </button>
+          </form>
+
+          <div style={{ marginTop: "28px", paddingTop: "20px", borderTop: "1px solid var(--line)", textAlign: "center" }}>
+            <small style={{ color: "var(--subtle)", fontSize: "11px", fontWeight: 600 }}>FAF Coffees · Sustentabilidade & EUDR</small>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -394,6 +744,18 @@ export default function Home() {
         </div>
         <div className="topbar-actions">
           <div className="privacy-pill"><span /> Dados locais e consulta segura</div>
+          <button
+            onClick={() => setShowAdminModal(true)}
+            style={{ color: "#d9e5df", border: "1px solid rgba(255,255,255,0.2)", padding: "7px 14px", borderRadius: "999px", cursor: "pointer", background: "rgba(255,255,255,0.06)", fontSize: "11px", fontWeight: 650 }}
+          >
+            {loggedUserRole === "admin" ? "⚙️ Gerenciar Usuários" : "🔑 Alterar Minha Senha"}
+          </button>
+          <button
+            onClick={handleLogout}
+            style={{ color: "#d9e5df", border: "1px solid rgba(255,255,255,0.2)", padding: "7px 14px", borderRadius: "999px", cursor: "pointer", background: "rgba(255,255,255,0.06)", fontSize: "11px", fontWeight: 650 }}
+          >
+            Sair
+          </button>
         </div>
       </header>
 
@@ -427,7 +789,16 @@ export default function Home() {
               <label>Número do CAR<input value={form.car} onChange={(e) => update("car", e.target.value)} placeholder="Registro no CAR" /></label>
               <label>Nome da fazenda<input value={form.farm} onChange={(e) => update("farm", e.target.value)} placeholder="NA se não informado" /></label>
               <label>Nome do produtor<input value={form.producer} onChange={(e) => update("producer", e.target.value)} placeholder="NA se não informado" /></label>
-              <label>Responsável pelo mapeamento *<input value={form.mappedBy} onChange={(e) => update("mappedBy", e.target.value)} placeholder="Nome completo" /></label>
+              <label>
+                Responsável pelo mapeamento * 🔒
+                <input
+                  value={form.mappedBy}
+                  readOnly
+                  disabled
+                  style={{ background: "var(--canvas)", color: "var(--forest-950)", fontWeight: 650, cursor: "not-allowed" }}
+                />
+                <small style={{ color: "var(--subtle)" }}>Definido pelo seu perfil de login.</small>
+              </label>
             </div>
           </article>
 
@@ -444,7 +815,7 @@ export default function Home() {
               <div className="geometry-result">
                 <MapPreview geometry={geometry} />
                 <div className="metrics">
-                  <div><span>Área calculada</span><strong>{area.toLocaleString("pt-BR", { maximumFractionDigits: 4 })} ha</strong></div>
+                  <div><span>Área calculada</span><strong>{area.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha</strong></div>
                   <div><span>Polígonos</span><strong>{geometry.polygons.length}</strong></div>
                   <div><span>Sistema</span><strong>WGS 84</strong></div>
                   <p>✓ Geometria fechada e pronta para exportação.</p>
@@ -513,9 +884,257 @@ export default function Home() {
             </div>
           </article>
 
-          <article className="side-card note-card"><strong>Privacidade</strong><p>Não há login nem senha. A consulta envia por HTTPS ao MapBiomas uma cópia temporária do Shapefile com a geometria e os dados preenchidos. O KML original permanece no PC.</p></article>
+          <article className="side-card note-card"><strong>Privacidade</strong><p>Acesso restrito por credenciais. A consulta envia por HTTPS ao MapBiomas uma cópia temporária da geometria para checagem da série temporal. Os arquivos permanecem salvos localmente.</p></article>
         </aside>
       </section>
+
+      {showAdminModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(16, 44, 36, 0.65)", backdropFilter: "blur(4px)", display: "grid", placeItems: "center", padding: "20px" }}>
+          <div style={{ width: "100%", maxWidth: "520px", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "16px", padding: "28px 24px", boxShadow: "var(--shadow-lg)", maxHeight: "90vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "18px", color: "var(--forest-950)", fontWeight: 700 }}>
+                  {loggedUserRole === "admin" ? "Gestão de Usuários · Painel ADM" : "Alterar Minha Senha"}
+                </h3>
+                <p style={{ margin: "2px 0 0", color: "var(--muted)", fontSize: "12px" }}>
+                  {loggedUserRole === "admin" ? "Adicione, remova ou altere permissões do sistema." : "Altere a sua senha de acesso ao sistema."}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowAdminModal(false)}
+                style={{ background: "transparent", border: "1px solid var(--line)", borderRadius: "6px", width: "30px", height: "30px", cursor: "pointer", fontWeight: 700, color: "var(--muted)" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {loggedUserRole === "admin" && (
+              <form onSubmit={handleAddUser} style={{ background: "var(--canvas)", border: "1px solid var(--line)", borderRadius: "12px", padding: "16px", marginBottom: "24px" }}>
+                <h4 style={{ margin: "0 0 12px", fontSize: "13px", color: "var(--forest-950)", fontWeight: 700 }}>➕ Cadastrar Novo Usuário</h4>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "12px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
+                      Usuário (login) *
+                      <input
+                        type="text"
+                        value={newAdminUser}
+                        onChange={(e) => setNewAdminUser(e.target.value)}
+                        placeholder="Ex: marcos"
+                        style={{ width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)" }}
+                      />
+                    </label>
+                    <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
+                      Senha *
+                      <input
+                        type="text"
+                        value={newAdminPass}
+                        onChange={(e) => setNewAdminPass(e.target.value)}
+                        placeholder="Ex: faf123"
+                        style={{ width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)" }}
+                      />
+                    </label>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
+                      Nome Completo *
+                      <input
+                        type="text"
+                        value={newAdminFullName}
+                        onChange={(e) => setNewAdminFullName(e.target.value)}
+                        placeholder="Ex: Marcos Oliveira"
+                        style={{ width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)" }}
+                      />
+                    </label>
+                    <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
+                      Perfil de Acesso *
+                      <select
+                        value={newAdminRole}
+                        onChange={(e) => setNewAdminRole(e.target.value as "admin" | "user")}
+                        style={{ width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)" }}
+                      >
+                        <option value="user">Usuário Padrão</option>
+                        <option value="admin">Administrador (ADM)</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+
+                {adminErrorMsg && <p style={{ color: "var(--danger)", fontSize: "12px", margin: "0 0 10px", fontWeight: 600 }}>{adminErrorMsg}</p>}
+                {adminSuccessMsg && <p style={{ color: "var(--success)", fontSize: "12px", margin: "0 0 10px", fontWeight: 600 }}>{adminSuccessMsg}</p>}
+
+                <button
+                  type="submit"
+                  style={{ width: "100%", padding: "10px", borderRadius: "6px", background: "var(--forest-900)", color: "#fff", border: 0, fontWeight: 700, fontSize: "12px", cursor: "pointer" }}
+                >
+                  Salvar Novo Usuário
+                </button>
+              </form>
+            )}
+
+            <h4 style={{ margin: "0 0 12px", fontSize: "13px", color: "var(--forest-950)", fontWeight: 700 }}>
+              {loggedUserRole === "admin" ? `📋 Usuários Ativos (${Object.keys(usersMap).length})` : "👤 Seu Perfil"}
+            </h4>
+
+            {adminErrorMsg && loggedUserRole === "user" && <p style={{ color: "var(--danger)", fontSize: "12px", margin: "0 0 10px", fontWeight: 600 }}>{adminErrorMsg}</p>}
+            {adminSuccessMsg && loggedUserRole === "user" && <p style={{ color: "var(--success)", fontSize: "12px", margin: "0 0 10px", fontWeight: 600 }}>{adminSuccessMsg}</p>}
+
+            <div style={{ border: "1px solid var(--line)", borderRadius: "8px", overflow: "hidden" }}>
+              {Object.entries(usersMap)
+                .filter(([userKey]) => loggedUserRole === "admin" || userKey === loggedUserKey)
+                .map(([userKey, profile], idx) => (
+                  <div
+                    key={userKey}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                      padding: "12px 14px",
+                      background: idx % 2 === 0 ? "var(--surface)" : "var(--canvas)",
+                      borderBottom: idx === Object.keys(usersMap).length - 1 ? 0 : "1px solid var(--line)",
+                      fontSize: "13px"
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div>
+                        <strong style={{ color: "var(--forest-950)" }}>{userKey}</strong>
+                        <span style={{ color: "var(--forest-800)", marginLeft: "8px", fontSize: "12px", fontWeight: 650 }}>
+                          ({typeof profile === "string" ? userKey.toUpperCase() : (profile.fullName || userKey)})
+                        </span>
+                        {typeof profile === "object" && profile.role === "admin" && (
+                          <span style={{ marginLeft: "8px", fontSize: "10px", background: "var(--forest-100)", color: "var(--forest-900)", padding: "2px 6px", borderRadius: "4px", fontWeight: 800 }}>ADM</span>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                        <button
+                          onClick={() => {
+                            if (editingUser === userKey) {
+                              setEditingUser(null);
+                            } else {
+                              handleStartEdit(userKey, profile);
+                            }
+                          }}
+                          style={{ color: "var(--forest-900)", border: 0, background: "transparent", cursor: "pointer", fontSize: "11.5px", fontWeight: 700 }}
+                        >
+                          {loggedUserRole === "admin" ? "✏️ Editar" : "🔑 Alterar Senha"}
+                        </button>
+                        {loggedUserRole === "admin" && (
+                          <button
+                            onClick={() => handleDeleteUser(userKey)}
+                            style={{ color: "var(--danger)", border: 0, background: "transparent", cursor: "pointer", fontSize: "11.5px", fontWeight: 700 }}
+                          >
+                            🗑️ Excluir
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {editingUser === userKey && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "4px", padding: "12px", background: "rgba(0,0,0,0.03)", borderRadius: "8px", border: "1px solid var(--line)" }}>
+                        {loggedUserRole === "admin" ? (
+                          <>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                              <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
+                                Usuário (login) *
+                                <input
+                                  type="text"
+                                  value={editUsernameInput}
+                                  onChange={(e) => setEditUsernameInput(e.target.value)}
+                                  placeholder="Ex: gabi.isidoro"
+                                  style={{ width: "100%", marginTop: "4px", padding: "6px 10px", borderRadius: "4px", border: "1px solid var(--line)", fontSize: "12px", background: "var(--surface)" }}
+                                />
+                              </label>
+                              <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
+                                Nome Completo *
+                                <input
+                                  type="text"
+                                  value={editFullNameInput}
+                                  onChange={(e) => setEditFullNameInput(e.target.value)}
+                                  placeholder="Nome e Sobrenome"
+                                  style={{ width: "100%", marginTop: "4px", padding: "6px 10px", borderRadius: "4px", border: "1px solid var(--line)", fontSize: "12px", background: "var(--surface)" }}
+                                />
+                              </label>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                              <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
+                                Perfil de Acesso
+                                <select
+                                  value={editRoleInput}
+                                  onChange={(e) => setEditRoleInput(e.target.value as "admin" | "user")}
+                                  style={{ width: "100%", marginTop: "4px", padding: "6px 10px", borderRadius: "4px", border: "1px solid var(--line)", fontSize: "12px", background: "var(--surface)" }}
+                                >
+                                  <option value="user">Usuário Padrão</option>
+                                  <option value="admin">Administrador (ADM)</option>
+                                </select>
+                              </label>
+                              <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
+                                Nova Senha (opcional)
+                                <input
+                                  type="text"
+                                  value={editNewPassInput}
+                                  onChange={(e) => setEditNewPassInput(e.target.value)}
+                                  placeholder="Deixe em branco para manter"
+                                  style={{ width: "100%", marginTop: "4px", padding: "6px 10px", borderRadius: "4px", border: "1px solid var(--line)", fontSize: "12px", background: "var(--surface)" }}
+                                />
+                              </label>
+                            </div>
+                            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "4px" }}>
+                              <button
+                                onClick={() => handleAdminUpdateUser(userKey)}
+                                style={{ padding: "6px 14px", background: "var(--forest-900)", color: "#fff", border: 0, borderRadius: "4px", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}
+                              >
+                                Salvar Alterações
+                              </button>
+                              <button
+                                onClick={() => setEditingUser(null)}
+                                style={{ padding: "6px 10px", background: "transparent", color: "var(--muted)", border: "1px solid var(--line)", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                              <input
+                                type="password"
+                                placeholder="Senha Atual"
+                                value={editingCurrentPassInput}
+                                onChange={(e) => setEditingCurrentPassInput(e.target.value)}
+                                autoFocus
+                                style={{ padding: "6px 10px", borderRadius: "4px", border: "1px solid var(--line)", fontSize: "12px", background: "var(--surface)" }}
+                              />
+                              <input
+                                type="password"
+                                placeholder="Nova Senha"
+                                value={editNewPassInput}
+                                onChange={(e) => setEditNewPassInput(e.target.value)}
+                                style={{ padding: "6px 10px", borderRadius: "4px", border: "1px solid var(--line)", fontSize: "12px", background: "var(--surface)" }}
+                              />
+                            </div>
+                            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                              <button
+                                onClick={() => handleChangePassword(userKey)}
+                                style={{ padding: "6px 12px", background: "var(--forest-900)", color: "#fff", border: 0, borderRadius: "4px", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}
+                              >
+                                Confirmar Alteração
+                              </button>
+                              <button
+                                onClick={() => setEditingUser(null)}
+                                style={{ padding: "6px 10px", background: "transparent", color: "var(--muted)", border: "1px solid var(--line)", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
