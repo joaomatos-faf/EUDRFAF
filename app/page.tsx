@@ -4,8 +4,11 @@ import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { EudrHeader } from "./components/EudrHeader";
+import { EudrStepsNav } from "./components/EudrStepsNav";
 import { LoginScreen } from "./components/LoginScreen";
 import { AdminUserModal } from "./components/AdminUserModal";
+import { useUserManagement } from "./hooks/useUserManagement";
 import {
   GeometryData,
   buildEudrGeoJson,
@@ -141,24 +144,12 @@ const DEFAULT_USERS_DATA: Record<string, UserProfile> = {
 };
 
 export default function Home() {
-  const [usersMap, setUsersMap] = useState<Record<string, UserProfile>>(DEFAULT_USERS_DATA);
-  const [showAdminModal, setShowAdminModal] = useState(false);
-  const [newAdminUser, setNewAdminUser] = useState("");
-  const [newAdminFullName, setNewAdminFullName] = useState("");
-  const [newAdminPass, setNewAdminPass] = useState("");
-  const [newAdminRole, setNewAdminRole] = useState<"admin" | "user">("user");
-  const [adminSuccessMsg, setAdminSuccessMsg] = useState("");
-  const [adminErrorMsg, setAdminErrorMsg] = useState("");
-
-  const [loggedUserKey, setLoggedUserKey] = useState<string>("");
-  const [loggedUserRole, setLoggedUserRole] = useState<"admin" | "user">("user");
-
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [loginUsername, setLoginUsername] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [loginError, setLoginError] = useState("");
-
   const [form, setForm] = useState<FormState>(initialForm);
+
+  const userMgmt = useUserManagement((fullName) => {
+    setForm((prev) => ({ ...prev, mappedBy: fullName }));
+  });
+
   const [geometry, setGeometry] = useState<GeometryData | null>(null);
   const [fileName, setFileName] = useState("");
   const [error, setError] = useState("");
@@ -169,254 +160,6 @@ export default function Home() {
   const [locationsStatus, setLocationsStatus] = useState<"loading" | "ready" | "error">("loading");
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
   const [locationsReload, setLocationsReload] = useState(0);
-
-  const saveUsers = async (updated: Record<string, UserProfile>) => {
-    setUsersMap(updated);
-    try {
-      localStorage.setItem("faf_eudr_users", JSON.stringify(updated));
-    } catch {}
-    try {
-      await fetch("/api/users", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ users: updated }),
-      });
-    } catch {}
-  };
-
-  useEffect(() => {
-    const initUsers = async () => {
-      let initial: Record<string, any> = DEFAULT_USERS_DATA;
-      try {
-        const res = await fetch("/api/users");
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.users && typeof data.users === "object" && Object.keys(data.users).length > 0) {
-            initial = data.users;
-          }
-        }
-      } catch {}
-
-      if (initial === DEFAULT_USERS_DATA) {
-        try {
-          const saved = localStorage.getItem("faf_eudr_users");
-          if (saved) initial = JSON.parse(saved);
-        } catch {}
-      }
-
-      const hashedMap: Record<string, UserProfile> = {};
-      for (const [u, val] of Object.entries(initial)) {
-        let pass = typeof val === "string" ? val : val.pass;
-        let fullName = typeof val === "string" ? u.toUpperCase() : (val.fullName || u.toUpperCase());
-        let role: "admin" | "user" = typeof val === "object" && val.role ? val.role : (u === "faf" || u === "admin" || u === "joaomatos" ? "admin" : "user");
-        if (pass.length !== 64 || !/^[0-9a-f]+$/i.test(pass)) {
-          pass = await hashPassword(pass);
-        }
-        hashedMap[u] = { pass, fullName, role };
-      }
-      setUsersMap(hashedMap);
-      try {
-        localStorage.setItem("faf_eudr_users", JSON.stringify(hashedMap));
-      } catch {}
-    };
-    initUsers();
-  }, []);
-
-  useEffect(() => {
-    const auth = sessionStorage.getItem("faf_eudr_auth");
-    if (auth === "true") {
-      setIsAuthenticated(true);
-      const savedName = sessionStorage.getItem("faf_eudr_user_name");
-      const savedKey = sessionStorage.getItem("faf_eudr_user_key");
-      const savedRole = sessionStorage.getItem("faf_eudr_user_role") as "admin" | "user";
-      if (savedName) setForm((prev) => ({ ...prev, mappedBy: savedName }));
-      if (savedKey) setLoggedUserKey(savedKey);
-      if (savedRole) setLoggedUserRole(savedRole);
-    } else {
-      setIsAuthenticated(false);
-    }
-  }, []);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const userKey = loginUsername.trim().toLowerCase();
-
-    let currentUsersMap = usersMap;
-    try {
-      const res = await fetch("/api/users");
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.users && typeof data.users === "object") currentUsersMap = data.users;
-      }
-    } catch {}
-
-    const profile = currentUsersMap[userKey];
-    if (!profile) {
-      setLoginError("Usuário ou senha incorretos.");
-      return;
-    }
-
-    const passToTest = typeof profile === "string" ? profile : profile.pass;
-    const isMatch = await checkPasswordMatch(loginPassword, passToTest);
-
-    if (isMatch) {
-      const fullName = typeof profile === "string" ? userKey.toUpperCase() : (profile.fullName || userKey);
-      const role = typeof profile === "string" ? "user" : (profile.role || "user");
-      sessionStorage.setItem("faf_eudr_auth", "true");
-      sessionStorage.setItem("faf_eudr_user_name", fullName);
-      sessionStorage.setItem("faf_eudr_user_key", userKey);
-      sessionStorage.setItem("faf_eudr_user_role", role);
-      setIsAuthenticated(true);
-      setLoggedUserKey(userKey);
-      setLoggedUserRole(role);
-      setForm((prev) => ({ ...prev, mappedBy: fullName }));
-      setLoginError("");
-    } else {
-      setLoginError("Usuário ou senha incorretos.");
-    }
-  };
-
-  const handleAddUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanUser = newAdminUser.trim().toLowerCase();
-    const cleanName = newAdminFullName.trim();
-    if (!cleanUser || !newAdminPass.trim() || !cleanName) {
-      setAdminErrorMsg("Preencha Usuário, Nome/Sobrenome e Senha.");
-      return;
-    }
-    const hashed = await hashPassword(newAdminPass.trim());
-    const updated = { ...usersMap, [cleanUser]: { pass: hashed, fullName: cleanName, role: newAdminRole } };
-    await saveUsers(updated);
-    setNewAdminUser("");
-    setNewAdminFullName("");
-    setNewAdminPass("");
-    setNewAdminRole("user");
-    setAdminErrorMsg("");
-    setAdminSuccessMsg(`Usuário "${cleanUser}" (${cleanName}) criado como ${newAdminRole === "admin" ? "ADM" : "Usuário Padrão"}!`);
-    setTimeout(() => setAdminSuccessMsg(""), 3000);
-  };
-
-  const [editingUser, setEditingUser] = useState<string | null>(null);
-  const [editUsernameInput, setEditUsernameInput] = useState("");
-  const [editFullNameInput, setEditFullNameInput] = useState("");
-  const [editRoleInput, setEditRoleInput] = useState<"admin" | "user">("user");
-  const [editNewPassInput, setEditNewPassInput] = useState("");
-  const [editingCurrentPassInput, setEditingCurrentPassInput] = useState("");
-
-  const handleStartEdit = (userKey: string, profile: UserProfile) => {
-    setEditingUser(userKey);
-    setEditUsernameInput(userKey);
-    const name = typeof profile === "string" ? userKey.toUpperCase() : (profile.fullName || userKey.toUpperCase());
-    const role = typeof profile === "string" ? "user" : (profile.role || "user");
-    setEditFullNameInput(name);
-    setEditRoleInput(role);
-    setEditNewPassInput("");
-    setEditingCurrentPassInput("");
-    setAdminErrorMsg("");
-  };
-
-  const handleDeleteUser = async (userKey: string) => {
-    if (Object.keys(usersMap).length <= 1) {
-      alert("Você não pode excluir todos os usuários!");
-      return;
-    }
-    const updated = { ...usersMap };
-    delete updated[userKey];
-    await saveUsers(updated);
-  };
-
-  const handleAdminUpdateUser = async (oldUserKey: string) => {
-    const newCleanUser = editUsernameInput.trim().toLowerCase();
-    const cleanName = editFullNameInput.trim();
-    if (!newCleanUser) {
-      setAdminErrorMsg("Informe o Usuário (login).");
-      return;
-    }
-    if (!cleanName) {
-      setAdminErrorMsg("Informe o Nome Completo.");
-      return;
-    }
-
-    if (newCleanUser !== oldUserKey && usersMap[newCleanUser]) {
-      setAdminErrorMsg(`O usuário (login) "${newCleanUser}" já existe.`);
-      return;
-    }
-
-    const profile = usersMap[oldUserKey];
-    if (!profile) return;
-
-    let newHash = typeof profile === "string" ? profile : profile.pass;
-    if (editNewPassInput.trim()) {
-      newHash = await hashPassword(editNewPassInput.trim());
-    }
-
-    const updated = { ...usersMap };
-    if (newCleanUser !== oldUserKey) {
-      delete updated[oldUserKey];
-    }
-
-    updated[newCleanUser] = {
-      pass: newHash,
-      fullName: cleanName,
-      role: editRoleInput,
-    };
-
-    await saveUsers(updated);
-
-    if (oldUserKey === loggedUserKey) {
-      sessionStorage.setItem("faf_eudr_user_key", newCleanUser);
-      sessionStorage.setItem("faf_eudr_user_name", cleanName);
-      sessionStorage.setItem("faf_eudr_user_role", editRoleInput);
-      setLoggedUserKey(newCleanUser);
-      setLoggedUserRole(editRoleInput);
-      setForm((prev) => ({ ...prev, mappedBy: cleanName }));
-    }
-
-    setEditingUser(null);
-    setEditUsernameInput("");
-    setEditFullNameInput("");
-    setEditNewPassInput("");
-    setAdminErrorMsg("");
-    setAdminSuccessMsg(`Usuário "${newCleanUser}" atualizado com sucesso!`);
-    setTimeout(() => setAdminSuccessMsg(""), 3000);
-  };
-
-  const handleChangePassword = async (userKey: string) => {
-    if (!editingCurrentPassInput.trim()) {
-      setAdminErrorMsg("Informe a senha atual.");
-      return;
-    }
-    if (!editNewPassInput.trim()) {
-      setAdminErrorMsg("Informe a nova senha.");
-      return;
-    }
-
-    const profile = usersMap[userKey];
-    if (!profile) {
-      setAdminErrorMsg("Usuário não encontrado.");
-      return;
-    }
-
-    const storedPass = typeof profile === "string" ? profile : profile.pass;
-    const isCurrentValid = await checkPasswordMatch(editingCurrentPassInput.trim(), storedPass);
-    if (!isCurrentValid) {
-      setAdminErrorMsg("A senha atual informada está incorreta.");
-      return;
-    }
-
-    const hashedNew = await hashPassword(editNewPassInput.trim());
-    const fullName = typeof profile === "string" ? userKey.toUpperCase() : profile.fullName;
-    const role = typeof profile === "string" ? "user" : profile.role;
-    const updated = { ...usersMap, [userKey]: { pass: hashedNew, fullName, role } };
-    await saveUsers(updated);
-
-    setEditingUser(null);
-    setEditingCurrentPassInput("");
-    setEditNewPassInput("");
-    setAdminErrorMsg("");
-    setAdminSuccessMsg(`Sua senha foi alterada com sucesso!`);
-    setTimeout(() => setAdminSuccessMsg(""), 3000);
-  };
 
   const handleLogout = () => {
     sessionStorage.removeItem("faf_eudr_auth");
@@ -684,7 +427,7 @@ export default function Home() {
     downloadBlob(`${normalizedId}-pacote-eudr.zip`, zipBlob);
   };
 
-  if (isAuthenticated === null) {
+  if (userMgmt.isAuthenticated === null) {
     return (
       <div style={{ minHeight: "100vh", background: "var(--canvas)", display: "grid", placeItems: "center" }}>
         <p style={{ color: "var(--muted)", fontWeight: 600 }}>Carregando sistema...</p>
@@ -692,45 +435,28 @@ export default function Home() {
     );
   }
 
-  if (isAuthenticated === false) {
+  if (userMgmt.isAuthenticated === false) {
     return (
       <LoginScreen
-        loginUsername={loginUsername}
-        setLoginUsername={setLoginUsername}
-        loginPassword={loginPassword}
-        setLoginPassword={setLoginPassword}
-        loginError={loginError}
-        onLogin={handleLogin}
+        loginUsername={userMgmt.loginUsername}
+        setLoginUsername={userMgmt.setLoginUsername}
+        loginPassword={userMgmt.loginPassword}
+        setLoginPassword={userMgmt.setLoginPassword}
+        loginError={userMgmt.loginError}
+        onLogin={userMgmt.handleLogin}
       />
     );
   }
 
   return (
     <main className="app-shell">
-      <header className="topbar">
-        <div className="brand-lockup">
-          <div className="brand-mark">FAF</div>
-          <div>
-            <p className="eyebrow">FAF Coffees · Sustentabilidade</p>
-            <h1>Preparador EUDR</h1>
-          </div>
-        </div>
-        <div className="topbar-actions">
-          <div className="privacy-pill"><span /> Dados locais e consulta segura</div>
-          <button
-            onClick={() => setShowAdminModal(true)}
-            style={{ color: "#d9e5df", border: "1px solid rgba(255,255,255,0.2)", padding: "7px 14px", borderRadius: "999px", cursor: "pointer", background: "rgba(255,255,255,0.06)", fontSize: "11px", fontWeight: 650 }}
-          >
-            {loggedUserRole === "admin" ? "⚙️ Gerenciar Usuários" : "🔑 Alterar Minha Senha"}
-          </button>
-          <button
-            onClick={handleLogout}
-            style={{ color: "#d9e5df", border: "1px solid rgba(255,255,255,0.2)", padding: "7px 14px", borderRadius: "999px", cursor: "pointer", background: "rgba(255,255,255,0.06)", fontSize: "11px", fontWeight: 650 }}
-          >
-            Sair
-          </button>
-        </div>
-      </header>
+      <EudrHeader
+        isAuthenticated={true}
+        loggedUserRole={userMgmt.loggedUserRole}
+        loggedUserKey={userMgmt.loggedUserKey}
+        onOpenAdminModal={() => userMgmt.setShowAdminModal(true)}
+        onLogout={userMgmt.handleLogout}
+      />
 
       <section className="dashboard-head">
         <div className="hero-copy">
@@ -745,12 +471,7 @@ export default function Home() {
         </div>
       </section>
 
-      <nav className="steps" aria-label="Etapas do processo">
-        <span className="active"><i>1</i><b>Identificação</b><small>Dados do talhão</small></span>
-        <span className={geometry ? "active" : ""}><i>2</i><b>Geometria</b><small>KML ou GeoJSON</small></span>
-        <span className={form.compliance ? "active" : ""}><i>3</i><b>Conformidade</b><small>MapBiomas e CAR</small></span>
-        <span className={ready ? "active" : ""}><i>4</i><b>Exportação</b><small>Arquivos finais</small></span>
-      </nav>
+      <EudrStepsNav geometryLoaded={Boolean(geometry)} mapbiomasChecked={Boolean(mapbiomasCheck.checkedAt)} />
 
       <section className="workspace-grid">
         <div className="main-column">
@@ -862,38 +583,38 @@ export default function Home() {
       </section>
 
       <AdminUserModal
-        showAdminModal={showAdminModal}
-        setShowAdminModal={setShowAdminModal}
-        loggedUserRole={loggedUserRole}
-        loggedUserKey={loggedUserKey}
-        usersMap={usersMap}
-        newAdminUser={newAdminUser}
-        setNewAdminUser={setNewAdminUser}
-        newAdminPass={newAdminPass}
-        setNewAdminPass={setNewAdminPass}
-        newAdminFullName={newAdminFullName}
-        setNewAdminFullName={setNewAdminFullName}
-        newAdminRole={newAdminRole}
-        setNewAdminRole={setNewAdminRole}
-        adminErrorMsg={adminErrorMsg}
-        adminSuccessMsg={adminSuccessMsg}
-        onAddUser={handleAddUser}
-        editingUser={editingUser}
-        setEditingUser={setEditingUser}
-        editUsernameInput={editUsernameInput}
-        setEditUsernameInput={setEditUsernameInput}
-        editFullNameInput={editFullNameInput}
-        setEditFullNameInput={setEditFullNameInput}
-        editRoleInput={editRoleInput}
-        setEditRoleInput={setEditRoleInput}
-        editNewPassInput={editNewPassInput}
-        setEditNewPassInput={setEditNewPassInput}
-        editingCurrentPassInput={editingCurrentPassInput}
-        setEditingCurrentPassInput={setEditingCurrentPassInput}
-        onStartEdit={handleStartEdit}
-        onDeleteUser={handleDeleteUser}
-        onAdminUpdateUser={handleAdminUpdateUser}
-        onChangePassword={handleChangePassword}
+        showAdminModal={userMgmt.showAdminModal}
+        setShowAdminModal={userMgmt.setShowAdminModal}
+        loggedUserRole={userMgmt.loggedUserRole}
+        loggedUserKey={userMgmt.loggedUserKey}
+        usersMap={userMgmt.usersMap}
+        newAdminUser={userMgmt.newAdminUser}
+        setNewAdminUser={userMgmt.setNewAdminUser}
+        newAdminPass={userMgmt.newAdminPass}
+        setNewAdminPass={userMgmt.setNewAdminPass}
+        newAdminFullName={userMgmt.newAdminFullName}
+        setNewAdminFullName={userMgmt.setNewAdminFullName}
+        newAdminRole={userMgmt.newAdminRole}
+        setNewAdminRole={userMgmt.setNewAdminRole}
+        adminErrorMsg={userMgmt.adminErrorMsg}
+        adminSuccessMsg={userMgmt.adminSuccessMsg}
+        onAddUser={userMgmt.handleAddUser}
+        editingUser={userMgmt.editingUser}
+        setEditingUser={userMgmt.setEditingUser}
+        editUsernameInput={userMgmt.editUsernameInput}
+        setEditUsernameInput={userMgmt.setEditUsernameInput}
+        editFullNameInput={userMgmt.editFullNameInput}
+        setEditFullNameInput={userMgmt.setEditFullNameInput}
+        editRoleInput={userMgmt.editRoleInput}
+        setEditRoleInput={userMgmt.setEditRoleInput}
+        editNewPassInput={userMgmt.editNewPassInput}
+        setEditNewPassInput={userMgmt.setEditNewPassInput}
+        editingCurrentPassInput={userMgmt.editingCurrentPassInput}
+        setEditingCurrentPassInput={userMgmt.setEditingCurrentPassInput}
+        onStartEdit={userMgmt.handleStartEdit}
+        onDeleteUser={userMgmt.handleDeleteUser}
+        onAdminUpdateUser={userMgmt.handleAdminUpdateUser}
+        onChangePassword={userMgmt.handleChangePassword}
       />
     </main>
   );

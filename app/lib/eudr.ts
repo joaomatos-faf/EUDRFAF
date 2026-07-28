@@ -405,3 +405,18 @@ export function downloadBlob(name: string, blob: Blob) {
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+export async function hashPassword(password: string): Promise<string> {
+  const msgUint8 = new TextEncoder().encode("FAF_EUDR_SALT_2026_" + password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+export async function checkPasswordMatch(inputPass: string, storedValue: string): Promise<boolean> {
+  const inputHash = await hashPassword(inputPass);
+  if (storedValue.length === 64 && /^[0-9a-f]+$/i.test(storedValue)) {
+    return inputHash === storedValue;
+  }
+  return inputPass === storedValue;
+}
