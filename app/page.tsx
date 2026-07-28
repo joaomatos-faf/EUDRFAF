@@ -20,6 +20,8 @@ import {
   parseGeometryFile,
   producerCsv,
   sanitizePlotId,
+  generateAutoPlotId,
+  getTwoLetterInitials,
 } from "./lib/eudr";
 
 type FormState = {
@@ -266,8 +268,37 @@ export default function Home() {
       mapbiomasConfirmed,
   );
 
+  const computeNextPlotId = (currentForm: FormState, updatedField: keyof FormState, newValue: string) => {
+    const nextForm = { ...currentForm, [updatedField]: newValue };
+    const supplierVal = nextForm.supplier || nextForm.producer;
+    const municipalityVal = nextForm.municipality;
+
+    const currentPlotId = currentForm.plotId;
+    const isAutoOrEmpty = !currentPlotId || /^FAF/i.test(currentPlotId);
+
+    if (isAutoOrEmpty && (supplierVal || municipalityVal)) {
+      let plotNumber = "01";
+      const numberMatch = currentPlotId.match(/-([0-9A-Z]+)$/i);
+      if (numberMatch && numberMatch[1]) {
+        plotNumber = numberMatch[1];
+      }
+      return generateAutoPlotId(supplierVal, municipalityVal, plotNumber);
+    }
+    return currentForm.plotId;
+  };
+
   const update = (field: keyof FormState, value: string) => {
-    setForm((current) => ({ ...current, [field]: value }));
+    setForm((current) => {
+      let nextPlotId = current.plotId;
+      if (field === "supplier" || field === "producer" || field === "municipality") {
+        nextPlotId = computeNextPlotId(current, field, value);
+      }
+      return {
+        ...current,
+        [field]: value,
+        plotId: field === "plotId" ? value.toUpperCase() : nextPlotId,
+      };
+    });
     if (shapefileDetailFields.has(field) && mapbiomasCheck.checkedAt) {
       setMapbiomasCheck(emptyMapbiomasCheck);
       setMapbiomasConfirmed(false);
@@ -278,12 +309,18 @@ export default function Home() {
     const query = normalizedText(value);
     const exact = municipalities.filter((municipality) => normalizedText(municipality.name) === query);
     const selected = exact.length === 1 ? exact[0] : null;
-    setForm((current) => ({
-      ...current,
-      municipality: selected?.name ?? value,
-      state: selected?.stateName ?? "",
-      region: selected?.region ?? "",
-    }));
+    const finalMuniName = selected?.name ?? value;
+
+    setForm((current) => {
+      const nextPlotId = computeNextPlotId(current, "municipality", finalMuniName);
+      return {
+        ...current,
+        municipality: finalMuniName,
+        state: selected?.stateName ?? "",
+        region: selected?.region ?? "",
+        plotId: nextPlotId,
+      };
+    });
     if (mapbiomasCheck.checkedAt) {
       setMapbiomasCheck(emptyMapbiomasCheck);
       setMapbiomasConfirmed(false);
@@ -293,12 +330,16 @@ export default function Home() {
   const selectMunicipalityState = (stateCode: string) => {
     const selected = exactMunicipalities.find((municipality) => municipality.stateCode === stateCode);
     if (!selected) return;
-    setForm((current) => ({
-      ...current,
-      municipality: selected.name,
-      state: selected.stateName,
-      region: selected.region,
-    }));
+    setForm((current) => {
+      const nextPlotId = computeNextPlotId(current, "municipality", selected.name);
+      return {
+        ...current,
+        municipality: selected.name,
+        state: selected.stateName,
+        region: selected.region,
+        plotId: nextPlotId,
+      };
+    });
     if (mapbiomasCheck.checkedAt) {
       setMapbiomasCheck(emptyMapbiomasCheck);
       setMapbiomasConfirmed(false);
@@ -306,12 +347,16 @@ export default function Home() {
   };
 
   const selectMunicipality = (selected: Municipality) => {
-    setForm((current) => ({
-      ...current,
-      municipality: selected.name,
-      state: selected.stateName,
-      region: selected.region,
-    }));
+    setForm((current) => {
+      const nextPlotId = computeNextPlotId(current, "municipality", selected.name);
+      return {
+        ...current,
+        municipality: selected.name,
+        state: selected.stateName,
+        region: selected.region,
+        plotId: nextPlotId,
+      };
+    });
     setLocationSuggestionsOpen(false);
     if (mapbiomasCheck.checkedAt) {
       setMapbiomasCheck(emptyMapbiomasCheck);
@@ -478,7 +523,44 @@ export default function Home() {
           <article className="card">
             <div className="card-title"><span>01</span><div><h3>Identificação do talhão</h3><p>Use o mesmo padrão adotado no procedimento.</p></div></div>
             <div className="form-grid three">
-              <label>Código do talhão *<input value={form.plotId} onChange={(e) => update("plotId", e.target.value.toUpperCase())} placeholder="Ex.: FAFDRAD-01" /><small>FAF + fornecedor + município + número</small></label>
+              <label>
+                Código do talhão *
+                <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                  <input
+                    value={form.plotId}
+                    onChange={(e) => update("plotId", e.target.value.toUpperCase())}
+                    placeholder="Ex.: FAFDRAD-01"
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      let plotNumber = "01";
+                      const numberMatch = form.plotId.match(/-([0-9A-Z]+)$/i);
+                      if (numberMatch && numberMatch[1]) plotNumber = numberMatch[1];
+                      const generated = generateAutoPlotId(form.supplier || form.producer, form.municipality, plotNumber);
+                      if (generated) update("plotId", generated);
+                    }}
+                    title="Gerar código automaticamente (FAF + Fornecedor + Município + N°)"
+                    style={{
+                      padding: "8px 10px",
+                      borderRadius: "6px",
+                      border: "1px solid var(--line)",
+                      background: "var(--canvas)",
+                      color: "var(--forest-950)",
+                      fontWeight: 700,
+                      fontSize: "11px",
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    ⚡ Auto-gerar
+                  </button>
+                </div>
+                <small>
+                  FAF + fornecedor ({getTwoLetterInitials(form.supplier || form.producer) || "XX"}) + município ({getTwoLetterInitials(form.municipality) || "XX"}) + número (-01)
+                </small>
+              </label>
               <label>Fornecedor *<input value={form.supplier} onChange={(e) => update("supplier", e.target.value)} placeholder="Ex.: Drumond" /></label>
               <label>Número do CAR<input value={form.car} onChange={(e) => update("car", e.target.value)} placeholder="Registro no CAR" /></label>
               <label>Nome da fazenda<input value={form.farm} onChange={(e) => update("farm", e.target.value)} placeholder="NA se não informado" /></label>

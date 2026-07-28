@@ -161,6 +161,36 @@ export function sanitizePlotId(value: string): string {
   return value.trim().toUpperCase().replace(/[^A-Z0-9-]/g, "").replace(/-+/g, "-");
 }
 
+export function getTwoLetterInitials(name: string): string {
+  if (!name || !name.trim()) return "";
+  const clean = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+  const words = clean
+    .replace(/[^A-Z0-9\s]/g, "")
+    .split(/\s+/)
+    .filter((w) => w.length > 0 && !["DE", "DA", "DO", "DOS", "DAS", "E"].includes(w));
+
+  if (words.length >= 2) {
+    return (words[0][0] + words[1][0]).toUpperCase();
+  } else if (words.length === 1) {
+    const w = words[0];
+    return w.slice(0, 2).toUpperCase();
+  }
+  return "";
+}
+
+export function generateAutoPlotId(supplierOrProducer: string, municipality: string, plotNumber = "01"): string {
+  const companyPrefix = "FAF";
+  const supplierCode = getTwoLetterInitials(supplierOrProducer);
+  const cityCode = getTwoLetterInitials(municipality);
+  const cleanNumber = plotNumber.replace(/[^0-9A-Z]/gi, "") || "01";
+
+  if (!supplierCode && !cityCode) {
+    return "";
+  }
+
+  return `${companyPrefix}${supplierCode || "XX"}${cityCode || "XX"}-${cleanNumber}`;
+}
+
 export function buildEudrGeoJson(data: GeometryData, plotId: string, area: number) {
   const geometry = data.polygons.length === 1
     ? { type: "Polygon" as const, coordinates: data.polygons[0] }

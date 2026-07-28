@@ -4,6 +4,8 @@ import {
   buildEudrGeoJson,
   buildShapefileParts,
   producerCsv,
+  getTwoLetterInitials,
+  generateAutoPlotId,
 } from "../app/lib/eudr.ts";
 import { APP_CONFIG } from "../app/lib/config.ts";
 
@@ -67,4 +69,16 @@ test("producerCsv constrói cabeçalho e linha formatados em UTF-8 com BOM", () 
   assert.match(csv, /"Plot ID";"Nome da fazenda"/);
   assert.match(csv, /"TALHAO-01";"Fazenda Santa Inês"/);
   assert.match(csv, /"12,50"/);
+});
+
+test("generateAutoPlotId constrói o código no padrão FAF + Fornecedor + Município + N°", () => {
+  assert.equal(getTwoLetterInitials("Drumond"), "DR");
+  assert.equal(getTwoLetterInitials("Daniel Rosa"), "DR");
+  assert.equal(getTwoLetterInitials("João Matos"), "JM");
+  assert.equal(getTwoLetterInitials("Andrada"), "AN");
+  assert.equal(getTwoLetterInitials("Poços de Caldas"), "PC");
+
+  assert.equal(generateAutoPlotId("Drumond", "Andrada", "01"), "FAFDRAN-01");
+  assert.equal(generateAutoPlotId("Daniel Rosa", "Andrada", "01"), "FAFDRAN-01");
+  assert.equal(generateAutoPlotId("João Matos", "São Paulo", "02"), "FAFJMSP-02");
 });
