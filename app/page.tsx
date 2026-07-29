@@ -539,29 +539,7 @@ export default function Home() {
 
       <section className="dashboard-head">
         <div className="hero-copy">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", marginBottom: "4px" }}>
-            <p className="section-kicker" style={{ margin: 0 }}>Novo processo</p>
-            <button
-              type="button"
-              onClick={handleNewProcess}
-              style={{
-                background: "var(--forest-100)",
-                color: "var(--forest-900)",
-                border: "1px solid var(--line-strong)",
-                borderRadius: "6px",
-                padding: "4px 10px",
-                fontSize: "11px",
-                fontWeight: 750,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-              }}
-              title="Limpar formulário e iniciar novo talhão"
-            >
-              🔄 Limpar / Novo Processo
-            </button>
-          </div>
+          <p className="section-kicker">Novo processo</p>
           <h2>Prepare um talhão para EUDR</h2>
           <p>Identifique a área, importe a geometria e valide a série temporal do MapBiomas antes de gerar o pacote final.</p>
         </div>
@@ -577,7 +555,37 @@ export default function Home() {
       <section className="workspace-grid">
         <div className="main-column">
           <article className="card">
-            <div className="card-title"><span>01</span><div><h3>Identificação do talhão</h3><p>Use o mesmo padrão adotado no procedimento.</p></div></div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", marginBottom: "21px", paddingBottom: "18px", borderBottom: "1px solid #e8ede9" }}>
+              <div className="card-title" style={{ marginBottom: 0, paddingBottom: 0, borderBottom: 0 }}>
+                <span>01</span>
+                <div>
+                  <h3>Identificação do talhão</h3>
+                  <p>Use o mesmo padrão adotado no procedimento.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleNewProcess}
+                style={{
+                  border: "1px solid var(--line-strong)",
+                  borderRadius: "8px",
+                  background: "#fff",
+                  color: "var(--forest-900)",
+                  padding: "6px 12px",
+                  fontSize: "11.5px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  boxShadow: "var(--shadow-sm)",
+                  transition: "all 0.16s ease",
+                }}
+                title="Limpar todos os campos e iniciar novo talhão"
+              >
+                <span>↺</span> Iniciar Novo Processo
+              </button>
+            </div>
             <div className="form-grid three">
               <label>
                 Código do talhão *

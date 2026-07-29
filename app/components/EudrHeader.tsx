@@ -32,36 +32,36 @@ export function EudrHeader({
               <button
                 onClick={onNewProcess}
                 style={{
-                  background: "var(--orange-500)",
-                  border: "1px solid rgba(255,255,255,0.4)",
-                  color: "#fff",
-                  borderRadius: "6px",
-                  padding: "6px 14px",
+                  background: "rgba(255, 255, 255, 0.12)",
+                  border: "1px solid rgba(255, 255, 255, 0.22)",
+                  color: "#e7f0eb",
+                  borderRadius: "8px",
+                  padding: "7px 14px",
                   fontSize: "12px",
-                  fontWeight: 800,
+                  fontWeight: 650,
                   cursor: "pointer",
-                  display: "flex",
+                  display: "inline-flex",
                   alignItems: "center",
                   gap: "6px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+                  transition: "background 0.16s ease, border-color 0.16s ease",
                 }}
                 title="Limpar formulário e iniciar o mapeamento de um novo talhão"
               >
-                ✨ Novo Processo
+                <span style={{ fontSize: "13px" }}>＋</span> Novo Processo
               </button>
             )}
             <button
               onClick={onOpenAdminModal}
               style={{
-                background: "rgba(255,255,255,0.15)",
-                border: "1px solid rgba(255,255,255,0.3)",
-                color: "#fff",
-                borderRadius: "6px",
-                padding: "6px 12px",
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.18)",
+                color: "#dce8e2",
+                borderRadius: "8px",
+                padding: "7px 12px",
                 fontSize: "12px",
-                fontWeight: 700,
+                fontWeight: 600,
                 cursor: "pointer",
-                display: "flex",
+                display: "inline-flex",
                 alignItems: "center",
                 gap: "6px",
               }}
@@ -71,11 +71,11 @@ export function EudrHeader({
             <button
               onClick={onLogout}
               style={{
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.2)",
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.15)",
                 color: "#ffd1d1",
-                borderRadius: "6px",
-                padding: "6px 10px",
+                borderRadius: "8px",
+                padding: "7px 10px",
                 fontSize: "12px",
                 cursor: "pointer",
               }}
