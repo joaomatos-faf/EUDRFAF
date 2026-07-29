@@ -490,6 +490,8 @@ export function buildProducerXlsxBytes(form: Record<string, string | number>): U
     ],
   });
 
+  worksheet["!autofilter"] = { ref: "A1:N2" };
+
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "EUDR");
 
