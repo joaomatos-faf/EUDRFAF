@@ -451,52 +451,127 @@ function displayDate(value: string) {
   return `${day}/${month}/${year}`;
 }
 
-import * as XLSX from "xlsx";
+function xmlEscape(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
 
 export function buildProducerXlsxBytes(form: Record<string, string | number>): Uint8Array {
-  const row = {
-    "Plot ID": String(form.plotId || ""),
-    "Nome da fazenda": String(form.farm || "NA"),
-    "Nome do produtor": String(form.producer || "NA"),
-    "Fornecedor": String(form.supplier || "NA"),
-    "Região": String(form.region || ""),
-    "Município": String(form.municipality || ""),
-    "Estado": String(form.state || ""),
-    "Hectare": Number(Number(form.area || 0).toFixed(2)),
-    "Mapeado": displayDate(String(form.mappedAt || "")),
-    "Verificado": displayDate(String(form.checkedAt || "")),
-    "Conformidade": String(form.compliance || ""),
-    "Comment": String(form.notes || ""),
-    "Who mapped": String(form.mappedBy || ""),
-    "CAR": String(form.car || ""),
-  };
+  const enc = new TextEncoder();
 
-  const worksheet = XLSX.utils.json_to_sheet([row], {
-    header: [
-      "Plot ID",
-      "Nome da fazenda",
-      "Nome do produtor",
-      "Fornecedor",
-      "Região",
-      "Município",
-      "Estado",
-      "Hectare",
-      "Mapeado",
-      "Verificado",
-      "Conformidade",
-      "Comment",
-      "Who mapped",
-      "CAR",
-    ],
-  });
+  const values = [
+    String(form.plotId || ""),
+    String(form.farm || "NA"),
+    String(form.producer || "NA"),
+    String(form.supplier || "NA"),
+    String(form.region || ""),
+    String(form.municipality || ""),
+    String(form.state || ""),
+    String(form.area ? Number(form.area).toFixed(2) : "0"),
+    displayDate(String(form.mappedAt || "")),
+    displayDate(String(form.checkedAt || "")),
+    String(form.compliance || ""),
+    String(form.notes || ""),
+    String(form.mappedBy || ""),
+    String(form.car || ""),
+  ];
 
-  worksheet["!autofilter"] = { ref: "A1:N2" };
+  const colLetters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N"];
+  const headers = [
+    "Plot ID", "Nome da fazenda", "Nome do produtor", "Fornecedor", "Região",
+    "Município", "Estado", "Hectare", "Mapeado", "Verificado", "Conformidade",
+    "Comment", "Who mapped", "CAR"
+  ];
 
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "EUDR");
+  const headerCellsXml = headers
+    .map((h, i) => `<c r="${colLetters[i]}1" t="inlineStr"><is><t>${xmlEscape(h)}</t></is></c>`)
+    .join("");
 
-  const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-  return new Uint8Array(buffer);
+  const dataCellsXml = values
+    .map((v, i) => `<c r="${colLetters[i]}2" t="inlineStr"><is><t>${xmlEscape(v)}</t></is></c>`)
+    .join("");
+
+  const contentTypesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/tables/table1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`;
+
+  const relsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+
+  const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    <sheet name="EUDR" sheetId="1" r:id="rId1"/>
+  </sheets>
+</workbook>`;
+
+  const workbookRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+
+  const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>
+  <fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>
+  <borders count="1"><border><left/><right/><top/><bottom/></border></borders>
+  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+  <cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>
+</styleSheet>`;
+
+  const sheet1Xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <dimension ref="A1:N2"/>
+  <sheetData>
+    <row r="1">${headerCellsXml}</row>
+    <row r="2">${dataCellsXml}</row>
+  </sheetData>
+  <tableParts count="1">
+    <tablePart r:id="rId1"/>
+  </tableParts>
+</worksheet>`;
+
+  const sheet1RelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/table" Target="../tables/table1.xml"/>
+</Relationships>`;
+
+  const table1ColumnsXml = headers
+    .map((h, i) => `<tableColumn id="${i + 1}" name="${xmlEscape(h)}"/>`)
+    .join("");
+
+  const table1Xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<table xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" id="1" name="Table1" displayName="Table1" ref="A1:N2" totalsRowShown="0">
+  <autoFilter ref="A1:N2"/>
+  <tableColumns count="14">${table1ColumnsXml}</tableColumns>
+  <tableStyleInfo name="TableStyleMedium9" showFirstColumn="0" showLastColumn="0" showRowStripes="1" showColumnStripes="0"/>
+</table>`;
+
+  const files = [
+    { name: "[Content_Types].xml", data: enc.encode(contentTypesXml) },
+    { name: "_rels/.rels", data: enc.encode(relsXml) },
+    { name: "xl/workbook.xml", data: enc.encode(workbookXml) },
+    { name: "xl/_rels/workbook.xml.rels", data: enc.encode(workbookRelsXml) },
+    { name: "xl/styles.xml", data: enc.encode(stylesXml) },
+    { name: "xl/worksheets/sheet1.xml", data: enc.encode(sheet1Xml) },
+    { name: "xl/worksheets/_rels/sheet1.xml.rels", data: enc.encode(sheet1RelsXml) },
+    { name: "xl/tables/table1.xml", data: enc.encode(table1Xml) },
+  ];
+
+  return zipStoreBytes(files);
 }
 
 export function downloadBlob(name: string, blob: Blob) {
