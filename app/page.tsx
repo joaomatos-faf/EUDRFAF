@@ -848,34 +848,7 @@ export default function Home() {
             <div className="individual-actions">
               <button disabled={!geometry || !normalizedId} onClick={downloadGeoJson}>GeoJSON</button>
               <button disabled={!geometry || !normalizedId} onClick={downloadShape}>Shapefile</button>
-              <button disabled={!normalizedId} onClick={downloadCsv}>Planilha</button>
-            </div>
-            <div style={{ marginTop: "10px" }}>
-              <button
-                type="button"
-                disabled={!normalizedId}
-                onClick={copySharePointRow}
-                style={{
-                  width: "100%",
-                  padding: "8px 12px",
-                  background: copySuccess ? "#ecfdf5" : "#fff",
-                  border: copySuccess ? "1px solid #a7f3d0" : "1px solid var(--line-strong)",
-                  color: copySuccess ? "#065f46" : "var(--forest-950)",
-                  borderRadius: "8px",
-                  fontSize: "11.5px",
-                  fontWeight: 700,
-                  cursor: !normalizedId ? "not-allowed" : "pointer",
-                  opacity: !normalizedId ? 0.5 : 1,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "6px",
-                  transition: "all 0.16s ease",
-                }}
-                title="Copia os dados formatados em 14 colunas para colar direto no SharePoint com Ctrl+V"
-              >
-                {copySuccess ? "✓ Copiado! Clique na célula e dê Ctrl+V" : "📋 Copiar Linha (SharePoint)"}
-              </button>
+              <button disabled={!normalizedId} onClick={downloadCsv}>Planilha (.csv)</button>
             </div>
           </article>
 
