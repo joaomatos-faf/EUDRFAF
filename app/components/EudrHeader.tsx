@@ -21,11 +21,19 @@ export function EudrHeader({
 }: EudrHeaderProps) {
   return (
     <header className="topbar">
-      <div>
-        <p className="kicker">FAF COFFEES · SUSTENTABILIDADE & CONFORMIDADE</p>
-        <h1 className="title">Preparador de Dossiê EUDR</h1>
+      <div className="brand-lockup">
+        <div className="brand-mark">FAF</div>
+        <div>
+          <p className="eyebrow">FAF COFFEES · SUSTENTABILIDADE & CONFORMIDADE</p>
+          <h1>Preparador de Dossiê EUDR</h1>
+        </div>
       </div>
-      <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+
+      <div className="topbar-actions">
+        <span className="privacy-pill">
+          <span></span>Privacidade local ativada
+        </span>
+
         {isAuthenticated && (
           <>
             {onNewProcess && (
@@ -53,8 +61,8 @@ export function EudrHeader({
             <button
               onClick={onOpenAdminModal}
               style={{
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.18)",
+                background: "rgba(255, 255, 255, 0.08)",
+                border: "1px solid rgba(255, 255, 255, 0.18)",
                 color: "#dce8e2",
                 borderRadius: "8px",
                 padding: "7px 12px",
@@ -71,8 +79,8 @@ export function EudrHeader({
             <button
               onClick={onLogout}
               style={{
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.15)",
+                background: "rgba(255, 255, 255, 0.05)",
+                border: "1px solid rgba(255, 255, 255, 0.15)",
                 color: "#ffd1d1",
                 borderRadius: "8px",
                 padding: "7px 10px",
@@ -84,7 +92,8 @@ export function EudrHeader({
             </button>
           </>
         )}
-        <span className="badge">v0.2.1</span>
+
+        <span className="version-pill">v0.2.1</span>
       </div>
     </header>
   );
