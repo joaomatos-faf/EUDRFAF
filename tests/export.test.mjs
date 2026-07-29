@@ -6,6 +6,7 @@ import {
   producerCsv,
   getTwoLetterInitials,
   generateAutoPlotId,
+  incrementPlotIdNumber,
 } from "../app/lib/eudr.ts";
 import { exportAuditLogsCsv } from "../app/lib/auditLogger.ts";
 import { APP_CONFIG } from "../app/lib/config.ts";
@@ -102,4 +103,11 @@ test("exportAuditLogsCsv gera CSV formatado com BOM UTF-8 e colunas corretas", (
   assert.match(csv, /"Data e Hora";"Usuário";"Nome";"Categoria"/);
   assert.match(csv, /"joaomatos";"João Matos";"EXPORTACAO"/);
   assert.match(csv, /"FAFDRAN-01"/);
+});
+
+test("incrementPlotIdNumber incrementa o sufixo do código do talhão corretamente", () => {
+  assert.equal(incrementPlotIdNumber("FAFDRAD-01"), "FAFDRAD-02");
+  assert.equal(incrementPlotIdNumber("FAFDRAD-09"), "FAFDRAD-10");
+  assert.equal(incrementPlotIdNumber("FAFJMSP-02"), "FAFJMSP-03");
+  assert.equal(incrementPlotIdNumber("FAFDRAD-100"), "FAFDRAD-101");
 });

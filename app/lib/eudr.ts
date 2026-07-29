@@ -191,6 +191,31 @@ export function generateAutoPlotId(supplierOrProducer: string, municipality: str
   return `${companyPrefix}${supplierCode || "XX"}${cityCode || "XX"}-${cleanNumber}`;
 }
 
+export function incrementPlotIdNumber(currentPlotId: string): string {
+  if (!currentPlotId || !currentPlotId.trim()) return "FAF-02";
+  const trimmed = currentPlotId.trim();
+
+  const dashMatch = trimmed.match(/^(.*?-)(\d+)$/);
+  if (dashMatch) {
+    const prefix = dashMatch[1];
+    const numStr = dashMatch[2];
+    const nextNum = parseInt(numStr, 10) + 1;
+    const padded = String(nextNum).padStart(numStr.length, "0");
+    return `${prefix}${padded}`;
+  }
+
+  const numMatch = trimmed.match(/^(.*?)(\d+)$/);
+  if (numMatch) {
+    const prefix = numMatch[1];
+    const numStr = numMatch[2];
+    const nextNum = parseInt(numStr, 10) + 1;
+    const padded = String(nextNum).padStart(numStr.length, "0");
+    return `${prefix}-${padded}`;
+  }
+
+  return `${trimmed}-02`;
+}
+
 export function buildEudrGeoJson(data: GeometryData, plotId: string, area: number) {
   const geometry = data.polygons.length === 1
     ? { type: "Polygon" as const, coordinates: data.polygons[0] }

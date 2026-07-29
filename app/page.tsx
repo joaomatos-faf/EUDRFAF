@@ -9,6 +9,7 @@ import { EudrStepsNav } from "./components/EudrStepsNav";
 import { LoginScreen } from "./components/LoginScreen";
 import { AdminUserModal } from "./components/AdminUserModal";
 import { AuditLogModal } from "./components/AuditLogModal";
+import { NewProcessModal } from "./components/NewProcessModal";
 import { useUserManagement } from "./hooks/useUserManagement";
 import { recordAuditLog } from "./lib/auditLogger";
 import {
@@ -25,6 +26,7 @@ import {
   sanitizePlotId,
   generateAutoPlotId,
   getTwoLetterInitials,
+  incrementPlotIdNumber,
 } from "./lib/eudr";
 
 type FormState = {
@@ -510,23 +512,13 @@ export default function Home() {
     );
   };
 
-  const handleNewProcess = () => {
-    const hasData = Boolean(
-      form.plotId ||
-      form.farm ||
-      form.producer ||
-      form.supplier ||
-      form.car ||
-      form.municipality ||
-      geometry
-    );
-    if (hasData) {
-      const confirmReset = window.confirm(
-        "Deseja iniciar um novo processo? Os dados e arquivos do talhão atual serão limpos."
-      );
-      if (!confirmReset) return;
-    }
+  const nextPlotIdPreview = useMemo(() => {
+    return incrementPlotIdNumber(normalizedId || form.plotId || "FAFDRAD-01");
+  }, [normalizedId, form.plotId]);
 
+  const [showNewProcessModal, setShowNewProcessModal] = useState(false);
+
+  const handleStartFromScratch = () => {
     const activeUser = userMgmt.loggedUserKey || "usuario";
     const activeName = form.mappedBy || activeUser;
     recordAuditLog(
@@ -534,8 +526,7 @@ export default function Home() {
       activeName,
       "PROCESS_RESET",
       "GEOMETRIA",
-      `Reiniciou o formulário e iniciou um novo processo de talhão.`,
-      normalizedId || undefined
+      `Iniciou um novo processo do zero (limpeza total).`
     );
 
     setForm({
@@ -550,6 +541,52 @@ export default function Home() {
     setCarConfirmed(false);
     setMapbiomasConfirmed(false);
     setMapbiomasCheck(emptyMapbiomasCheck);
+  };
+
+  const handleNextPlotSameSupplier = () => {
+    const newPlotId = incrementPlotIdNumber(normalizedId || form.plotId);
+    const activeUser = userMgmt.loggedUserKey || "usuario";
+    const activeName = form.mappedBy || activeUser;
+    recordAuditLog(
+      activeUser,
+      activeName,
+      "PROCESS_RESET",
+      "GEOMETRIA",
+      `Iniciou próximo talhão para o mesmo fornecedor: código avançado para ${newPlotId}.`,
+      newPlotId
+    );
+
+    setForm((current) => ({
+      ...current,
+      plotId: newPlotId,
+      mappedAt: today,
+      checkedAt: today,
+      compliance: "",
+      notes: "",
+    }));
+    setGeometry(null);
+    setFileName("");
+    setError("");
+    setCarConfirmed(false);
+    setMapbiomasConfirmed(false);
+    setMapbiomasCheck(emptyMapbiomasCheck);
+  };
+
+  const handleNewProcessClick = () => {
+    const hasData = Boolean(
+      form.plotId ||
+      form.farm ||
+      form.producer ||
+      form.supplier ||
+      form.car ||
+      form.municipality ||
+      geometry
+    );
+    if (hasData) {
+      setShowNewProcessModal(true);
+    } else {
+      handleStartFromScratch();
+    }
   };
 
   if (userMgmt.isAuthenticated === null) {
@@ -581,7 +618,7 @@ export default function Home() {
         loggedUserKey={userMgmt.loggedUserKey}
         onOpenAdminModal={() => userMgmt.setShowAdminModal(true)}
         onLogout={userMgmt.handleLogout}
-        onNewProcess={handleNewProcess}
+        onNewProcess={handleNewProcessClick}
         onOpenLogsModal={() => setShowLogsModal(true)}
       />
 
@@ -613,7 +650,7 @@ export default function Home() {
               </div>
               <button
                 type="button"
-                onClick={handleNewProcess}
+                onClick={handleNewProcessClick}
                 style={{
                   border: "1px solid var(--line-strong)",
                   borderRadius: "8px",
@@ -814,6 +851,16 @@ export default function Home() {
       <AuditLogModal
         isOpen={showLogsModal}
         onClose={() => setShowLogsModal(false)}
+      />
+
+      <NewProcessModal
+        isOpen={showNewProcessModal}
+        onClose={() => setShowNewProcessModal(false)}
+        onStartFromScratch={handleStartFromScratch}
+        onNextPlotSameSupplier={handleNextPlotSameSupplier}
+        currentPlotId={normalizedId || form.plotId}
+        currentSupplier={form.supplier || form.producer}
+        nextPlotIdPreview={nextPlotIdPreview}
       />
     </main>
   );
