@@ -456,10 +456,56 @@ function displayDate(value: string) {
   return `${day}/${month}/${year}`;
 }
 
+import * as XLSX from "xlsx";
+
 export function producerCsv(form: Record<string, string | number>) {
   const headers = ["Plot ID", "Nome da fazenda", "Nome do produtor", "Fornecedor", "Região", "Município", "Estado", "Área (ha)", "Data do mapeamento", "Data da verificação", "Conformidade", "Observações", "Mapeado por", "Número do CAR"];
   const row = [form.plotId, form.farm || "NA", form.producer || "NA", form.supplier, form.region, form.municipality, form.state, Number(form.area).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), displayDate(String(form.mappedAt)), displayDate(String(form.checkedAt)), form.compliance, form.notes, form.mappedBy, form.car];
   return `\uFEFF${headers.map(csvCell).join(";")}\r\n${row.map(csvCell).join(";")}\r\n`;
+}
+
+export function buildProducerXlsxBytes(form: Record<string, string | number>): Uint8Array {
+  const row = {
+    "Plot ID": String(form.plotId || ""),
+    "Nome da fazenda": String(form.farm || "NA"),
+    "Nome do produtor": String(form.producer || "NA"),
+    "Fornecedor": String(form.supplier || "NA"),
+    "Região": String(form.region || ""),
+    "Município": String(form.municipality || ""),
+    "Estado": String(form.state || ""),
+    "Hectare": Number(Number(form.area || 0).toFixed(2)),
+    "Mapeado": displayDate(String(form.mappedAt || "")),
+    "Verificado": displayDate(String(form.checkedAt || "")),
+    "Conformidade": String(form.compliance || ""),
+    "Comment": String(form.notes || ""),
+    "Who mapped": String(form.mappedBy || ""),
+    "CAR": String(form.car || ""),
+  };
+
+  const worksheet = XLSX.utils.json_to_sheet([row], {
+    header: [
+      "Plot ID",
+      "Nome da fazenda",
+      "Nome do produtor",
+      "Fornecedor",
+      "Região",
+      "Município",
+      "Estado",
+      "Hectare",
+      "Mapeado",
+      "Verificado",
+      "Conformidade",
+      "Comment",
+      "Who mapped",
+      "CAR",
+    ],
+  });
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "EUDR");
+
+  const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+  return new Uint8Array(buffer);
 }
 
 export function downloadBlob(name: string, blob: Blob) {

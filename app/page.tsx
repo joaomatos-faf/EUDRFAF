@@ -23,6 +23,7 @@ import {
   downloadBlob,
   parseGeometryFile,
   producerCsv,
+  buildProducerXlsxBytes,
   sanitizePlotId,
   generateAutoPlotId,
   getTwoLetterInitials,
@@ -471,6 +472,16 @@ export default function Home() {
     downloadBlob(`${normalizedId}-cadastro.csv`, new Blob([content], { type: "text/csv;charset=utf-8" }));
   };
 
+  const downloadXlsx = () => {
+    if (!normalizedId) return;
+    const automaticNote = mapbiomasCheck.checkedAt
+      ? `MapBiomas Série temporal de Cobertura por classe, Coleção 10.1 (${new Date(mapbiomasCheck.checkedAt).toLocaleString("pt-BR")}): ${mapbiomasCheck.changes.length ? `${mapbiomasCheck.changes.length} alteração(ões) entre classes/anos de 2020 a 2024` : "nenhuma alteração entre 2020 e 2024"}.${mapbiomasCheck.verificationUrl ? ` Verificação: ${mapbiomasCheck.verificationUrl}.` : ""}`
+      : "MapBiomas Série temporal de Cobertura: consulta automática não realizada.";
+    const notes = [form.notes.trim(), automaticNote].filter(Boolean).join(" ");
+    const xlsxBytes = buildProducerXlsxBytes({ ...form, notes, plotId: normalizedId, area });
+    downloadBlob(`${normalizedId}-cadastro.xlsx`, new Blob([xlsxBytes as unknown as BlobPart], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+  };
+
   const exportAll = () => {
     if (!geometry || !normalizedId) return;
 
@@ -478,13 +489,14 @@ export default function Home() {
     const geojsonContent = JSON.stringify(buildEudrGeoJson(geometry, normalizedId, area), null, 2);
     const geojsonBytes = new TextEncoder().encode(geojsonContent);
 
-    // 2. CSV
+    // 2. CSV & XLSX
     const automaticNote = mapbiomasCheck.checkedAt
       ? `MapBiomas Série temporal de Cobertura por classe, Coleção 10.1 (${new Date(mapbiomasCheck.checkedAt).toLocaleString("pt-BR")}): ${mapbiomasCheck.changes.length ? `${mapbiomasCheck.changes.length} alteração(ões) entre classes/anos de 2020 a 2024` : "nenhuma alteração entre 2020 e 2024"}.${mapbiomasCheck.verificationUrl ? ` Verificação: ${mapbiomasCheck.verificationUrl}.` : ""}`
       : "MapBiomas Série temporal de Cobertura: consulta automática não realizada.";
     const notes = [form.notes.trim(), automaticNote].filter(Boolean).join(" ");
     const csvContent = producerCsv({ ...form, notes, plotId: normalizedId, area });
     const csvBytes = new TextEncoder().encode(csvContent);
+    const xlsxBytes = buildProducerXlsxBytes({ ...form, notes, plotId: normalizedId, area });
 
     // 3. Shapefile em ZIP interno
     const shapeParts = buildShapefileParts(geometry, normalizedId, area, form);
@@ -494,6 +506,7 @@ export default function Home() {
     const allFiles = [
       { name: `${normalizedId}.geojson`, data: geojsonBytes },
       { name: `${normalizedId}-cadastro.csv`, data: csvBytes },
+      { name: `${normalizedId}-cadastro.xlsx`, data: xlsxBytes },
       { name: `${normalizedId}-shapefile.zip`, data: shapefileZipBytes },
     ];
 
@@ -848,6 +861,7 @@ export default function Home() {
             <div className="individual-actions">
               <button disabled={!geometry || !normalizedId} onClick={downloadGeoJson}>GeoJSON</button>
               <button disabled={!geometry || !normalizedId} onClick={downloadShape}>Shapefile</button>
+              <button disabled={!normalizedId} onClick={downloadXlsx}>Excel (.xlsx)</button>
               <button disabled={!normalizedId} onClick={downloadCsv}>Planilha (.csv)</button>
             </div>
           </article>
