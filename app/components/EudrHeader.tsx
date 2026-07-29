@@ -8,6 +8,7 @@ interface EudrHeaderProps {
   loggedUserKey: string;
   onOpenAdminModal: () => void;
   onLogout: () => void;
+  onNewProcess?: () => void;
 }
 
 export function EudrHeader({
@@ -16,6 +17,7 @@ export function EudrHeader({
   loggedUserKey,
   onOpenAdminModal,
   onLogout,
+  onNewProcess,
 }: EudrHeaderProps) {
   return (
     <header className="topbar">
@@ -26,6 +28,28 @@ export function EudrHeader({
       <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
         {isAuthenticated && (
           <>
+            {onNewProcess && (
+              <button
+                onClick={onNewProcess}
+                style={{
+                  background: "var(--orange-500)",
+                  border: "1px solid rgba(255,255,255,0.4)",
+                  color: "#fff",
+                  borderRadius: "6px",
+                  padding: "6px 14px",
+                  fontSize: "12px",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+                }}
+                title="Limpar formulário e iniciar o mapeamento de um novo talhão"
+              >
+                ✨ Novo Processo
+              </button>
+            )}
             <button
               onClick={onOpenAdminModal}
               style={{

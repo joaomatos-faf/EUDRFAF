@@ -474,6 +474,37 @@ export default function Home() {
     downloadBlob(`${normalizedId}-pacote-eudr.zip`, zipBlob);
   };
 
+  const handleNewProcess = () => {
+    const hasData = Boolean(
+      form.plotId ||
+      form.farm ||
+      form.producer ||
+      form.supplier ||
+      form.car ||
+      form.municipality ||
+      geometry
+    );
+    if (hasData) {
+      const confirmReset = window.confirm(
+        "Deseja iniciar um novo processo? Os dados e arquivos do talhão atual serão limpos."
+      );
+      if (!confirmReset) return;
+    }
+
+    setForm({
+      ...initialForm,
+      mappedBy: form.mappedBy || userMgmt.loggedUserKey || (typeof window !== "undefined" ? sessionStorage.getItem("faf_eudr_user_name") || "" : ""),
+      mappedAt: today,
+      checkedAt: today,
+    });
+    setGeometry(null);
+    setFileName("");
+    setError("");
+    setCarConfirmed(false);
+    setMapbiomasConfirmed(false);
+    setMapbiomasCheck(emptyMapbiomasCheck);
+  };
+
   if (userMgmt.isAuthenticated === null) {
     return (
       <div style={{ minHeight: "100vh", background: "var(--canvas)", display: "grid", placeItems: "center" }}>
@@ -503,11 +534,34 @@ export default function Home() {
         loggedUserKey={userMgmt.loggedUserKey}
         onOpenAdminModal={() => userMgmt.setShowAdminModal(true)}
         onLogout={userMgmt.handleLogout}
+        onNewProcess={handleNewProcess}
       />
 
       <section className="dashboard-head">
         <div className="hero-copy">
-          <p className="section-kicker">Novo processo</p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", marginBottom: "4px" }}>
+            <p className="section-kicker" style={{ margin: 0 }}>Novo processo</p>
+            <button
+              type="button"
+              onClick={handleNewProcess}
+              style={{
+                background: "var(--forest-100)",
+                color: "var(--forest-900)",
+                border: "1px solid var(--line-strong)",
+                borderRadius: "6px",
+                padding: "4px 10px",
+                fontSize: "11px",
+                fontWeight: 750,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+              title="Limpar formulário e iniciar novo talhão"
+            >
+              🔄 Limpar / Novo Processo
+            </button>
+          </div>
           <h2>Prepare um talhão para EUDR</h2>
           <p>Identifique a área, importe a geometria e valide a série temporal do MapBiomas antes de gerar o pacote final.</p>
         </div>
