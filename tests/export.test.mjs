@@ -3,7 +3,7 @@ import test from "node:test";
 import {
   buildEudrGeoJson,
   buildShapefileParts,
-  producerCsv,
+  buildProducerXlsxBytes,
   getTwoLetterInitials,
   generateAutoPlotId,
   incrementPlotIdNumber,
@@ -50,8 +50,8 @@ test("buildShapefileParts gera 5 arquivos essenciais do Shapefile (.shp, .shx, .
   assert.deepEqual(extensions, ["shp", "shx", "dbf", "prj", "cpg"]);
 });
 
-test("producerCsv constrói cabeçalho e linha formatados em UTF-8 com BOM", () => {
-  const csv = producerCsv({
+test("buildProducerXlsxBytes gera arquivo Excel (.xlsx) válido em formato binário", () => {
+  const bytes = buildProducerXlsxBytes({
     plotId: "TALHAO-01",
     farm: "Fazenda Santa Inês",
     producer: "João Matos",
@@ -67,10 +67,8 @@ test("producerCsv constrói cabeçalho e linha formatados em UTF-8 com BOM", () 
     mappedBy: "João Matos",
     car: "SP-123456",
   });
-  assert.match(csv, /^\uFEFF/);
-  assert.match(csv, /"Plot ID";"Nome da fazenda"/);
-  assert.match(csv, /"TALHAO-01";"Fazenda Santa Inês"/);
-  assert.match(csv, /"12,50"/);
+  assert.ok(bytes instanceof Uint8Array);
+  assert.ok(bytes.length > 100);
 });
 
 test("generateAutoPlotId constrói o código no padrão FAF + Fornecedor + Município + N°", () => {

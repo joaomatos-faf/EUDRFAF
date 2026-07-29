@@ -445,11 +445,6 @@ export function buildShapefileZip(
   return zipStore(buildShapefileParts(data, plotId, area, attributes));
 }
 
-function csvCell(value: string | number) {
-  const text = String(value ?? "").replace(/"/g, '""');
-  return `"${text}"`;
-}
-
 function displayDate(value: string) {
   if (!value) return "";
   const [year, month, day] = value.split("-");
@@ -457,12 +452,6 @@ function displayDate(value: string) {
 }
 
 import * as XLSX from "xlsx";
-
-export function producerCsv(form: Record<string, string | number>) {
-  const headers = ["Plot ID", "Nome da fazenda", "Nome do produtor", "Fornecedor", "Região", "Município", "Estado", "Área (ha)", "Data do mapeamento", "Data da verificação", "Conformidade", "Observações", "Mapeado por", "Número do CAR"];
-  const row = [form.plotId, form.farm || "NA", form.producer || "NA", form.supplier, form.region, form.municipality, form.state, Number(form.area).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), displayDate(String(form.mappedAt)), displayDate(String(form.checkedAt)), form.compliance, form.notes, form.mappedBy, form.car];
-  return `\uFEFF${headers.map(csvCell).join(";")}\r\n${row.map(csvCell).join(";")}\r\n`;
-}
 
 export function buildProducerXlsxBytes(form: Record<string, string | number>): Uint8Array {
   const row = {
