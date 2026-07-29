@@ -7,6 +7,7 @@ import {
   getTwoLetterInitials,
   generateAutoPlotId,
 } from "../app/lib/eudr.ts";
+import { exportAuditLogsCsv } from "../app/lib/auditLogger.ts";
 import { APP_CONFIG } from "../app/lib/config.ts";
 
 const sampleGeometry = {
@@ -81,4 +82,24 @@ test("generateAutoPlotId constrói o código no padrão FAF + Fornecedor + Munic
   assert.equal(generateAutoPlotId("Drumond", "Andrada", "01"), "FAFDRAN-01");
   assert.equal(generateAutoPlotId("Daniel Rosa", "Andrada", "01"), "FAFDRAN-01");
   assert.equal(generateAutoPlotId("João Matos", "São Paulo", "02"), "FAFJMSP-02");
+});
+
+test("exportAuditLogsCsv gera CSV formatado com BOM UTF-8 e colunas corretas", () => {
+  const sampleLogs = [
+    {
+      id: "log_123",
+      timestamp: "2026-07-29T14:00:00.000Z",
+      user: "joaomatos",
+      userFullName: "João Matos",
+      action: "PACKAGE_EXPORTED",
+      category: "EXPORTACAO",
+      details: "Exportou pacote EUDR para FAFDRAN-01",
+      plotId: "FAFDRAN-01",
+    },
+  ];
+  const csv = exportAuditLogsCsv(sampleLogs);
+  assert.match(csv, /^\uFEFF/);
+  assert.match(csv, /"Data e Hora";"Usuário";"Nome";"Categoria"/);
+  assert.match(csv, /"joaomatos";"João Matos";"EXPORTACAO"/);
+  assert.match(csv, /"FAFDRAN-01"/);
 });

@@ -9,6 +9,7 @@ interface EudrHeaderProps {
   onOpenAdminModal: () => void;
   onLogout: () => void;
   onNewProcess?: () => void;
+  onOpenLogsModal?: () => void;
 }
 
 export function EudrHeader({
@@ -18,6 +19,7 @@ export function EudrHeader({
   onOpenAdminModal,
   onLogout,
   onNewProcess,
+  onOpenLogsModal,
 }: EudrHeaderProps) {
   return (
     <header className="topbar">
@@ -58,6 +60,27 @@ export function EudrHeader({
                 <span style={{ fontSize: "13px" }}>＋</span> Novo Processo
               </button>
             )}
+            {onOpenLogsModal && (
+              <button
+                onClick={onOpenLogsModal}
+                style={{
+                  background: "rgba(255, 255, 255, 0.08)",
+                  border: "1px solid rgba(255, 255, 255, 0.18)",
+                  color: "#dce8e2",
+                  borderRadius: "8px",
+                  padding: "7px 12px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+                title="Visualizar histórico e logs de auditoria"
+              >
+                📋 Logs
+              </button>
+            )}
             <button
               onClick={onOpenAdminModal}
               style={{
@@ -74,7 +97,7 @@ export function EudrHeader({
                 gap: "6px",
               }}
             >
-              {loggedUserRole === "admin" ? "⚙️ Gerenciar Usuários" : "🔑 Alterar Minha Senha"}
+              {loggedUserRole === "admin" ? "⚙️ Usuários" : "🔑 Minha Senha"}
             </button>
             <button
               onClick={onLogout}

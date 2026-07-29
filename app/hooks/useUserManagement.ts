@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { checkPasswordMatch, hashPassword } from "../lib/eudr";
+import { recordAuditLog } from "../lib/auditLogger";
 
 export interface UserProfile {
   pass: string;
@@ -141,12 +142,16 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
       setLoggedUserRole(role);
       if (onUserLoggedIn) onUserLoggedIn(fullName);
       setLoginError("");
+
+      recordAuditLog(userKey, fullName, "LOGIN", "ACESSO", `Usuário @${userKey} (${fullName}) realizou login.`);
     } else {
       setLoginError("Usuário ou senha incorretos.");
     }
   };
 
   const handleLogout = () => {
+    const currentName = sessionStorage.getItem("faf_eudr_user_name") || loggedUserKey;
+    recordAuditLog(loggedUserKey, currentName, "LOGOUT", "ACESSO", `Usuário @${loggedUserKey} encerrou a sessão.`);
     sessionStorage.removeItem("faf_eudr_auth");
     sessionStorage.removeItem("faf_eudr_user_name");
     sessionStorage.removeItem("faf_eudr_user_key");
@@ -167,6 +172,11 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
     const hashed = await hashPassword(newAdminPass.trim());
     const updated = { ...usersMap, [cleanUser]: { pass: hashed, fullName: cleanName, role: newAdminRole } };
     await saveUsers(updated);
+
+    const currentUser = loggedUserKey || "admin";
+    const currentName = sessionStorage.getItem("faf_eudr_user_name") || currentUser;
+    recordAuditLog(currentUser, currentName, "USER_CREATED", "USUARIOS", `Criou novo usuário @${cleanUser} (${cleanName}) com perfil ${newAdminRole === "admin" ? "ADM" : "Usuário"}.`);
+
     setNewAdminUser("");
     setNewAdminFullName("");
     setNewAdminPass("");
@@ -196,6 +206,10 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
     const updated = { ...usersMap };
     delete updated[userKey];
     await saveUsers(updated);
+
+    const currentUser = loggedUserKey || "admin";
+    const currentName = sessionStorage.getItem("faf_eudr_user_name") || currentUser;
+    recordAuditLog(currentUser, currentName, "USER_UPDATED", "USUARIOS", `Excluiu o usuário @${userKey}.`);
   };
 
   const handleAdminUpdateUser = async (oldUserKey: string) => {
@@ -235,6 +249,10 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
     };
 
     await saveUsers(updated);
+
+    const currentUser = loggedUserKey || "admin";
+    const currentName = sessionStorage.getItem("faf_eudr_user_name") || currentUser;
+    recordAuditLog(currentUser, currentName, "USER_UPDATED", "USUARIOS", `Atualizou informações do usuário @${newCleanUser} (${cleanName}).`);
 
     if (oldUserKey === loggedUserKey) {
       sessionStorage.setItem("faf_eudr_user_key", newCleanUser);
@@ -282,6 +300,8 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
     const role = typeof profile === "string" ? "user" : profile.role;
     const updated = { ...usersMap, [userKey]: { pass: hashedNew, fullName, role } };
     await saveUsers(updated);
+
+    recordAuditLog(userKey, fullName, "PASSWORD_CHANGED", "USUARIOS", `Usuário @${userKey} alterou sua senha.`);
 
     setEditingUser(null);
     setEditingCurrentPassInput("");

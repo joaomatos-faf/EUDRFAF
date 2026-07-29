@@ -8,7 +8,9 @@ import { EudrHeader } from "./components/EudrHeader";
 import { EudrStepsNav } from "./components/EudrStepsNav";
 import { LoginScreen } from "./components/LoginScreen";
 import { AdminUserModal } from "./components/AdminUserModal";
+import { AuditLogModal } from "./components/AuditLogModal";
 import { useUserManagement } from "./hooks/useUserManagement";
+import { recordAuditLog } from "./lib/auditLogger";
 import {
   GeometryData,
   buildEudrGeoJson,
@@ -163,6 +165,7 @@ export default function Home() {
   const [locationsStatus, setLocationsStatus] = useState<"loading" | "ready" | "error">("loading");
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
   const [locationsReload, setLocationsReload] = useState(0);
+  const [showLogsModal, setShowLogsModal] = useState(false);
 
   const handleLogout = () => {
     sessionStorage.removeItem("faf_eudr_auth");
@@ -375,6 +378,17 @@ export default function Home() {
       setFileName(file.name);
       setMapbiomasCheck(emptyMapbiomasCheck);
       setMapbiomasConfirmed(false);
+
+      const activeUser = userMgmt.loggedUserKey || "usuario";
+      const activeName = form.mappedBy || activeUser;
+      recordAuditLog(
+        activeUser,
+        activeName,
+        "FILE_UPLOADED",
+        "GEOMETRIA",
+        `Importou o arquivo "${file.name}" com ${parsed.polygons.length} polígono(s).`,
+        normalizedId || undefined
+      );
     } catch (problem) {
       setGeometry(null);
       setFileName("");
@@ -414,6 +428,17 @@ export default function Home() {
         changes: result.changes ?? [],
       });
       update("checkedAt", today);
+
+      const activeUser = userMgmt.loggedUserKey || "usuario";
+      const activeName = form.mappedBy || activeUser;
+      recordAuditLog(
+        activeUser,
+        activeName,
+        "MAPBIOMAS_CHECKED",
+        "MAPBIOMAS",
+        `Consultou MapBiomas 2020-2024 para ${normalizedId || "talhão"}: ${result.hasChanges ? `${result.changes?.length || 1} alteração(ões) de cobertura` : "sem alterações de cobertura"}.`,
+        normalizedId || undefined
+      );
     } catch (problem) {
       setMapbiomasCheck({
         ...emptyMapbiomasCheck,
@@ -472,6 +497,17 @@ export default function Home() {
 
     const zipBlob = zipStore(allFiles);
     downloadBlob(`${normalizedId}-pacote-eudr.zip`, zipBlob);
+
+    const activeUser = userMgmt.loggedUserKey || "usuario";
+    const activeName = form.mappedBy || activeUser;
+    recordAuditLog(
+      activeUser,
+      activeName,
+      "PACKAGE_EXPORTED",
+      "EXPORTACAO",
+      `Exportou o pacote EUDR completo (.zip) para o talhão ${normalizedId} (${area.toFixed(2)} ha).`,
+      normalizedId
+    );
   };
 
   const handleNewProcess = () => {
@@ -490,6 +526,17 @@ export default function Home() {
       );
       if (!confirmReset) return;
     }
+
+    const activeUser = userMgmt.loggedUserKey || "usuario";
+    const activeName = form.mappedBy || activeUser;
+    recordAuditLog(
+      activeUser,
+      activeName,
+      "PROCESS_RESET",
+      "GEOMETRIA",
+      `Reiniciou o formulário e iniciou um novo processo de talhão.`,
+      normalizedId || undefined
+    );
 
     setForm({
       ...initialForm,
@@ -535,6 +582,7 @@ export default function Home() {
         onOpenAdminModal={() => userMgmt.setShowAdminModal(true)}
         onLogout={userMgmt.handleLogout}
         onNewProcess={handleNewProcess}
+        onOpenLogsModal={() => setShowLogsModal(true)}
       />
 
       <section className="dashboard-head">
@@ -761,6 +809,11 @@ export default function Home() {
         onDeleteUser={userMgmt.handleDeleteUser}
         onAdminUpdateUser={userMgmt.handleAdminUpdateUser}
         onChangePassword={userMgmt.handleChangePassword}
+      />
+
+      <AuditLogModal
+        isOpen={showLogsModal}
+        onClose={() => setShowLogsModal(false)}
       />
     </main>
   );
