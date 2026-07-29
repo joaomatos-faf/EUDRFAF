@@ -849,7 +849,7 @@ export default function Home() {
       />
 
       <AuditLogModal
-        isOpen={showLogsModal}
+        isOpen={showLogsModal && userMgmt.loggedUserRole === "admin"}
         onClose={() => setShowLogsModal(false)}
       />
 

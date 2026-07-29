@@ -60,7 +60,7 @@ export function EudrHeader({
                 <span style={{ fontSize: "13px" }}>＋</span> Novo Processo
               </button>
             )}
-            {onOpenLogsModal && (
+            {loggedUserRole === "admin" && onOpenLogsModal && (
               <button
                 onClick={onOpenLogsModal}
                 style={{
@@ -76,7 +76,7 @@ export function EudrHeader({
                   alignItems: "center",
                   gap: "6px",
                 }}
-                title="Visualizar histórico e logs de auditoria"
+                title="Visualizar histórico e logs de auditoria (Restrito a Administradores)"
               >
                 📋 Logs
               </button>
