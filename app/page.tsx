@@ -748,6 +748,14 @@ export default function Home() {
     }
   };
 
+  if (userMgmt.isAuthenticated === null) {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--canvas)", display: "grid", placeItems: "center" }}>
+        <p style={{ color: "var(--muted)", fontWeight: 600 }}>Carregando sistema...</p>
+      </div>
+    );
+  }
+
   if (activeView === "contratos") {
     if (userMgmt.isAuthenticated === false) {
       return (
@@ -757,11 +765,7 @@ export default function Home() {
           loginPassword={userMgmt.loginPassword}
           setLoginPassword={userMgmt.setLoginPassword}
           loginError={userMgmt.loginError}
-          onLogin={() => {
-            const success = userMgmt.handleLogin();
-            if (success) setActiveView("contratos");
-            return success;
-          }}
+          onLogin={userMgmt.handleLogin}
           onBackToLanding={() => setActiveView("landing")}
         />
       );
