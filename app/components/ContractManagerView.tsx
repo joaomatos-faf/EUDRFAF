@@ -2,19 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { ContractRecord } from "@/app/lib/contractStore";
+import { PLOT_MASTER_LIST, PlotMasterRecord } from "@/app/lib/plotMasterData";
 
 interface ContractManagerViewProps {
   onOpenLanding: () => void;
   loggedUserKey?: string;
-}
-
-export interface PlotMasterRecord {
-  plotId: string;
-  farm: string;
-  producer: string;
-  supplier: string;
-  region: string;
-  hectares: number;
 }
 
 interface DraftPlotItem {
@@ -33,13 +25,13 @@ interface DraftLotItem {
 
 export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos" }: ContractManagerViewProps) {
   const [contracts, setContracts] = useState<ContractRecord[]>([]);
-  const [plotMasterList, setPlotMasterList] = useState<PlotMasterRecord[]>([]);
+  const [plotMasterList, setPlotMasterList] = useState<PlotMasterRecord[]>(PLOT_MASTER_LIST);
   const [contractCode, setContractCode] = useState("");
   const [clientName, setClientName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
 
-  // Iniciar sem nenhum valor padrao / mock data
+  // Iniciar TUDO em branco (zero mock data)
   const [lots, setLots] = useState<DraftLotItem[]>([
     {
       lotNumber: "LOTE 01",
@@ -52,18 +44,19 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
 
   const loadContractsAndPlots = async () => {
     try {
-      const [resContracts, resPlots] = await Promise.all([
-        fetch("/api/r2/copy-contract"),
-        fetch("/api/plot-lookup"),
-      ]);
+      const resContracts = await fetch("/api/r2/copy-contract");
+      if (resContracts.ok) {
+        const dataContracts = await resContracts.json();
+        if (dataContracts.contracts) setContracts(dataContracts.contracts);
+      }
 
-      const dataContracts = await resContracts.json();
-      if (dataContracts.contracts) setContracts(dataContracts.contracts);
-
-      const dataPlots = await resPlots.json();
-      if (dataPlots.plots) setPlotMasterList(dataPlots.plots);
-    } catch (err) {
-      console.error("Erro ao carregar dados:", err);
+      const resPlots = await fetch("/api/plot-lookup");
+      if (resPlots.ok) {
+        const dataPlots = await resPlots.json();
+        if (dataPlots.plots && dataPlots.plots.length > 0) setPlotMasterList(dataPlots.plots);
+      }
+    } catch {
+      // Usar a lista master pre-carregada offline
     }
   };
 
@@ -116,13 +109,26 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
     const normId = cleanId.replace(/[^A-Z0-9]/g, "");
     const updated = [...lots];
 
-    // Busca inteligente no Excel master (256 talhões) por ID exato ou normalizado sem traço/espaço
+    if (!cleanId) {
+      updated[lotIndex].plots[plotIndex] = {
+        plotId: "",
+        producer: "",
+        supplier: "",
+        farm: "",
+        hectares: 0,
+      };
+      setLots(updated);
+      return;
+    }
+
+    // Busca exata ou por normalização (remove traços e espaços) nos 256+ talhões da FAF
     const matched = plotMasterList.find(
-      (p) => p.plotId === cleanId || p.plotId.replace(/[^A-Z0-9]/g, "") === normId
+      (p) =>
+        p.plotId.toUpperCase().trim() === cleanId ||
+        p.plotId.replace(/[^A-Z0-9]/g, "") === normId
     );
 
     if (matched) {
-      // Preenchimento AUTOMÁTICO garantido de Produtor, Fornecedor, Fazenda e Hectares
       updated[lotIndex].plots[plotIndex] = {
         plotId: matched.plotId || cleanId,
         producer: matched.producer,
@@ -131,7 +137,6 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
         hectares: matched.hectares,
       };
 
-      // Atualizar Região do Lote caso em branco
       if (matched.region && !updated[lotIndex].region) {
         updated[lotIndex].region = matched.region.toUpperCase();
       }
@@ -177,7 +182,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
 
     setIsSaving(true);
     try {
-      // 1. Cadastrar novos talhões que não existiam na lista master do servidor
+      // 1. Atualizar novos talhões no servidor
       for (const lot of lots) {
         for (const p of lot.plots) {
           if (p.plotId.trim()) {
@@ -197,7 +202,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
         }
       }
 
-      // 2. Salvar o contrato no Cloudflare R2
+      // 2. Salvar contrato no R2
       const res = await fetch("/api/r2/copy-contract", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -266,7 +271,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
         fontFamily: "system-ui, -apple-system, sans-serif",
       }}
     >
-      {/* Autocomplete Datalist para 256+ talhões */}
+      {/* Autocomplete Datalist para 256+ talhões da FAF */}
       <datalist id="plot-master-list">
         {plotMasterList.map((p) => (
           <option key={p.plotId} value={p.plotId}>
@@ -322,7 +327,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
       </header>
 
       {/* Main Content */}
-      <main style={{ maxWidth: "1350px", margin: "0 auto", padding: "32px 24px" }}>
+      <main style={{ maxWidth: "1380px", margin: "0 auto", padding: "32px 24px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1.35fr 0.65fr", gap: "32px" }}>
           {/* Coluna Esquerda: Formulário de Criação de Contrato */}
           <div
@@ -338,7 +343,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
               📜 Criar Novo Contrato de Cliente
             </h2>
             <p style={{ fontSize: "13px", color: "var(--muted)", margin: "0 0 24px" }}>
-              Digite o PLOT ID para buscar automaticamente da planilha Lista IDPLOT. Todos os campos iniciam em branco.
+              Digite o PLOT ID (ex: <strong>NAS-02</strong>, <strong>P2401</strong>) para autopreencher Produtor, Fornecedor, Fazenda e Hectares.
             </p>
 
             <form onSubmit={handleSaveContract} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
@@ -517,7 +522,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                                     list="plot-master-list"
                                     value={plot.plotId}
                                     onChange={(e) => handlePlotIdChange(lotIdx, plotIdx, e.target.value)}
-                                    placeholder="Ex: NAS-02, P2401 ou AMR-01"
+                                    placeholder="Ex: NAS-02, P2401..."
                                     required
                                     style={{
                                       width: "100%",
@@ -537,7 +542,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                                     type="text"
                                     value={plot.producer}
                                     onChange={(e) => handlePlotFieldChange(lotIdx, plotIdx, "producer", e.target.value)}
-                                    placeholder="Ex: Natal Alcino"
+                                    placeholder="Nome do Produtor"
                                     style={{ width: "100%", padding: "6px 8px", borderRadius: "5px", border: "1px solid var(--line)", fontSize: "11px" }}
                                   />
                                 </label>
@@ -548,7 +553,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                                     type="text"
                                     value={plot.supplier}
                                     onChange={(e) => handlePlotFieldChange(lotIdx, plotIdx, "supplier", e.target.value)}
-                                    placeholder="Ex: Washing Station SDC"
+                                    placeholder="Nome do Fornecedor"
                                     style={{ width: "100%", padding: "6px 8px", borderRadius: "5px", border: "1px solid var(--line)", fontSize: "11px" }}
                                   />
                                 </label>
@@ -559,7 +564,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                                     type="text"
                                     value={plot.farm}
                                     onChange={(e) => handlePlotFieldChange(lotIdx, plotIdx, "farm", e.target.value)}
-                                    placeholder="Ex: Sitio Cachoeirinha"
+                                    placeholder="Nome da Fazenda"
                                     style={{ width: "100%", padding: "6px 8px", borderRadius: "5px", border: "1px solid var(--line)", fontSize: "11px" }}
                                   />
                                 </label>
@@ -571,7 +576,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                                     step="0.01"
                                     value={plot.hectares || ""}
                                     onChange={(e) => handlePlotFieldChange(lotIdx, plotIdx, "hectares", e.target.value)}
-                                    placeholder="3.21"
+                                    placeholder="0.00"
                                     style={{ width: "100%", padding: "6px 8px", borderRadius: "5px", border: "1px solid var(--line)", fontSize: "11px" }}
                                   />
                                 </label>
