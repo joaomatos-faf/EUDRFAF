@@ -11,9 +11,10 @@ export interface AuditLogEntry {
     | "PASSWORD_CHANGED"
     | "FILE_UPLOADED"
     | "MAPBIOMAS_CHECKED"
+    | "GFW_CHECKED"
     | "PACKAGE_EXPORTED"
     | "PROCESS_RESET";
-  category: "ACESSO" | "USUARIOS" | "GEOMETRIA" | "MAPBIOMAS" | "EXPORTACAO";
+  category: "ACESSO" | "USUARIOS" | "GEOMETRIA" | "MAPBIOMAS" | "GFW" | "EXPORTACAO";
   details: string;
   plotId?: string;
   meta?: Record<string, unknown>;

@@ -399,6 +399,8 @@ export default function Home() {
     }
   };
 
+  const [verificationProvider, setVerificationProvider] = useState<"gfw" | "mapbiomas">("gfw");
+
   const checkMapbiomas = async () => {
     if (!geometry) return;
     setMapbiomasConfirmed(false);
@@ -447,6 +449,58 @@ export default function Home() {
         ...emptyMapbiomasCheck,
         status: "error",
         message: problem instanceof Error ? problem.message : "Não foi possível consultar o MapBiomas.",
+      });
+    }
+  };
+
+  const checkGfw = async () => {
+    if (!geometry) return;
+    setMapbiomasConfirmed(false);
+    setMapbiomasCheck({ ...emptyMapbiomasCheck, status: "loading" });
+    try {
+      const response = await fetch("/api/gfw/check", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          geometry,
+          details: { ...form, plotId: normalizedId, checkedAt: today },
+        }),
+      });
+      const result = await response.json() as {
+        areaHa?: number;
+        hasChanges?: boolean;
+        changes?: MapbiomasCheck["changes"];
+        checkedAt?: string;
+        verificationUrl?: string;
+        error?: string;
+      };
+      if (!response.ok) throw new Error(result.error || "Não foi possível consultar o Global Forest Watch.");
+      const mappedArea = result.areaHa ?? 0;
+      setMapbiomasCheck({
+        status: result.hasChanges ? "attention" : "clear",
+        areaHa: mappedArea,
+        checkedAt: result.checkedAt ?? new Date().toISOString(),
+        message: "",
+        verificationUrl: result.verificationUrl ?? "",
+        changes: result.changes ?? [],
+      });
+      update("checkedAt", today);
+
+      const activeUser = userMgmt.loggedUserKey || "usuario";
+      const activeName = form.mappedBy || activeUser;
+      recordAuditLog(
+        activeUser,
+        activeName,
+        "GFW_CHECKED",
+        "GFW",
+        `Consultou Global Forest Watch 2021-2024 para ${normalizedId || "talhão"}: ${result.hasChanges ? `${result.changes?.length || 1} alerta(s) de perda florestal` : "sem perda de cobertura florestal"}.`,
+        normalizedId || undefined
+      );
+    } catch (problem) {
+      setMapbiomasCheck({
+        ...emptyMapbiomasCheck,
+        status: "error",
+        message: problem instanceof Error ? problem.message : "Não foi possível consultar o Global Forest Watch.",
       });
     }
   };
@@ -794,7 +848,13 @@ export default function Home() {
           </article>
 
           <article className="card">
-            <div className="card-title"><span>03</span><div><h3>Localização e conformidade</h3><p>Compare automaticamente a série temporal de cobertura por classe no MapBiomas.</p></div></div>
+            <div className="card-title">
+              <span>03</span>
+              <div>
+                <h3>Localização e conformidade</h3>
+                <p>Verificação de desmatamento e cobertura de vegetação para o EUDR.</p>
+              </div>
+            </div>
             <div className="form-grid three">
               <label>Região<input value={form.region} onChange={(e) => update("region", e.target.value)} placeholder={locationsStatus === "loading" ? "Carregando…" : "Preenchida automaticamente"} /><small>Preenchida automaticamente pelo município; você pode alterar se necessário.</small></label>
               <div className="location-field"><label htmlFor="municipality">Município *</label><input id="municipality" autoComplete="off" role="combobox" aria-autocomplete="list" aria-expanded={locationSuggestionsOpen && municipalitySuggestions.length > 0} value={form.municipality} onFocus={() => setLocationSuggestionsOpen(true)} onBlur={() => window.setTimeout(() => setLocationSuggestionsOpen(false), 120)} onChange={(e) => { updateMunicipality(e.target.value); setLocationSuggestionsOpen(true); }} placeholder="Digite e selecione o município" />{locationSuggestionsOpen && municipalitySuggestions.length > 0 && <div className="municipality-suggestions" role="listbox">{municipalitySuggestions.map((municipality) => <button type="button" role="option" key={municipality.id} onMouseDown={(event) => event.preventDefault()} onClick={() => selectMunicipality(municipality)}><strong>{municipality.name}</strong><span>{municipality.stateCode} · {municipality.stateName}</span></button>)}</div>}<small>{locationsStatus === "loading" ? "Carregando lista oficial do IBGE…" : locationsStatus === "error" ? <>Não foi possível carregar os municípios. <button type="button" className="location-retry" onClick={() => setLocationsReload((value) => value + 1)}>Tentar novamente</button></> : "Digite ao menos duas letras e clique em uma opção."}</small></div>
@@ -803,22 +863,94 @@ export default function Home() {
               <label>Data da verificação<input type="date" value={form.checkedAt} onChange={(e) => update("checkedAt", e.target.value)} /></label>
               <label>Resultado *<select value={form.compliance} onChange={(e) => update("compliance", e.target.value)}><option value="">Selecione</option><option>Em conformidade</option><option>Não conforme</option><option>Revisão necessária</option></select></label>
             </div>
+
+            <div style={{ margin: "16px 0 10px 0", display: "flex", gap: "12px", alignItems: "center" }}>
+              <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-text)" }}>Provedor de Verificação:</span>
+              <button
+                type="button"
+                className={verificationProvider === "gfw" ? "primary-button" : "secondary-button"}
+                style={{ padding: "6px 14px", fontSize: "13px" }}
+                onClick={() => setVerificationProvider("gfw")}
+              >
+                🌲 Global Forest Watch (GFW)
+              </button>
+              <button
+                type="button"
+                className={verificationProvider === "mapbiomas" ? "primary-button" : "secondary-button"}
+                style={{ padding: "6px 14px", fontSize: "13px" }}
+                onClick={() => setVerificationProvider("mapbiomas")}
+              >
+                🇧🇷 MapBiomas Brasil
+              </button>
+            </div>
+
             <div className="mapbiomas-panel">
               <div>
-                <strong>MapBiomas Cobertura · série temporal 2020–2024</strong>
-                <p>O KML é convertido em Shapefile e as áreas de todas as classes são comparadas ano a ano, com duas casas decimais, como na tabela do MapBiomas.</p>
+                <strong>
+                  {verificationProvider === "gfw"
+                    ? "Global Forest Watch · Perda de Cobertura Florestal (2021–2024)"
+                    : "MapBiomas Cobertura · Série Temporal (2020–2024)"}
+                </strong>
+                <p>
+                  {verificationProvider === "gfw"
+                    ? "O polígono é enviado à Geostore API do GFW para analisar a perda de dossel arbóreo e alertas de desmatamento no período de conformidade EUDR."
+                    : "O KML é convertido em Shapefile e as áreas de todas as classes são comparadas ano a ano com a tabela oficial do MapBiomas."}
+                </p>
                 {!mapbiomasReady && <small className="mapbiomas-prerequisite">Preencha código do talhão, fornecedor, município, estado e responsável pelo mapeamento.</small>}
               </div>
-              <button className="secondary-button" disabled={!mapbiomasReady || mapbiomasCheck.status === "loading"} onClick={checkMapbiomas}>
-                {mapbiomasCheck.status === "loading" ? "Consultando…" : mapbiomasCheck.checkedAt ? "Consultar novamente" : "Consultar MapBiomas"}
+              <button
+                className="secondary-button"
+                disabled={!mapbiomasReady || mapbiomasCheck.status === "loading"}
+                onClick={verificationProvider === "gfw" ? checkGfw : checkMapbiomas}
+              >
+                {mapbiomasCheck.status === "loading"
+                  ? "Consultando…"
+                  : mapbiomasCheck.checkedAt
+                    ? "Consultar novamente"
+                    : verificationProvider === "gfw"
+                      ? "Consultar GFW"
+                      : "Consultar MapBiomas"}
               </button>
             </div>
             {mapbiomasCheck.status !== "idle" && mapbiomasCheck.status !== "loading" && (
               <div className={`mapbiomas-result ${mapbiomasCheck.status}`}>
-                {mapbiomasCheck.status === "clear" && <><strong>✓ Cobertura sem alteração de 2020 a 2024</strong><p>Todas as classes mantiveram os mesmos valores na precisão exibida pela tabela do MapBiomas.</p></>}
-                {mapbiomasCheck.status === "attention" && <><strong>! Alteração de cobertura encontrada</strong><p>Revise as mudanças abaixo na tabela da série temporal do MapBiomas.</p><ul className="coverage-changes">{mapbiomasCheck.changes.slice(0, 8).map((change, index) => <li key={`${change.fromYear}-${change.toYear}-${change.className}-${index}`}><b>{change.fromYear}→{change.toYear}</b> · {change.className}: {change.fromHa.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} → {change.toHa.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha</li>)}{mapbiomasCheck.changes.length > 8 && <li>Mais {mapbiomasCheck.changes.length - 8} alteração(ões). Consulte a tabela completa no link.</li>}</ul></>}
-                {mapbiomasCheck.status === "error" && <><strong>Não foi possível concluir a consulta</strong><p>{mapbiomasCheck.message}</p></>}
-                {mapbiomasCheck.verificationUrl && <a className="verification-link" href={mapbiomasCheck.verificationUrl} target="_blank" rel="noreferrer">Abrir geometria e cobertura no MapBiomas ↗</a>}
+                {mapbiomasCheck.status === "clear" && (
+                  <>
+                    <strong>
+                      ✓ Sem alertas de perda de vegetação florestal no período
+                    </strong>
+                    <p>A área mantém-se em conformidade sem perda de cobertura florestal detectada.</p>
+                  </>
+                )}
+                {mapbiomasCheck.status === "attention" && (
+                  <>
+                    <strong>! Perda de cobertura / alteração detectada</strong>
+                    <p>Revise o histórico da área abaixo:</p>
+                    <ul className="coverage-changes">
+                      {mapbiomasCheck.changes.slice(0, 8).map((change, index) => (
+                        <li key={`${change.fromYear}-${change.toYear}-${change.className}-${index}`}>
+                          <b>{change.fromYear}→{change.toYear}</b> · {change.className}: {change.toHa.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha
+                        </li>
+                      ))}
+                      {mapbiomasCheck.changes.length > 8 && (
+                        <li>Mais {mapbiomasCheck.changes.length - 8} registro(s). Consulte a análise completa no link.</li>
+                      )}
+                    </ul>
+                  </>
+                )}
+                {mapbiomasCheck.status === "error" && (
+                  <>
+                    <strong>Não foi possível concluir a consulta</strong>
+                    <p>{mapbiomasCheck.message}</p>
+                  </>
+                )}
+                {mapbiomasCheck.verificationUrl && (
+                  <a className="verification-link" href={mapbiomasCheck.verificationUrl} target="_blank" rel="noreferrer">
+                    {verificationProvider === "gfw"
+                      ? "Abrir talhão no Mapa Interativo do Global Forest Watch ↗"
+                      : "Abrir geometria e cobertura no MapBiomas ↗"}
+                  </a>
+                )}
               </div>
             )}
             <label>Observações<textarea value={form.notes} onChange={(e) => update("notes", e.target.value)} placeholder="Registre evidências, ressalvas ou pendências." /></label>
