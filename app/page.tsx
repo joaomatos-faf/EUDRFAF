@@ -524,6 +524,17 @@ export default function Home() {
   const [isPublishingR2, setIsPublishingR2] = useState(false);
   const [lastPublishedR2Key, setLastPublishedR2Key] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname.toLowerCase();
+      if (host.startsWith("portal.") || host.startsWith("cliente.")) {
+        setShowClientPortal(true);
+      } else if (host.startsWith("app.") || host.startsWith("faf.")) {
+        setActiveView("app");
+      }
+    }
+  }, []);
+
   const publishToCloudflareR2 = async () => {
     if (!geometry || !normalizedId) return;
     setIsPublishingR2(true);
@@ -752,6 +763,7 @@ export default function Home() {
           if (success) setActiveView("app");
           return success;
         }}
+        onBackToLanding={() => setActiveView("landing")}
       />
     );
   }

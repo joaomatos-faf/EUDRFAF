@@ -9,6 +9,7 @@ interface LoginScreenProps {
   setLoginPassword: (val: string) => void;
   loginError: string;
   onLogin: (e: React.FormEvent) => void;
+  onBackToLanding?: () => void;
 }
 
 export function LoginScreen({
@@ -18,19 +19,41 @@ export function LoginScreen({
   setLoginPassword,
   loginError,
   onLogin,
+  onBackToLanding,
 }: LoginScreenProps) {
   return (
     <main className="app-shell" style={{ display: "grid", minHeight: "100vh", placeItems: "center", background: "var(--canvas)", padding: "20px" }}>
-      <div style={{ width: "100%", maxWidth: "400px", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "16px", padding: "36px 32px", boxShadow: "var(--shadow-lg)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "24px" }}>
+      <div style={{ width: "100%", maxWidth: "420px", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "20px", padding: "36px 32px", boxShadow: "var(--shadow-lg)" }}>
+        {onBackToLanding && (
+          <button
+            onClick={onBackToLanding}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "var(--forest-900)",
+              fontSize: "13px",
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              marginBottom: "20px",
+              padding: 0,
+            }}
+          >
+            ← Voltar à Página Inicial
+          </button>
+        )}
+
+        <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "20px" }}>
           <div className="brand-mark" style={{ width: "46px", height: "46px", fontSize: "15px" }}>FAF</div>
           <div>
             <p className="eyebrow" style={{ margin: 0 }}>FAF Coffees</p>
-            <h1 style={{ margin: 0, fontSize: "20px", color: "var(--forest-950)", fontWeight: 700 }}>Acesso Restrito</h1>
+            <h1 style={{ margin: 0, fontSize: "20px", color: "var(--forest-950)", fontWeight: 700 }}>Acesso Restrito FAF</h1>
           </div>
         </div>
         <p style={{ margin: "0 0 24px", color: "var(--muted)", fontSize: "13.5px", lineHeight: "1.5" }}>
-          Digite suas credenciais autorizadas para acessar o Preparador EUDR.
+          Digite suas credenciais autorizadas para acessar o Preparador de Dossiês EUDR.
         </p>
 
         <form onSubmit={onLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -58,24 +81,15 @@ export function LoginScreen({
           </label>
 
           {loginError && (
-            <p style={{ color: "var(--danger)", fontSize: "12.5px", fontWeight: 600, margin: 0 }}>{loginError}</p>
+            <p style={{ margin: 0, color: "var(--danger)", fontSize: "13px", fontWeight: 600 }}>{loginError}</p>
           )}
 
           <button
             type="submit"
-            style={{
-              marginTop: "8px",
-              padding: "12px",
-              borderRadius: "8px",
-              background: "var(--forest-900)",
-              color: "#fff",
-              border: 0,
-              fontWeight: 700,
-              fontSize: "14px",
-              cursor: "pointer",
-            }}
+            className="primary-button"
+            style={{ width: "100%", padding: "13px", marginTop: "8px", fontSize: "14px", fontWeight: 700, borderRadius: "10px" }}
           >
-            Entrar no Sistema
+            Entrar no Preparador EUDR ➔
           </button>
         </form>
       </div>
