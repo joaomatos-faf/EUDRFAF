@@ -1,12 +1,16 @@
+export interface ContractPlotItem {
+  plotId: string;
+  sourceGeojsonKey: string;
+  targetGeojsonKey: string;
+}
+
 export interface ContractLotItem {
   id: string;
   lotNumber: string;
   region: string;
   supplier: string;
   farm: string;
-  plotId: string;
-  sourceGeojsonKey: string;
-  targetGeojsonKey: string;
+  plots: ContractPlotItem[];
 }
 
 export interface ContractRecord {
@@ -30,9 +34,18 @@ let memoryContractsStore: ContractRecord[] = [
         region: "MOGIANA",
         supplier: "Adilson Reis",
         farm: "Sítio Dutra",
-        plotId: "FAFDRAN-01",
-        sourceGeojsonKey: "mapping_eudr_data/MOGIANA/ADILSON_REIS/SITIO_DUTRA/FAFDRAN-01.geojson",
-        targetGeojsonKey: "contratos_clientes/BREMEN_IMPORTERS_GMBH/2026-C001/LOTE_01/FAFDRAN-01.geojson",
+        plots: [
+          {
+            plotId: "FAFDRAN-01",
+            sourceGeojsonKey: "mapping_eudr_data/MOGIANA/ADILSON_REIS/SITIO_DUTRA/FAFDRAN-01.geojson",
+            targetGeojsonKey: "contratos_clientes/BREMEN_IMPORTERS_GMBH/2026-C001/LOTE_01/FAFDRAN-01.geojson",
+          },
+          {
+            plotId: "FAFDRAN-02",
+            sourceGeojsonKey: "mapping_eudr_data/MOGIANA/ADILSON_REIS/SITIO_DUTRA/FAFDRAN-02.geojson",
+            targetGeojsonKey: "contratos_clientes/BREMEN_IMPORTERS_GMBH/2026-C001/LOTE_01/FAFDRAN-02.geojson",
+          },
+        ],
       },
     ],
     createdAt: new Date().toISOString(),
