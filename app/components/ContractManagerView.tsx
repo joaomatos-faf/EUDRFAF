@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ContractRecord } from "@/app/lib/contractStore";
 import { PlotMasterRecord } from "@/app/lib/plotMasterData";
 
@@ -21,6 +21,116 @@ interface DraftLotItem {
   lotNumber: string;
   region: string;
   plots: DraftPlotItem[];
+}
+
+// Componente de Autocomplete Customizado com Filtro em Tempo Real
+interface PlotAutocompleteInputProps {
+  value: string;
+  onChange: (plotId: string) => void;
+  onSelect: (plot: PlotMasterRecord) => void;
+  plotMasterList: PlotMasterRecord[];
+  placeholder?: string;
+}
+
+function PlotAutocompleteInput({ value, onChange, onSelect, plotMasterList, placeholder }: PlotAutocompleteInputProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const query = value.trim().toUpperCase();
+  const normQuery = query.replace(/[^A-Z0-9]/g, "");
+
+  // Filtragem estrita: mostra APENAS o que combina exatamente com o que foi digitado!
+  const filteredPlots = query
+    ? plotMasterList.filter((p) => {
+        const pId = p.plotId.toUpperCase();
+        const normP = pId.replace(/[^A-Z0-9]/g, "");
+        return pId.includes(query) || normP.includes(normQuery);
+      })
+    : plotMasterList.slice(0, 8);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={containerRef} style={{ position: "relative", width: "100%" }}>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setIsOpen(true);
+        }}
+        onFocus={() => setIsOpen(true)}
+        placeholder={placeholder || "Ex: NAS-02, P2401..."}
+        required
+        style={{
+          width: "100%",
+          padding: "7px 9px",
+          borderRadius: "6px",
+          border: "1px solid #0284c7",
+          fontSize: "12px",
+          fontWeight: 800,
+          background: "#f0f9ff",
+          outline: "none",
+        }}
+      />
+
+      {/* Menu Dropdown de Sugestoes Filtradas em Tempo Real */}
+      {isOpen && filteredPlots.length > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            zIndex: 99,
+            background: "#fff",
+            border: "1px solid var(--line-strong)",
+            borderRadius: "8px",
+            boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+            maxHeight: "220px",
+            overflowY: "auto",
+            marginTop: "4px",
+          }}
+        >
+          {filteredPlots.map((p, idx) => (
+            <div
+              key={`${p.plotId}-${idx}`}
+              onClick={() => {
+                onSelect(p);
+                setIsOpen(false);
+              }}
+              style={{
+                padding: "8px 12px",
+                borderBottom: "1px solid #f1f5f9",
+                cursor: "pointer",
+                transition: "background 0.15s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#f0f9ff")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+            >
+              <div style={{ fontWeight: 800, fontSize: "12px", color: "var(--forest-950)" }}>
+                {p.plotId} <span style={{ fontWeight: 600, color: "var(--muted)" }}>({p.hectares} ha)</span>
+              </div>
+              <div style={{ fontSize: "10px", color: "#0284c7", fontWeight: 600 }}>
+                Produtor: {p.producer} • Fornecedor: {p.supplier}
+              </div>
+              <div style={{ fontSize: "10px", color: "var(--muted)" }}>
+                Fazenda: {p.farm}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos" }: ContractManagerViewProps) {
@@ -58,7 +168,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
         }
       }
     } catch {
-      // Ignore
+      // Ignorar erros silenciosos de rede
     }
   };
 
@@ -106,7 +216,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
     setLots(updated);
   };
 
-  const handlePlotIdChange = (lotIndex: number, plotIndex: number, rawValue: string) => {
+  const handlePlotIdInputChange = (lotIndex: number, plotIndex: number, rawValue: string) => {
     const cleanId = rawValue.toUpperCase().trim();
     const normId = cleanId.replace(/[^A-Z0-9]/g, "");
     const updated = [...lots];
@@ -123,7 +233,6 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
       return;
     }
 
-    // Busca exata ou por normalizacao nos 256+ talhoes decriptografados pelo servidor
     const matched = plotMasterList.find(
       (p) =>
         p.plotId.toUpperCase().trim() === cleanId ||
@@ -138,7 +247,6 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
         farm: matched.farm,
         hectares: matched.hectares,
       };
-
       if (matched.region && !updated[lotIndex].region) {
         updated[lotIndex].region = matched.region.toUpperCase();
       }
@@ -147,6 +255,23 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
         ...updated[lotIndex].plots[plotIndex],
         plotId: cleanId,
       };
+    }
+
+    setLots(updated);
+  };
+
+  const handleSelectPlotMaster = (lotIndex: number, plotIndex: number, plot: PlotMasterRecord) => {
+    const updated = [...lots];
+    updated[lotIndex].plots[plotIndex] = {
+      plotId: plot.plotId,
+      producer: plot.producer,
+      supplier: plot.supplier,
+      farm: plot.farm,
+      hectares: plot.hectares,
+    };
+
+    if (plot.region && !updated[lotIndex].region) {
+      updated[lotIndex].region = plot.region.toUpperCase();
     }
 
     setLots(updated);
@@ -273,15 +398,6 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
         fontFamily: "system-ui, -apple-system, sans-serif",
       }}
     >
-      {/* Autocomplete Datalist para 256+ talhoes da FAF */}
-      <datalist id="plot-master-list">
-        {plotMasterList.map((p, idx) => (
-          <option key={`${p.plotId}-${idx}`} value={p.plotId}>
-            {`${p.plotId} | ${p.producer} | Fornecedor: ${p.supplier} - ${p.farm} (${p.hectares} ha)`}
-          </option>
-        ))}
-      </datalist>
-
       {/* Top Navbar */}
       <header
         style={{
@@ -519,22 +635,12 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                               <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr 0.8fr", gap: "8px" }}>
                                 <label style={{ fontSize: "10px", fontWeight: 700 }}>
                                   PLOT ID *
-                                  <input
-                                    type="text"
-                                    list="plot-master-list"
+                                  <PlotAutocompleteInput
                                     value={plot.plotId}
-                                    onChange={(e) => handlePlotIdChange(lotIdx, plotIdx, e.target.value)}
+                                    onChange={(newVal) => handlePlotIdInputChange(lotIdx, plotIdx, newVal)}
+                                    onSelect={(selectedPlot) => handleSelectPlotMaster(lotIdx, plotIdx, selectedPlot)}
+                                    plotMasterList={plotMasterList}
                                     placeholder="Ex: NAS-02, P2401..."
-                                    required
-                                    style={{
-                                      width: "100%",
-                                      padding: "6px 8px",
-                                      borderRadius: "5px",
-                                      border: "1px solid #0284c7",
-                                      fontSize: "11px",
-                                      fontWeight: 800,
-                                      background: "#f0f9ff",
-                                    }}
                                   />
                                 </label>
 
