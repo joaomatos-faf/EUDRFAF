@@ -7,8 +7,8 @@ import {
 } from "../../../lib/eudr";
 
 const GFW_API_HOST = "https://data-api.globalforestwatch.org";
-const START_YEAR = 2021; // EUDR cutoff: after Dec 31, 2020
-const END_YEAR = 2024;
+const START_YEAR = 2024;
+const END_YEAR = new Date().getFullYear();
 const MAX_POINTS = 100_000;
 
 type GfwGeostoreResponse = {
