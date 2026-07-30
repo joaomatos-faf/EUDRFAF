@@ -258,7 +258,15 @@ export async function POST(request: Request) {
     const geostoreId = await createGeostore(geometry, plotId);
     const changes = await queryTreeCoverLoss(geostoreId);
 
-    const verificationUrl = `https://www.globalforestwatch.org/map/aoi/${geostoreId}`;
+    const points = geometry.polygons.flat(2);
+    const xs = points.map((p) => p[0]);
+    const ys = points.map((p) => p[1]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const centerLng = Number(((minX + maxX) / 2).toFixed(6));
+    const centerLat = Number(((minY + maxY) / 2).toFixed(6));
+
+    const verificationUrl = `https://www.globalforestwatch.org/map/geostore/${geostoreId}/?map=center,lat:${centerLat},lng:${centerLng},zoom:14`;
 
     return Response.json({
       areaHa: Number(calculatedArea.toFixed(2)),
