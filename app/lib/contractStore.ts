@@ -1,7 +1,9 @@
 export interface ContractPlotItem {
   plotId: string;
+  producer: string;
   supplier: string;
   farm: string;
+  hectares: number;
   sourceGeojsonKey: string;
   targetGeojsonKey: string;
 }
@@ -34,18 +36,22 @@ let memoryContractsStore: ContractRecord[] = [
         region: "MOGIANA",
         plots: [
           {
-            plotId: "FAFDRAN-01",
-            supplier: "Adilson Reis",
-            farm: "Sítio Dutra",
-            sourceGeojsonKey: "mapping_eudr_data/MOGIANA/ADILSON_REIS/SITIO_DUTRA/FAFDRAN-01.geojson",
-            targetGeojsonKey: "contratos_clientes/BREMEN_IMPORTERS_GMBH/2026-C001/LOTE_01/FAFDRAN-01.geojson",
+            plotId: "P2401",
+            producer: "Adonis Cerri",
+            supplier: "Produtor / Gram Cerri",
+            farm: "Fazenda da Mata",
+            hectares: 9.13,
+            sourceGeojsonKey: "mapping_eudr_data/MOGIANA/ADONIS_CERRI/FAZENDA_DA_MATA/P2401.geojson",
+            targetGeojsonKey: "contratos_clientes/BREMEN_IMPORTERS_GMBH/2026-C001/LOTE_01/P2401.geojson",
           },
           {
-            plotId: "FAFDRAV-01",
-            supplier: "Valdir Silva",
-            farm: "Fazenda Primavera",
-            sourceGeojsonKey: "mapping_eudr_data/MOGIANA/VALDIR_SILVA/FAZENDA_PRIMAVERA/FAFDRAV-01.geojson",
-            targetGeojsonKey: "contratos_clientes/BREMEN_IMPORTERS_GMBH/2026-C001/LOTE_01/FAFDRAV-01.geojson",
+            plotId: "P2402",
+            producer: "Adonis Cerri",
+            supplier: "Produtor / Gram Cerri",
+            farm: "Fazenda da Mata",
+            hectares: 16.8,
+            sourceGeojsonKey: "mapping_eudr_data/MOGIANA/ADONIS_CERRI/FAZENDA_DA_MATA/P2402.geojson",
+            targetGeojsonKey: "contratos_clientes/BREMEN_IMPORTERS_GMBH/2026-C001/LOTE_01/P2402.geojson",
           },
         ],
       },

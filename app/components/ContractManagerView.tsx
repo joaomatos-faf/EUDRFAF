@@ -19,6 +19,7 @@ export interface PlotMasterRecord {
 
 interface DraftPlotItem {
   plotId: string;
+  producer: string;
   supplier: string;
   farm: string;
   hectares: number;
@@ -43,8 +44,8 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
       lotNumber: "LOTE 01",
       region: "MOGIANA",
       plots: [
-        { plotId: "P2401", supplier: "Adonis Cerri", farm: "Fazenda da Mata", hectares: 9.13 },
-        { plotId: "P2402", supplier: "Adonis Cerri", farm: "Fazenda da Mata", hectares: 16.8 },
+        { plotId: "P2401", producer: "Adonis Cerri", supplier: "Produtor / Gram Cerri", farm: "Fazenda da Mata", hectares: 9.13 },
+        { plotId: "P2402", producer: "Adonis Cerri", supplier: "Produtor / Gram Cerri", farm: "Fazenda da Mata", hectares: 16.8 },
       ],
     },
   ]);
@@ -78,7 +79,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
       {
         lotNumber: nextLotNum,
         region: lastLot.region || "MOGIANA",
-        plots: [{ plotId: "", supplier: "", farm: "", hectares: 0 }],
+        plots: [{ plotId: "", producer: "", supplier: "", farm: "", hectares: 0 }],
       },
     ]);
   };
@@ -97,10 +98,10 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
   const handleAddPlotToLot = (lotIndex: number) => {
     const updated = [...lots];
     const lotPlots = updated[lotIndex].plots;
-    const lastPlot = lotPlots[lotPlots.length - 1] || { supplier: "", farm: "", hectares: 0 };
+    const lastPlot = lotPlots[lotPlots.length - 1] || { producer: "", supplier: "", farm: "", hectares: 0 };
     updated[lotIndex].plots = [
       ...lotPlots,
-      { plotId: "", supplier: lastPlot.supplier || "", farm: lastPlot.farm || "", hectares: 0 },
+      { plotId: "", producer: lastPlot.producer || "", supplier: lastPlot.supplier || "", farm: lastPlot.farm || "", hectares: 0 },
     ];
     setLots(updated);
   };
@@ -120,10 +121,11 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
     const matched = plotMasterList.find((p) => p.plotId === cleanId);
 
     if (matched) {
-      // Preencher AUTOMATICAMENTE os dados vindos da planilha Lista IDPLOT geojson.xlsx!
+      // Preencher AUTOMATICAMENTE os dois campos (Produtor E Fornecedor) vindos do Excel!
       updated[lotIndex].plots[plotIndex] = {
         plotId: cleanId,
-        supplier: matched.producer || matched.supplier,
+        producer: matched.producer,
+        supplier: matched.supplier,
         farm: matched.farm,
         hectares: matched.hectares,
       };
@@ -142,7 +144,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
     setLots(updated);
   };
 
-  const handlePlotFieldChange = (lotIndex: number, plotIndex: number, field: "supplier" | "farm" | "hectares", value: any) => {
+  const handlePlotFieldChange = (lotIndex: number, plotIndex: number, field: "producer" | "supplier" | "farm" | "hectares", value: any) => {
     const updated = [...lots];
     updated[lotIndex].plots[plotIndex] = {
       ...updated[lotIndex].plots[plotIndex],
@@ -183,7 +185,8 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 plotId: p.plotId,
-                producer: p.supplier,
+                producer: p.producer,
+                supplier: p.supplier,
                 farm: p.farm,
                 region: lot.region,
                 hectares: p.hectares,
@@ -258,7 +261,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
       <datalist id="plot-master-list">
         {plotMasterList.map((p) => (
           <option key={p.plotId} value={p.plotId}>
-            {`${p.producer} - ${p.farm} (${p.hectares} ha)`}
+            {`${p.producer} | Fornecedor: ${p.supplier} - ${p.farm} (${p.hectares} ha)`}
           </option>
         ))}
       </datalist>
@@ -282,14 +285,14 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
               CONTRATOS.FAFEU.ONLINE
             </div>
             <h1 style={{ fontSize: "18px", margin: 0, fontWeight: 700, color: "#fff" }}>
-              Gerenciador de Contratos & Enxoval de Lotes
+              Gerenciador de Contratos, Produtores & Fornecedores
             </h1>
           </div>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <span style={{ fontSize: "11px", background: "rgba(255,255,255,0.15)", padding: "4px 10px", borderRadius: "20px", color: "#a7f3d0", fontWeight: 700 }}>
-            📊 {plotMasterList.length} Talhões Carregados
+            📊 {plotMasterList.length} Talhões Mapeados
           </span>
           <button
             onClick={onOpenLanding}
@@ -310,8 +313,8 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
       </header>
 
       {/* Main Content */}
-      <main style={{ maxWidth: "1280px", margin: "0 auto", padding: "32px 24px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "32px" }}>
+      <main style={{ maxWidth: "1350px", margin: "0 auto", padding: "32px 24px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1.35fr 0.65fr", gap: "32px" }}>
           {/* Coluna Esquerda: Formulário de Criação de Contrato */}
           <div
             style={{
@@ -326,7 +329,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
               📜 Criar Novo Contrato de Cliente
             </h2>
             <p style={{ fontSize: "13px", color: "var(--muted)", margin: "0 0 24px" }}>
-              Monte o contrato. Ao digitar o PLOT ID, os dados do produtor, fazenda e hectares são preenchidos automaticamente da planilha Lista IDPLOT.
+              Ao digitar o PLOT ID, o sistema preenche separadamente as informações de <strong>Produtor</strong>, <strong>Fornecedor</strong>, <strong>Fazenda</strong> e <strong>Área (ha)</strong>.
             </p>
 
             <form onSubmit={handleSaveContract} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
@@ -380,7 +383,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                   </button>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "18px", maxHeight: "550px", overflowY: "auto", paddingRight: "4px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "18px", maxHeight: "580px", overflowY: "auto", paddingRight: "4px" }}>
                   {lots.map((lot, lotIdx) => (
                     <div
                       key={lotIdx}
@@ -497,9 +500,9 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                                 )}
                               </div>
 
-                              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 0.8fr", gap: "8px" }}>
+                              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr 0.8fr", gap: "8px" }}>
                                 <label style={{ fontSize: "10px", fontWeight: 700 }}>
-                                  PLOT ID (AutoComplete) *
+                                  PLOT ID *
                                   <input
                                     type="text"
                                     list="plot-master-list"
@@ -519,13 +522,24 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                                   />
                                 </label>
 
-                                <label style={{ fontSize: "10px" }}>
-                                  Produtor / Fornecedor
+                                <label style={{ fontSize: "10px", fontWeight: 600 }}>
+                                  Produtor
+                                  <input
+                                    type="text"
+                                    value={plot.producer}
+                                    onChange={(e) => handlePlotFieldChange(lotIdx, plotIdx, "producer", e.target.value)}
+                                    placeholder="Adonis Cerri"
+                                    style={{ width: "100%", padding: "6px 8px", borderRadius: "5px", border: "1px solid var(--line)", fontSize: "11px" }}
+                                  />
+                                </label>
+
+                                <label style={{ fontSize: "10px", fontWeight: 600 }}>
+                                  Fornecedor
                                   <input
                                     type="text"
                                     value={plot.supplier}
                                     onChange={(e) => handlePlotFieldChange(lotIdx, plotIdx, "supplier", e.target.value)}
-                                    placeholder="Adonis Cerri"
+                                    placeholder="Produtor / Gram Cerri"
                                     style={{ width: "100%", padding: "6px 8px", borderRadius: "5px", border: "1px solid var(--line)", fontSize: "11px" }}
                                   />
                                 </label>
@@ -542,7 +556,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                                 </label>
 
                                 <label style={{ fontSize: "10px" }}>
-                                  Área (Hectares)
+                                  Área (ha)
                                   <input
                                     type="number"
                                     step="0.01"
@@ -585,7 +599,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
               }}
             >
               <h3 style={{ fontSize: "18px", margin: "0 0 16px", fontWeight: 700, color: "var(--forest-950)" }}>
-                📁 Contratos Ativos no Cloudflare R2 ({contracts.length})
+                📁 Contratos Ativos no R2 ({contracts.length})
               </h3>
 
               {contracts.length === 0 ? (
@@ -623,11 +637,14 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                               {(lot.plots || []).map((p, pIdx) => (
-                                <div key={pIdx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px", background: "var(--canvas)", padding: "6px 10px", borderRadius: "6px" }}>
+                                <div key={pIdx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px", background: "var(--canvas)", padding: "8px 10px", borderRadius: "6px" }}>
                                   <div>
-                                    <div style={{ fontWeight: 700, color: "var(--forest-950)" }}>🌐 {p.plotId}</div>
+                                    <div style={{ fontWeight: 800, color: "var(--forest-950)" }}>🌐 {p.plotId} ({p.hectares || 0} ha)</div>
+                                    <div style={{ fontSize: "10px", color: "#0369a1", fontWeight: 600 }}>
+                                      Produtor: <strong>{p.producer}</strong> • Fornecedor: <strong>{p.supplier}</strong>
+                                    </div>
                                     <div style={{ fontSize: "10px", color: "var(--muted)" }}>
-                                      Produtor: {p.supplier} • Fazenda: {p.farm}
+                                      Fazenda: {p.farm}
                                     </div>
                                   </div>
                                   <button

@@ -50,13 +50,16 @@ export async function POST(request: Request) {
         const rawPlotId = typeof plotObj === "string" ? plotObj : plotObj.plotId || "";
         const plotId = rawPlotId.trim().toUpperCase() || `TALHAO-${j + 1}`;
 
-        const supplier = typeof plotObj === "object" ? (plotObj.supplier || plotObj.producer || "FORNECEDOR") : "FORNECEDOR";
+        const producer = typeof plotObj === "object" ? (plotObj.producer || plotObj.supplier || "PRODUTOR") : "PRODUTOR";
+        const supplier = typeof plotObj === "object" ? (plotObj.supplier || producer) : "FORNECEDOR";
         const farm = typeof plotObj === "object" ? (plotObj.farm || "FAZENDA") : "FAZENDA";
+        const hectares = typeof plotObj === "object" ? (Number(plotObj.hectares) || 0) : 0;
 
+        const cleanProducer = sanitizeSegment(producer, "PRODUTOR");
         const cleanSupplier = sanitizeSegment(supplier, "FORNECEDOR");
         const cleanFarm = sanitizeSegment(farm, "FAZENDA");
 
-        const sourceKey = `mapping_eudr_data/${cleanRegion}/${cleanSupplier}/${cleanFarm}/${plotId}.geojson`;
+        const sourceKey = `mapping_eudr_data/${cleanRegion}/${cleanProducer}/${cleanFarm}/${plotId}.geojson`;
         const targetKey = `contratos_clientes/${cleanClient}/${cleanContractCode}/${cleanLot}/${plotId}.geojson`;
 
         let geojsonContent = "";
@@ -71,11 +74,13 @@ export async function POST(request: Request) {
                 type: "Feature",
                 properties: {
                   plotId,
-                  producer: supplier,
+                  producer,
+                  supplier,
                   farm,
+                  hectares,
                   municipality: matched.municipality || "Divinolândia",
                   state: matched.state || "SP",
-                  area: matched.area || 1.0,
+                  area: hectares || matched.area || 1.0,
                   compliance: matched.compliance || "CONFORME",
                   productioncountry: "BR",
                 },
@@ -96,8 +101,10 @@ export async function POST(request: Request) {
                 type: "Feature",
                 properties: {
                   plotId,
-                  producer: supplier,
+                  producer,
+                  supplier,
                   farm,
+                  hectares,
                   productioncountry: "BR",
                 },
                 geometry: {
@@ -114,8 +121,10 @@ export async function POST(request: Request) {
 
         processedPlots.push({
           plotId,
+          producer: cleanProducer,
           supplier: cleanSupplier,
           farm: cleanFarm,
+          hectares,
           sourceGeojsonKey: sourceKey,
           targetGeojsonKey: targetKey,
         });
