@@ -1,6 +1,17 @@
 import { uploadToR2 } from "@/app/lib/r2";
 import { addPublishedPlot, PublishedPlotRecord } from "@/app/lib/clientPortalStore";
 
+function sanitizePathSegment(value: string, fallback: string): string {
+  if (!value || !value.trim()) return fallback;
+  return value
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9_\-]/g, "_")
+    .replace(/_+/g, "_")
+    .toUpperCase() || fallback;
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -8,15 +19,15 @@ export async function POST(request: Request) {
       plotId,
       contractId = "2026-C001",
       producer = "",
+      supplier = "",
       farm = "",
+      region = "",
       municipality = "",
       state = "",
       area = 0,
       compliance = "CONFORME",
       publishedBy = "usuario.faf",
       geojsonContent = "",
-      xlsxBase64 = "",
-      shapeZipBase64 = "",
     } = body;
 
     if (!plotId || !geojsonContent) {
@@ -26,32 +37,25 @@ export async function POST(request: Request) {
       });
     }
 
+    const cleanRegion = sanitizePathSegment(region, "GERAL");
+    const cleanSupplier = sanitizePathSegment(supplier || producer, "FORNECEDOR");
+    const cleanFarm = sanitizePathSegment(farm, "FAZENDA");
     const cleanContractId = contractId.trim().toUpperCase() || "2026-C001";
-    const geojsonKey = `contratos/${cleanContractId}/${plotId}/${plotId}.geojson`;
-    const xlsxKey = `contratos/${cleanContractId}/${plotId}/${plotId}-cadastro.xlsx`;
-    const shapeKey = `contratos/${cleanContractId}/${plotId}/${plotId}-shapefile.zip`;
 
-    // 1. Upload GeoJSON
+    // Estrutura solicitada: mapping_eudr_data > regiao > Fornecedor > Fazenda > geojson
+    const geojsonKey = `mapping_eudr_data/${cleanRegion}/${cleanSupplier}/${cleanFarm}/${plotId}.geojson`;
+
+    // Upload APENAS do arquivo GeoJSON para o Cloudflare R2
     await uploadToR2(geojsonKey, geojsonContent, "application/geo+json");
-
-    // 2. Upload XLSX if provided
-    if (xlsxBase64) {
-      const xlsxBuffer = Buffer.from(xlsxBase64, "base64");
-      await uploadToR2(xlsxKey, xlsxBuffer, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    }
-
-    // 3. Upload Shapefile ZIP if provided
-    if (shapeZipBase64) {
-      const zipBuffer = Buffer.from(shapeZipBase64, "base64");
-      await uploadToR2(shapeKey, zipBuffer, "application/zip");
-    }
 
     const record: PublishedPlotRecord = {
       id: `pub-${Date.now()}`,
       plotId,
       contractId: cleanContractId,
-      producer,
-      farm,
+      producer: producer || supplier || "N/A",
+      supplier: supplier || producer || "N/A",
+      farm: farm || "N/A",
+      region: cleanRegion,
       municipality,
       state,
       area,
@@ -59,8 +63,6 @@ export async function POST(request: Request) {
       publishedAt: new Date().toISOString(),
       publishedBy,
       geojsonKey,
-      xlsxKey,
-      shapeKey,
     };
 
     addPublishedPlot(record);
@@ -68,7 +70,8 @@ export async function POST(request: Request) {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Talhão ${plotId} publicado com sucesso no Cloudflare R2 para o contrato ${cleanContractId}.`,
+        message: `Arquivo GeoJSON enviado com sucesso para o Cloudflare R2 em: ${geojsonKey}`,
+        key: geojsonKey,
         record,
       }),
       {
@@ -77,7 +80,7 @@ export async function POST(request: Request) {
       }
     );
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : "Erro interno ao publicar no Cloudflare R2.";
+    const errorMsg = error instanceof Error ? error.message : "Erro interno ao publicar o GeoJSON no Cloudflare R2.";
     return new Response(JSON.stringify({ error: errorMsg }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

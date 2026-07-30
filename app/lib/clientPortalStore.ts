@@ -3,7 +3,9 @@ export interface PublishedPlotRecord {
   plotId: string;
   contractId: string;
   producer: string;
+  supplier: string;
   farm: string;
+  region: string;
   municipality: string;
   state: string;
   area: number;
@@ -11,8 +13,6 @@ export interface PublishedPlotRecord {
   publishedAt: string;
   publishedBy: string;
   geojsonKey: string;
-  xlsxKey: string;
-  shapeKey: string;
 }
 
 let memoryPublishedStore: PublishedPlotRecord[] = [
@@ -21,16 +21,16 @@ let memoryPublishedStore: PublishedPlotRecord[] = [
     plotId: "FAFDRAN-01",
     contractId: "2026-C001",
     producer: "Adilson Reis",
+    supplier: "Adilson Reis",
     farm: "Sítio Dutra",
+    region: "MOGIANA",
     municipality: "Divinolândia",
     state: "SP",
     area: 1.78,
     compliance: "CONFORME",
     publishedAt: new Date().toISOString(),
     publishedBy: "joao.matos",
-    geojsonKey: "contratos/2026-C001/FAFDRAN-01/FAFDRAN-01.geojson",
-    xlsxKey: "contratos/2026-C001/FAFDRAN-01/FAFDRAN-01-cadastro.xlsx",
-    shapeKey: "contratos/2026-C001/FAFDRAN-01/FAFDRAN-01-shapefile.zip",
+    geojsonKey: "mapping_eudr_data/MOGIANA/ADILSON_REIS/SITIO_DUTRA/FAFDRAN-01.geojson",
   },
 ];
 
