@@ -7,6 +7,7 @@ import L from "leaflet";
 import { EudrHeader } from "./components/EudrHeader";
 import { EudrStepsNav } from "./components/EudrStepsNav";
 import { LoginScreen } from "./components/LoginScreen";
+import { LandingPage } from "./components/LandingPage";
 import { AdminUserModal } from "./components/AdminUserModal";
 import { AuditLogModal } from "./components/AuditLogModal";
 import { NewProcessModal } from "./components/NewProcessModal";
@@ -517,6 +518,7 @@ export default function Home() {
     );
   };
 
+  const [activeView, setActiveView] = useState<"landing" | "app">("landing");
   const [showClientPortal, setShowClientPortal] = useState(false);
   const [contractIdToPublish, setContractIdToPublish] = useState("2026-C001");
   const [isPublishingR2, setIsPublishingR2] = useState(false);
@@ -714,6 +716,21 @@ export default function Home() {
     }
   };
 
+  if (activeView === "landing") {
+    return (
+      <>
+        <LandingPage
+          onOpenFafApp={() => setActiveView("app")}
+          onOpenClientPortal={() => setShowClientPortal(true)}
+        />
+        <ClientPortalModal
+          isOpen={showClientPortal}
+          onClose={() => setShowClientPortal(false)}
+        />
+      </>
+    );
+  }
+
   if (userMgmt.isAuthenticated === null) {
     return (
       <div style={{ minHeight: "100vh", background: "var(--canvas)", display: "grid", placeItems: "center" }}>
@@ -730,7 +747,11 @@ export default function Home() {
         loginPassword={userMgmt.loginPassword}
         setLoginPassword={userMgmt.setLoginPassword}
         loginError={userMgmt.loginError}
-        onLogin={userMgmt.handleLogin}
+        onLogin={() => {
+          const success = userMgmt.handleLogin();
+          if (success) setActiveView("app");
+          return success;
+        }}
       />
     );
   }
@@ -746,6 +767,7 @@ export default function Home() {
         onNewProcess={handleNewProcessClick}
         onOpenLogsModal={() => setShowLogsModal(true)}
         onOpenClientPortal={() => setShowClientPortal(true)}
+        onOpenLanding={() => setActiveView("landing")}
       />
 
       <section className="dashboard-head">
