@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { ContractRecord } from "@/app/lib/contractStore";
-import { PLOT_MASTER_LIST, PlotMasterRecord } from "@/app/lib/plotMasterData";
+import { PlotMasterRecord } from "@/app/lib/plotMasterData";
 
 interface ContractManagerViewProps {
   onOpenLanding: () => void;
@@ -25,7 +25,7 @@ interface DraftLotItem {
 
 export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos" }: ContractManagerViewProps) {
   const [contracts, setContracts] = useState<ContractRecord[]>([]);
-  const [plotMasterList, setPlotMasterList] = useState<PlotMasterRecord[]>(PLOT_MASTER_LIST);
+  const [plotMasterList, setPlotMasterList] = useState<PlotMasterRecord[]>([]);
   const [contractCode, setContractCode] = useState("");
   const [clientName, setClientName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -53,10 +53,12 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
       const resPlots = await fetch("/api/plot-lookup");
       if (resPlots.ok) {
         const dataPlots = await resPlots.json();
-        if (dataPlots.plots && dataPlots.plots.length > 0) setPlotMasterList(dataPlots.plots);
+        if (dataPlots.plots && dataPlots.plots.length > 0) {
+          setPlotMasterList(dataPlots.plots);
+        }
       }
     } catch {
-      // Usar a lista master pre-carregada offline
+      // Ignore
     }
   };
 
@@ -121,7 +123,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
       return;
     }
 
-    // Busca exata ou por normalização (remove traços e espaços) nos 256+ talhões da FAF
+    // Busca exata ou por normalizacao nos 256+ talhoes decriptografados pelo servidor
     const matched = plotMasterList.find(
       (p) =>
         p.plotId.toUpperCase().trim() === cleanId ||
@@ -182,7 +184,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
 
     setIsSaving(true);
     try {
-      // 1. Atualizar novos talhões no servidor
+      // 1. Atualizar novos talhoes no servidor
       for (const lot of lots) {
         for (const p of lot.plots) {
           if (p.plotId.trim()) {
@@ -271,7 +273,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
         fontFamily: "system-ui, -apple-system, sans-serif",
       }}
     >
-      {/* Autocomplete Datalist para 256+ talhões da FAF */}
+      {/* Autocomplete Datalist para 256+ talhoes da FAF */}
       <datalist id="plot-master-list">
         {plotMasterList.map((p) => (
           <option key={p.plotId} value={p.plotId}>
@@ -299,14 +301,14 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
               CONTRATOS.FAFEU.ONLINE
             </div>
             <h1 style={{ fontSize: "18px", margin: 0, fontWeight: 700, color: "#fff" }}>
-              Gerenciador de Contratos, Produtores & Fornecedores
+              Gerenciador de Contratos & Banco Criptografado (AES-256)
             </h1>
           </div>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <span style={{ fontSize: "11px", background: "rgba(255,255,255,0.15)", padding: "4px 10px", borderRadius: "20px", color: "#a7f3d0", fontWeight: 700 }}>
-            📊 {plotMasterList.length} Talhões Mapeados
+            🔒 {plotMasterList.length} Talhões Protegidos (AES-256)
           </span>
           <button
             onClick={onOpenLanding}
@@ -343,7 +345,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
               📜 Criar Novo Contrato de Cliente
             </h2>
             <p style={{ fontSize: "13px", color: "var(--muted)", margin: "0 0 24px" }}>
-              Digite o PLOT ID (ex: <strong>NAS-02</strong>, <strong>P2401</strong>) para autopreencher Produtor, Fornecedor, Fazenda e Hectares.
+              Digite o PLOT ID (ex: <strong>NAS-02</strong>, <strong>P2401</strong>) para autopreencher a partir do banco de dados criptografado.
             </p>
 
             <form onSubmit={handleSaveContract} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
