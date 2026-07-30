@@ -39,6 +39,11 @@ function PlotAutocompleteInput({ value, onChange, onSelect, plotMasterList, plac
   const query = value.trim().toUpperCase();
   const normQuery = query.replace(/[^A-Z0-9]/g, "");
 
+  // Verificar se o valor atual ja e exatamente um talhao cadastrado
+  const exactMatch = plotMasterList.find(
+    (p) => p.plotId.toUpperCase() === query || p.plotId.replace(/[^A-Z0-9]/g, "") === normQuery
+  );
+
   // Filtragem estrita: mostra APENAS o que combina exatamente com o que foi digitado!
   const filteredPlots = query
     ? plotMasterList.filter((p) => {
@@ -58,16 +63,27 @@ function PlotAutocompleteInput({ value, onChange, onSelect, plotMasterList, plac
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleSelectOption = (p: PlotMasterRecord) => {
+    onSelect(p);
+    setIsOpen(false);
+  };
+
   return (
     <div ref={containerRef} style={{ position: "relative", width: "100%" }}>
       <input
         type="text"
         value={value}
         onChange={(e) => {
-          onChange(e.target.value);
+          const newVal = e.target.value;
+          onChange(newVal);
           setIsOpen(true);
         }}
-        onFocus={() => setIsOpen(true)}
+        onFocus={() => {
+          // Se ainda nao tiver selecionado um talhao exato, exibe o menu
+          if (!exactMatch || value !== exactMatch.plotId) {
+            setIsOpen(true);
+          }
+        }}
         placeholder={placeholder || "Ex: NAS-02, P2401..."}
         required
         style={{
@@ -82,33 +98,33 @@ function PlotAutocompleteInput({ value, onChange, onSelect, plotMasterList, plac
         }}
       />
 
-      {/* Menu Dropdown de Sugestoes Filtradas em Tempo Real */}
+      {/* Menu Dropdown de Sugestoes: Largura Ampla (320px) e Z-Index Elevado (Nao corta na tela) */}
       {isOpen && filteredPlots.length > 0 && (
         <div
           style={{
             position: "absolute",
-            top: "100%",
+            top: "calc(100% + 4px)",
             left: 0,
-            right: 0,
-            zIndex: 99,
-            background: "#fff",
-            border: "1px solid var(--line-strong)",
-            borderRadius: "8px",
-            boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
-            maxHeight: "220px",
+            minWidth: "320px",
+            maxWidth: "360px",
+            zIndex: 9999,
+            background: "#ffffff",
+            border: "1px solid #0284c7",
+            borderRadius: "10px",
+            boxShadow: "0 12px 30px rgba(0,0,0,0.22)",
+            maxHeight: "240px",
             overflowY: "auto",
-            marginTop: "4px",
           }}
         >
           {filteredPlots.map((p, idx) => (
             <div
               key={`${p.plotId}-${idx}`}
-              onClick={() => {
-                onSelect(p);
-                setIsOpen(false);
+              onMouseDown={(e) => {
+                e.preventDefault(); // Evita que o evento onBlur feche antes de processar o clique
+                handleSelectOption(p);
               }}
               style={{
-                padding: "8px 12px",
+                padding: "10px 14px",
                 borderBottom: "1px solid #f1f5f9",
                 cursor: "pointer",
                 transition: "background 0.15s ease",
@@ -116,11 +132,15 @@ function PlotAutocompleteInput({ value, onChange, onSelect, plotMasterList, plac
               onMouseEnter={(e) => (e.currentTarget.style.background = "#f0f9ff")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
             >
-              <div style={{ fontWeight: 800, fontSize: "12px", color: "var(--forest-950)" }}>
-                {p.plotId} <span style={{ fontWeight: 600, color: "var(--muted)" }}>({p.hectares} ha)</span>
+              <div style={{ fontWeight: 800, fontSize: "13px", color: "var(--forest-950)", display: "flex", justifyContent: "space-between" }}>
+                <span>{p.plotId}</span>
+                <span style={{ fontWeight: 700, color: "#0284c7", fontSize: "11px" }}>{p.hectares} ha</span>
               </div>
-              <div style={{ fontSize: "10px", color: "#0284c7", fontWeight: 600 }}>
-                Produtor: {p.producer} • Fornecedor: {p.supplier}
+              <div style={{ fontSize: "11px", color: "var(--forest-900)", fontWeight: 600, marginTop: "2px" }}>
+                Produtor: <strong>{p.producer}</strong>
+              </div>
+              <div style={{ fontSize: "10px", color: "#0369a1", fontWeight: 600 }}>
+                Fornecedor: {p.supplier}
               </div>
               <div style={{ fontSize: "10px", color: "var(--muted)" }}>
                 Fazenda: {p.farm}
@@ -542,7 +562,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                   </button>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "18px", maxHeight: "580px", overflowY: "auto", paddingRight: "4px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "18px", maxHeight: "640px", overflowY: "auto", paddingRight: "6px", paddingBottom: "140px" }}>
                   {lots.map((lot, lotIdx) => {
                     const lotTotalHectares = lot.plots.reduce((sum, p) => sum + (Number(p.hectares) || 0), 0);
 
