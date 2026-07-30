@@ -10,6 +10,7 @@ import { LoginScreen } from "./components/LoginScreen";
 import { AdminUserModal } from "./components/AdminUserModal";
 import { AuditLogModal } from "./components/AuditLogModal";
 import { NewProcessModal } from "./components/NewProcessModal";
+import ClientPortalModal from "./components/ClientPortalModal";
 import { useUserManagement } from "./hooks/useUserManagement";
 import { recordAuditLog } from "./lib/auditLogger";
 import {
@@ -516,6 +517,82 @@ export default function Home() {
     );
   };
 
+  const [showClientPortal, setShowClientPortal] = useState(false);
+  const [contractIdToPublish, setContractIdToPublish] = useState("2026-C001");
+  const [isPublishingR2, setIsPublishingR2] = useState(false);
+
+  const publishToCloudflareR2 = async () => {
+    if (!geometry || !normalizedId) return;
+    setIsPublishingR2(true);
+    try {
+      const geojsonContent = buildEudrGeoJsonString(geometry, normalizedId, area);
+
+      const currentYear = new Date().getFullYear();
+      const automaticNote = gfwCheck.checkedAt
+        ? `Global Forest Watch Perda de Cobertura Florestal (2024–${currentYear}): ${gfwCheck.changes.length ? `${gfwCheck.changes.length} alerta(s) de perda florestal` : "sem perda de cobertura florestal detectada"}.${gfwCheck.verificationUrl ? ` Verificação: ${gfwCheck.verificationUrl}.` : ""}`
+        : "Global Forest Watch: consulta automática não realizada.";
+      const notes = [form.notes.trim(), automaticNote].filter(Boolean).join(" ");
+      const xlsxBytes = buildProducerXlsxBytes({ ...form, notes, plotId: normalizedId, area });
+      let xlsxBase64 = "";
+      if (xlsxBytes && xlsxBytes.length) {
+        let binaryStr = "";
+        for (let i = 0; i < xlsxBytes.length; i++) binaryStr += String.fromCharCode(xlsxBytes[i]);
+        xlsxBase64 = btoa(binaryStr);
+      }
+
+      const shapeParts = buildShapefileParts(geometry, normalizedId, area, form);
+      const shapefileZipBytes = zipStoreBytes(shapeParts);
+      let shapeZipBase64 = "";
+      if (shapefileZipBytes && shapefileZipBytes.length) {
+        let binaryStr = "";
+        for (let i = 0; i < shapefileZipBytes.length; i++) binaryStr += String.fromCharCode(shapefileZipBytes[i]);
+        shapeZipBase64 = btoa(binaryStr);
+      }
+
+      const activeUser = userMgmt.loggedUserKey || "usuario";
+      const activeName = form.mappedBy || activeUser;
+
+      const res = await fetch("/api/r2/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plotId: normalizedId,
+          contractId: contractIdToPublish || "2026-C001",
+          producer: form.producer || "N/A",
+          farm: form.farm || "N/A",
+          municipality: form.municipality || "N/A",
+          state: form.state || "N/A",
+          area,
+          compliance: form.compliance || "CONFORME",
+          publishedBy: activeName,
+          geojsonContent,
+          xlsxBase64,
+          shapeZipBase64,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        recordAuditLog(
+          activeUser,
+          activeName,
+          "PACKAGE_EXPORTED",
+          "EXPORTACAO",
+          `Publicou o pacote do talhão ${normalizedId} no Cloudflare R2 para o contrato ${contractIdToPublish || "2026-C001"}.`,
+          normalizedId
+        );
+        alert(`✅ Talhão ${normalizedId} publicado com sucesso no Cloudflare R2 para o contrato ${contractIdToPublish}!`);
+      } else {
+        throw new Error(data.error || "Erro ao publicar no Cloudflare R2.");
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro desconhecido ao publicar no R2.";
+      alert(`⚠️ Falha na publicação: ${msg}`);
+    } finally {
+      setIsPublishingR2(false);
+    }
+  };
+
   const [copySuccess, setCopySuccess] = useState(false);
 
   const copySharePointRow = () => {
@@ -668,6 +745,7 @@ export default function Home() {
         onLogout={userMgmt.handleLogout}
         onNewProcess={handleNewProcessClick}
         onOpenLogsModal={() => setShowLogsModal(true)}
+        onOpenClientPortal={() => setShowClientPortal(true)}
       />
 
       <section className="dashboard-head">
@@ -899,6 +977,44 @@ export default function Home() {
               <button disabled={!geometry || !normalizedId} onClick={downloadShape}>Shapefile</button>
               <button disabled={!normalizedId} onClick={downloadXlsx}>Excel (.xlsx)</button>
             </div>
+
+            <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid var(--line-light)" }}>
+              <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)", display: "block", marginBottom: "4px" }}>
+                Contrato para o Portal (Cloudflare R2):
+              </label>
+              <input
+                type="text"
+                value={contractIdToPublish}
+                onChange={(e) => setContractIdToPublish(e.target.value.toUpperCase())}
+                placeholder="Ex: 2026-C001"
+                style={{
+                  width: "100%",
+                  padding: "7px 10px",
+                  fontSize: "12px",
+                  borderRadius: "6px",
+                  border: "1px solid var(--line-strong)",
+                  marginBottom: "8px",
+                }}
+              />
+              <button
+                disabled={!ready || isPublishingR2}
+                onClick={publishToCloudflareR2}
+                style={{
+                  width: "100%",
+                  padding: "9px 12px",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  borderRadius: "8px",
+                  border: "1px solid #166534",
+                  background: "#15803d",
+                  color: "#fff",
+                  cursor: ready && !isPublishingR2 ? "pointer" : "not-allowed",
+                  opacity: ready && !isPublishingR2 ? 1 : 0.6,
+                }}
+              >
+                {isPublishingR2 ? "⏳ Publicando no R2..." : "🚀 Publicar no Portal do Cliente"}
+              </button>
+            </div>
           </article>
 
           <article className="side-card note-card"><strong>Privacidade</strong><p>Acesso restrito por credenciais. A consulta envia por HTTPS ao Global Forest Watch (GFW) uma cópia temporária da geometria para checagem da série temporal. Os arquivos permanecem salvos localmente.</p></article>
@@ -953,6 +1069,12 @@ export default function Home() {
         currentPlotId={normalizedId || form.plotId}
         currentSupplier={form.supplier || form.producer}
         nextPlotIdPreview={nextPlotIdPreview}
+      />
+
+      <ClientPortalModal
+        isOpen={showClientPortal}
+        onClose={() => setShowClientPortal(false)}
+        userEmail={userMgmt.loggedUserKey || "cliente@fafcoffees.com"}
       />
     </main>
   );
