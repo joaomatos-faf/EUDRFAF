@@ -47,12 +47,13 @@ function loadPlotMasterList(): PlotMasterRecord[] {
 
     cachedPlotsMaster = rawRows
       .map((row) => {
-        const plotId = String(row["PLOT ID"] || row["plotId"] || "").trim().toUpperCase();
+        const rawPlot = String(row["PLOT ID"] || row["plotId"] || "").trim();
+        const plotId = rawPlot.toUpperCase();
         const farm = String(row["Nome da Fazenda "] || row["Nome da Fazenda"] || row["farm"] || "").trim();
         const producer = String(row["Nome do Produtor "] || row["Nome do Produtor"] || row["producer"] || "").trim();
         const supplier = String(row["Fornecedor"] || row["supplier"] || producer).trim();
         const region = String(row["Região"] || row["region"] || "GERAL").trim();
-        const hectares = parseFloat(row["Hectares"] || row["hectares"] || "0") || 0;
+        const hectares = parseFloat(String(row["Hectares"] || row["hectares"] || "0").replace(",", ".")) || 0;
 
         return {
           plotId,
@@ -80,12 +81,16 @@ export async function GET(request: Request) {
   const allPlots = loadPlotMasterList();
 
   if (query) {
-    const matched = allPlots.filter(
-      (p) =>
+    const cleanQuery = query.replace(/[^A-Z0-9]/g, "");
+    const matched = allPlots.filter((p) => {
+      const cleanP = p.plotId.replace(/[^A-Z0-9]/g, "");
+      return (
         p.plotId.includes(query) ||
+        cleanP === cleanQuery ||
         p.producer.toUpperCase().includes(query) ||
         p.farm.toUpperCase().includes(query)
-    );
+      );
+    });
     return new Response(JSON.stringify({ plots: matched }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
