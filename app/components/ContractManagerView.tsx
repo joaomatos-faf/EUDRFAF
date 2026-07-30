@@ -1,11 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ContractRecord, ContractLotItem } from "@/app/lib/contractStore";
+import { ContractRecord } from "@/app/lib/contractStore";
 
 interface ContractManagerViewProps {
   onOpenLanding: () => void;
   loggedUserKey?: string;
+}
+
+interface DraftPlotItem {
+  plotId: string;
 }
 
 interface DraftLotItem {
@@ -13,7 +17,7 @@ interface DraftLotItem {
   region: string;
   supplier: string;
   farm: string;
-  plotId: string;
+  plots: DraftPlotItem[];
 }
 
 export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos" }: ContractManagerViewProps) {
@@ -29,7 +33,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
       region: "MOGIANA",
       supplier: "Adilson Reis",
       farm: "Sítio Dutra",
-      plotId: "FAFDRAN-01",
+      plots: [{ plotId: "FAFDRAN-01" }],
     },
   ]);
 
@@ -51,7 +55,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
 
   const handleAddLot = () => {
     const nextLotNum = `LOTE ${String(lots.length + 1).padStart(2, "0")}`;
-    const lastLot = lots[lots.length - 1] || { region: "MOGIANA", supplier: "", farm: "", plotId: "" };
+    const lastLot = lots[lots.length - 1] || { region: "MOGIANA", supplier: "", farm: "" };
     setLots([
       ...lots,
       {
@@ -59,7 +63,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
         region: lastLot.region || "MOGIANA",
         supplier: lastLot.supplier || "",
         farm: lastLot.farm || "",
-        plotId: "",
+        plots: [{ plotId: "" }],
       },
     ]);
   };
@@ -69,9 +73,29 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
     setLots(lots.filter((_, i) => i !== index));
   };
 
-  const handleLotChange = (index: number, field: keyof DraftLotItem, value: string) => {
+  const handleLotChange = (index: number, field: keyof Omit<DraftLotItem, "plots">, value: string) => {
     const updated = [...lots];
     updated[index] = { ...updated[index], [field]: value };
+    setLots(updated);
+  };
+
+  const handleAddPlotToLot = (lotIndex: number) => {
+    const updated = [...lots];
+    const lotPlots = updated[lotIndex].plots;
+    updated[lotIndex].plots = [...lotPlots, { plotId: "" }];
+    setLots(updated);
+  };
+
+  const handleRemovePlotFromLot = (lotIndex: number, plotIndex: number) => {
+    const updated = [...lots];
+    if (updated[lotIndex].plots.length === 1) return;
+    updated[lotIndex].plots = updated[lotIndex].plots.filter((_, i) => i !== plotIndex);
+    setLots(updated);
+  };
+
+  const handlePlotChange = (lotIndex: number, plotIndex: number, value: string) => {
+    const updated = [...lots];
+    updated[lotIndex].plots[plotIndex].plotId = value.toUpperCase();
     setLots(updated);
   };
 
@@ -83,9 +107,16 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
     }
 
     for (let i = 0; i < lots.length; i++) {
-      if (!lots[i].plotId.trim()) {
-        alert(`⚠️ Preencha o Código do Talhão para o Lote ${i + 1}.`);
+      const lot = lots[i];
+      if (!lot.plots || lot.plots.length === 0) {
+        alert(`⚠️ Adicione ao menos 1 talhão ao Lote ${i + 1}.`);
         return;
+      }
+      for (let j = 0; j < lot.plots.length; j++) {
+        if (!lot.plots[j].plotId.trim()) {
+          alert(`⚠️ Preencha o Código do Talhão ${j + 1} no Lote ${i + 1}.`);
+          return;
+        }
       }
     }
 
@@ -170,7 +201,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
               CONTRATOS.FAFEU.ONLINE
             </div>
             <h1 style={{ fontSize: "18px", margin: 0, fontWeight: 700, color: "#fff" }}>
-              Gerenciador de Contratos & Enxoval de Lotes
+              Gerenciador de Contratos, Lotes & Talhões
             </h1>
           </div>
         </div>
@@ -209,7 +240,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
               📜 Criar Novo Contrato de Cliente
             </h2>
             <p style={{ fontSize: "13px", color: "var(--muted)", margin: "0 0 24px" }}>
-              Associe múltiplos lotes/talhões ao cliente. O sistema criará as pastas no Cloudflare R2 e copiará os GeoJSONs originais sem movê-los.
+              Associe múltiplos lotes e talhões ao cliente. O sistema criará as pastas no Cloudflare R2 e copiará os GeoJSONs originais sem movê-los.
             </p>
 
             <form onSubmit={handleSaveContract} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
@@ -243,7 +274,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
               <div style={{ borderTop: "1px solid var(--line-light)", paddingTop: "16px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                   <h3 style={{ fontSize: "15px", margin: 0, fontWeight: 700, color: "var(--forest-950)" }}>
-                    📦 Enxoval de Lotes / Talhões ({lots.length})
+                    📦 Enxoval de Lotes ({lots.length})
                   </h3>
                   <button
                     type="button"
@@ -263,26 +294,26 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                   </button>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "14px", maxHeight: "380px", overflowY: "auto", paddingRight: "4px" }}>
-                  {lots.map((lot, index) => (
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px", maxHeight: "450px", overflowY: "auto", paddingRight: "4px" }}>
+                  {lots.map((lot, lotIdx) => (
                     <div
-                      key={index}
+                      key={lotIdx}
                       style={{
                         background: "var(--canvas)",
                         border: "1px solid var(--line)",
-                        borderRadius: "12px",
+                        borderRadius: "14px",
                         padding: "16px",
                         position: "relative",
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
-                        <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--forest-900)" }}>
-                          Lote #{index + 1}
+                        <span style={{ fontSize: "13px", fontWeight: 800, color: "var(--forest-900)" }}>
+                          {lot.lotNumber || `LOTE ${lotIdx + 1}`}
                         </span>
                         {lots.length > 1 && (
                           <button
                             type="button"
-                            onClick={() => handleRemoveLot(index)}
+                            onClick={() => handleRemoveLot(lotIdx)}
                             style={{
                               background: "transparent",
                               border: "none",
@@ -292,45 +323,31 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                               cursor: "pointer",
                             }}
                           >
-                            🗑️ Remover
+                            🗑️ Remover Lote
                           </button>
                         )}
                       </div>
 
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginBottom: "12px" }}>
                         <label style={{ fontSize: "11px", fontWeight: 600 }}>
-                          Número / Código do Lote
+                          Nome/Código do Lote
                           <input
                             type="text"
                             value={lot.lotNumber}
-                            onChange={(e) => handleLotChange(index, "lotNumber", e.target.value)}
+                            onChange={(e) => handleLotChange(lotIdx, "lotNumber", e.target.value)}
                             placeholder="Ex: LOTE 01"
                             style={{ width: "100%", padding: "7px 9px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "12px" }}
                           />
                         </label>
 
-                        <label style={{ fontSize: "11px", fontWeight: 600 }}>
-                          Código do Talhão (.geojson) *
-                          <input
-                            type="text"
-                            value={lot.plotId}
-                            onChange={(e) => handleLotChange(index, "plotId", e.target.value.toUpperCase())}
-                            placeholder="Ex: FAFDRAN-01"
-                            required
-                            style={{ width: "100%", padding: "7px 9px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "12px", fontWeight: 700 }}
-                          />
-                        </label>
-                      </div>
-
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
                         <label style={{ fontSize: "11px" }}>
                           Região
                           <input
                             type="text"
                             value={lot.region}
-                            onChange={(e) => handleLotChange(index, "region", e.target.value)}
+                            onChange={(e) => handleLotChange(lotIdx, "region", e.target.value)}
                             placeholder="MOGIANA"
-                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "11px" }}
+                            style={{ width: "100%", padding: "7px 9px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "11px" }}
                           />
                         </label>
 
@@ -339,22 +356,66 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                           <input
                             type="text"
                             value={lot.supplier}
-                            onChange={(e) => handleLotChange(index, "supplier", e.target.value)}
+                            onChange={(e) => handleLotChange(lotIdx, "supplier", e.target.value)}
                             placeholder="Adilson Reis"
-                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "11px" }}
+                            style={{ width: "100%", padding: "7px 9px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "11px" }}
                           />
                         </label>
+                      </div>
 
-                        <label style={{ fontSize: "11px" }}>
-                          Fazenda
-                          <input
-                            type="text"
-                            value={lot.farm}
-                            onChange={(e) => handleLotChange(index, "farm", e.target.value)}
-                            placeholder="Sítio Dutra"
-                            style={{ width: "100%", padding: "6px 8px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "11px" }}
-                          />
-                        </label>
+                      {/* Lista Dinâmica de Talhões para este Lote */}
+                      <div style={{ background: "#fff", padding: "12px", borderRadius: "10px", border: "1px solid var(--line-light)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                          <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
+                            🌐 Talhões deste Lote ({lot.plots.length})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleAddPlotToLot(lotIdx)}
+                            style={{
+                              background: "#0369a1",
+                              color: "#fff",
+                              border: "none",
+                              padding: "4px 8px",
+                              borderRadius: "4px",
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              cursor: "pointer",
+                            }}
+                          >
+                            ➕ Adicionar talhão a este lote
+                          </button>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                          {lot.plots.map((plot, plotIdx) => (
+                            <div key={plotIdx} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                              <input
+                                type="text"
+                                value={plot.plotId}
+                                onChange={(e) => handlePlotChange(lotIdx, plotIdx, e.target.value)}
+                                placeholder={`Código do Talhão #${plotIdx + 1} (ex: FAFDRAN-0${plotIdx + 1})`}
+                                required
+                                style={{ flex: 1, padding: "7px 10px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "12px", fontWeight: 700 }}
+                              />
+                              {lot.plots.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemovePlotFromLot(lotIdx, plotIdx)}
+                                  style={{
+                                    background: "transparent",
+                                    border: "none",
+                                    color: "var(--danger)",
+                                    fontSize: "12px",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  ✖
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -414,46 +475,35 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                         {c.clientName}
                       </h4>
 
-                      <div style={{ borderTop: "1px solid var(--line-light)", paddingTop: "10px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                        <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--muted)" }}>
-                          Lotes Vinculados ({c.lots.length}):
-                        </span>
+                      <div style={{ borderTop: "1px solid var(--line-light)", paddingTop: "10px", display: "flex", flexDirection: "column", gap: "10px" }}>
                         {c.lots.map((lot) => (
-                          <div
-                            key={lot.id}
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              background: "#fff",
-                              padding: "8px 12px",
-                              borderRadius: "8px",
-                              border: "1px solid var(--line-light)",
-                              fontSize: "12px",
-                            }}
-                          >
-                            <div>
-                              <strong>{lot.lotNumber}</strong>: {lot.plotId}
-                              <div style={{ fontSize: "10px", color: "var(--muted)" }}>
-                                Caminho: {lot.targetGeojsonKey}
-                              </div>
+                          <div key={lot.id} style={{ background: "#fff", padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--line-light)" }}>
+                            <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--forest-900)", marginBottom: "6px" }}>
+                              📦 {lot.lotNumber} ({lot.plots ? lot.plots.length : 1} talhão(ões))
                             </div>
-                            <button
-                              onClick={() => handleDownloadGeoJson(lot.targetGeojsonKey, `${lot.plotId}.geojson`)}
-                              disabled={downloadingKey === lot.targetGeojsonKey}
-                              style={{
-                                padding: "4px 8px",
-                                fontSize: "10px",
-                                fontWeight: 700,
-                                borderRadius: "6px",
-                                background: "var(--forest-900)",
-                                color: "#fff",
-                                border: "none",
-                                cursor: "pointer",
-                              }}
-                            >
-                              🌐 Baixar GeoJSON
-                            </button>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                              {(lot.plots || []).map((p, pIdx) => (
+                                <div key={pIdx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px" }}>
+                                  <span style={{ fontWeight: 600 }}>🌐 {p.plotId}</span>
+                                  <button
+                                    onClick={() => handleDownloadGeoJson(p.targetGeojsonKey, `${p.plotId}.geojson`)}
+                                    disabled={downloadingKey === p.targetGeojsonKey}
+                                    style={{
+                                      padding: "3px 7px",
+                                      fontSize: "10px",
+                                      fontWeight: 700,
+                                      borderRadius: "4px",
+                                      background: "var(--forest-900)",
+                                      color: "#fff",
+                                      border: "none",
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    Baixar GeoJSON
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         ))}
                       </div>

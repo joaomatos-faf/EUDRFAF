@@ -1,5 +1,5 @@
-import { uploadToR2, getR2PresignedUrl } from "@/app/lib/r2";
-import { addContract, ContractRecord, ContractLotItem } from "@/app/lib/contractStore";
+import { uploadToR2 } from "@/app/lib/r2";
+import { addContract, ContractRecord, ContractLotItem, ContractPlotItem } from "@/app/lib/contractStore";
 import { getPublishedPlots } from "@/app/lib/clientPortalStore";
 
 function sanitizeSegment(value: string, fallback: string): string {
@@ -44,18 +44,26 @@ export async function POST(request: Request) {
       const region = lot.region || "GERAL";
       const supplier = lot.supplier || lot.producer || "FORNECEDOR";
       const farm = lot.farm || "FAZENDA";
-      const plotId = lot.plotId || `TALHAO-${i + 1}`;
 
       const cleanRegion = sanitizeSegment(region, "GERAL");
       const cleanSupplier = sanitizeSegment(supplier, "FORNECEDOR");
       const cleanFarm = sanitizeSegment(farm, "FAZENDA");
 
-      const sourceKey = lot.sourceGeojsonKey || `mapping_eudr_data/${cleanRegion}/${cleanSupplier}/${cleanFarm}/${plotId}.geojson`;
-      const targetKey = `contratos_clientes/${cleanClient}/${cleanContractCode}/${cleanLot}/${plotId}.geojson`;
+      // Suporte a múltiplos talhões no mesmo lote (plots array ou plotId único)
+      const rawPlots: string[] = Array.isArray(lot.plots)
+        ? lot.plots.map((p: any) => (typeof p === "string" ? p : p.plotId || "")).filter(Boolean)
+        : lot.plotId ? [lot.plotId] : [`TALHAO-${i + 1}`];
 
-      let geojsonContent = lot.geojsonContent || "";
-      if (!geojsonContent) {
-        // Tentar obter GeoJSON de talhões conhecidos ou gerar fallback GeoJSON válido
+      const processedPlots: ContractPlotItem[] = [];
+
+      for (let j = 0; j < rawPlots.length; j++) {
+        const rawPlotId = rawPlots[j];
+        const plotId = rawPlotId.trim().toUpperCase() || `TALHAO-${j + 1}`;
+
+        const sourceKey = `mapping_eudr_data/${cleanRegion}/${cleanSupplier}/${cleanFarm}/${plotId}.geojson`;
+        const targetKey = `contratos_clientes/${cleanClient}/${cleanContractCode}/${cleanLot}/${plotId}.geojson`;
+
+        let geojsonContent = "";
         const matched = publishedPlots.find((p) => p.plotId === plotId);
         if (matched) {
           geojsonContent = JSON.stringify({
@@ -104,10 +112,16 @@ export async function POST(request: Request) {
             ],
           });
         }
-      }
 
-      // Copiar / Salvar o GeoJSON no R2 no caminho do contrato do cliente
-      await uploadToR2(targetKey, geojsonContent, "application/geo+json");
+        // Copiar o arquivo GeoJSON para a nuvem Cloudflare R2
+        await uploadToR2(targetKey, geojsonContent, "application/geo+json");
+
+        processedPlots.push({
+          plotId,
+          sourceGeojsonKey: sourceKey,
+          targetGeojsonKey: targetKey,
+        });
+      }
 
       processedLots.push({
         id: `lot-${Date.now()}-${i}`,
@@ -115,9 +129,7 @@ export async function POST(request: Request) {
         region: cleanRegion,
         supplier: cleanSupplier,
         farm: cleanFarm,
-        plotId,
-        sourceGeojsonKey: sourceKey,
-        targetGeojsonKey: targetKey,
+        plots: processedPlots,
       });
     }
 
