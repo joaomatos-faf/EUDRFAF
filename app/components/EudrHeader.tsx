@@ -10,6 +10,7 @@ interface EudrHeaderProps {
   onLogout: () => void;
   onNewProcess?: () => void;
   onOpenLogsModal?: () => void;
+  onOpenClientPortal?: () => void;
 }
 
 export function EudrHeader({
@@ -20,6 +21,7 @@ export function EudrHeader({
   onLogout,
   onNewProcess,
   onOpenLogsModal,
+  onOpenClientPortal,
 }: EudrHeaderProps) {
   return (
     <header className="topbar">
@@ -58,6 +60,27 @@ export function EudrHeader({
                 title="Limpar formulário e iniciar o mapeamento de um novo talhão"
               >
                 <span style={{ fontSize: "13px" }}>＋</span> Novo Processo
+              </button>
+            )}
+            {onOpenClientPortal && (
+              <button
+                onClick={onOpenClientPortal}
+                style={{
+                  background: "rgba(255, 255, 255, 0.12)",
+                  border: "1px solid rgba(255, 255, 255, 0.25)",
+                  color: "#ffffff",
+                  borderRadius: "8px",
+                  padding: "7px 12px",
+                  fontSize: "12px",
+                  fontWeight: 650,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+                title="Abrir o Portal do Cliente e Downloads do Cloudflare R2"
+              >
+                🌐 Portal do Cliente
               </button>
             )}
             {loggedUserRole === "admin" && onOpenLogsModal && (
