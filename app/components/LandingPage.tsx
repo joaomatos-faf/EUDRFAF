@@ -8,6 +8,28 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPageProps) {
+  const handleFafAppClick = () => {
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname.toLowerCase();
+      if (host.includes("fafeu.online") && !host.startsWith("app.")) {
+        window.location.href = "https://app.fafeu.online";
+        return;
+      }
+    }
+    onOpenFafApp();
+  };
+
+  const handleClientPortalClick = () => {
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname.toLowerCase();
+      if (host.includes("fafeu.online") && !host.startsWith("portal.")) {
+        window.location.href = "https://portal.fafeu.online";
+        return;
+      }
+    }
+    onOpenClientPortal();
+  };
+
   return (
     <div
       style={{
@@ -73,7 +95,7 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
             ● Regulamento (UE) 2023/1115
           </span>
           <button
-            onClick={onOpenFafApp}
+            onClick={handleFafAppClick}
             style={{
               background: "rgba(255, 255, 255, 0.1)",
               border: "1px solid rgba(255, 255, 255, 0.2)",
@@ -91,7 +113,7 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
       </header>
 
       {/* Hero Section */}
-      <main style={{ flex: 1, maxW: "1200px", width: "100%", margin: "0 auto", padding: "60px 24px" }}>
+      <main style={{ flex: 1, maxWidth: "1200px", width: "100%", margin: "0 auto", padding: "60px 24px" }}>
         <div style={{ textAlign: "center", maxWidth: "800px", margin: "0 auto 60px" }}>
           <div
             style={{
@@ -159,7 +181,6 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
                 height: "140px",
                 background: "rgba(16, 185, 129, 0.1)",
                 borderRadius: "50%",
-                blur: "40px",
               }}
             />
             <div>
@@ -191,7 +212,7 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
               </ul>
             </div>
             <button
-              onClick={onOpenFafApp}
+              onClick={handleFafAppClick}
               style={{
                 width: "100%",
                 padding: "14px 24px",
@@ -206,7 +227,7 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
                 transition: "transform 0.15s ease",
               }}
             >
-              🔒 Acessar Área FAF ➔
+              🔒 Acessar Área FAF (app.fafeu.online) ➔
             </button>
           </div>
 
@@ -234,7 +255,6 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
                 height: "140px",
                 background: "rgba(59, 130, 246, 0.1)",
                 borderRadius: "50%",
-                blur: "40px",
               }}
             />
             <div>
@@ -266,7 +286,7 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
               </ul>
             </div>
             <button
-              onClick={onOpenClientPortal}
+              onClick={handleClientPortalClick}
               style={{
                 width: "100%",
                 padding: "14px 24px",
@@ -281,7 +301,7 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
                 transition: "transform 0.15s ease",
               }}
             >
-              🌐 Acessar Portal do Cliente ➔
+              🌐 Acessar Portal do Cliente (portal.fafeu.online) ➔
             </button>
           </div>
         </div>

@@ -518,19 +518,7 @@ export default function Home() {
     );
   };
 
-  const [activeView, setActiveView] = useState<"landing" | "app" | "portal">(() => {
-    if (typeof window !== "undefined") {
-      const host = window.location.hostname.toLowerCase();
-      if (host.startsWith("portal.") || host.startsWith("cliente.")) {
-        return "portal";
-      }
-      if (host.startsWith("app.") || host.startsWith("faf.")) {
-        return "app";
-      }
-    }
-    return "landing";
-  });
-
+  const [activeView, setActiveView] = useState<"landing" | "app" | "portal">("landing");
   const [showClientPortal, setShowClientPortal] = useState(false);
   const [contractIdToPublish, setContractIdToPublish] = useState("2026-C001");
   const [isPublishingR2, setIsPublishingR2] = useState(false);
@@ -539,10 +527,23 @@ export default function Home() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const host = window.location.hostname.toLowerCase();
-      if (host.startsWith("portal.") || host.startsWith("cliente.")) {
+      const search = window.location.search.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+
+      if (
+        host.startsWith("portal.") ||
+        host.startsWith("cliente.") ||
+        search.includes("view=portal") ||
+        hash.includes("portal")
+      ) {
         setActiveView("portal");
         setShowClientPortal(true);
-      } else if (host.startsWith("app.") || host.startsWith("faf.")) {
+      } else if (
+        host.startsWith("app.") ||
+        host.startsWith("faf.") ||
+        search.includes("view=app") ||
+        hash.includes("app")
+      ) {
         setActiveView("app");
       }
     }
