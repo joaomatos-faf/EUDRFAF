@@ -586,8 +586,8 @@ export default function Home() {
     setFileName("");
     setError("");
     setCarConfirmed(false);
-    setMapbiomasConfirmed(false);
-    setMapbiomasCheck(emptyMapbiomasCheck);
+    setGfwConfirmed(false);
+    setGfwCheck(emptyGfwCheck);
   };
 
   const handleNextPlotSameSupplier = () => {
@@ -615,8 +615,8 @@ export default function Home() {
     setFileName("");
     setError("");
     setCarConfirmed(false);
-    setMapbiomasConfirmed(false);
-    setMapbiomasCheck(emptyMapbiomasCheck);
+    setGfwConfirmed(false);
+    setGfwCheck(emptyGfwCheck);
   };
 
   const handleNewProcessClick = () => {
