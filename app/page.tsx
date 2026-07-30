@@ -8,6 +8,7 @@ import { EudrHeader } from "./components/EudrHeader";
 import { EudrStepsNav } from "./components/EudrStepsNav";
 import { LoginScreen } from "./components/LoginScreen";
 import { LandingPage } from "./components/LandingPage";
+import { ContractManagerView } from "./components/ContractManagerView";
 import { AdminUserModal } from "./components/AdminUserModal";
 import { AuditLogModal } from "./components/AuditLogModal";
 import { NewProcessModal } from "./components/NewProcessModal";
@@ -518,7 +519,7 @@ export default function Home() {
     );
   };
 
-  const [activeView, setActiveView] = useState<"landing" | "app" | "portal">("landing");
+  const [activeView, setActiveView] = useState<"landing" | "app" | "portal" | "contratos">("landing");
   const [showClientPortal, setShowClientPortal] = useState(false);
   const [contractIdToPublish, setContractIdToPublish] = useState("2026-C001");
   const [isPublishingR2, setIsPublishingR2] = useState(false);
@@ -531,6 +532,12 @@ export default function Home() {
       const hash = window.location.hash.toLowerCase();
 
       if (
+        host.startsWith("contratos.") ||
+        search.includes("view=contratos") ||
+        hash.includes("contratos")
+      ) {
+        setActiveView("contratos");
+      } else if (
         host.startsWith("portal.") ||
         host.startsWith("cliente.") ||
         search.includes("view=portal") ||
@@ -740,6 +747,32 @@ export default function Home() {
       handleStartFromScratch();
     }
   };
+
+  if (activeView === "contratos") {
+    if (userMgmt.isAuthenticated === false) {
+      return (
+        <LoginScreen
+          loginUsername={userMgmt.loginUsername}
+          setLoginUsername={userMgmt.setLoginUsername}
+          loginPassword={userMgmt.loginPassword}
+          setLoginPassword={userMgmt.setLoginPassword}
+          loginError={userMgmt.loginError}
+          onLogin={() => {
+            const success = userMgmt.handleLogin();
+            if (success) setActiveView("contratos");
+            return success;
+          }}
+          onBackToLanding={() => setActiveView("landing")}
+        />
+      );
+    }
+    return (
+      <ContractManagerView
+        onOpenLanding={() => setActiveView("landing")}
+        loggedUserKey={userMgmt.loggedUserKey}
+      />
+    );
+  }
 
   if (activeView === "portal") {
     return (
