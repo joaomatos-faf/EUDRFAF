@@ -275,8 +275,8 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
     >
       {/* Autocomplete Datalist para 256+ talhoes da FAF */}
       <datalist id="plot-master-list">
-        {plotMasterList.map((p) => (
-          <option key={p.plotId} value={p.plotId}>
+        {plotMasterList.map((p, idx) => (
+          <option key={`${p.plotId}-${idx}`} value={p.plotId}>
             {`${p.plotId} | ${p.producer} | Fornecedor: ${p.supplier} - ${p.farm} (${p.hectares} ha)`}
           </option>
         ))}
