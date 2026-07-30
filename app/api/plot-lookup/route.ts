@@ -1,10 +1,21 @@
-import { getDecryptedPlotMasterList, PlotMasterRecord } from "@/app/lib/plotMasterData";
+import crypto from "node:crypto";
+import { ENCRYPTED_PAYLOAD, PlotMasterRecord } from "@/app/lib/plotMasterData";
+
+const SECRET_KEY = crypto.createHash("sha256").update("FAF_EUDR_SECRET_KEY_2026_FAF").digest();
 
 let dynamicMasterList: PlotMasterRecord[] = [];
 
 function getMasterList(): PlotMasterRecord[] {
   if (dynamicMasterList.length === 0) {
-    dynamicMasterList = [...getDecryptedPlotMasterList()];
+    try {
+      const decipher = crypto.createDecipheriv("aes-256-cbc", SECRET_KEY, Buffer.from(ENCRYPTED_PAYLOAD.iv, "hex"));
+      let decrypted = decipher.update(ENCRYPTED_PAYLOAD.data, "hex", "utf8");
+      decrypted += decipher.final("utf8");
+      dynamicMasterList = JSON.parse(decrypted);
+    } catch (err) {
+      console.error("Erro ao decriptografar dados de IDPLOT no servidor:", err);
+      dynamicMasterList = [];
+    }
   }
   return dynamicMasterList;
 }

@@ -58,26 +58,6 @@ export const ENCRYPTED_PAYLOAD = {
   iv: "${iv.toString("hex")}",
   data: "${encrypted}",
 };
-
-let decryptedCache: PlotMasterRecord[] | null = null;
-
-export function getDecryptedPlotMasterList(): PlotMasterRecord[] {
-  if (decryptedCache) return decryptedCache;
-  if (typeof window !== "undefined") return [];
-
-  try {
-    const crypto = require("node:crypto");
-    const secretKey = crypto.createHash("sha256").update("FAF_EUDR_SECRET_KEY_2026_FAF").digest();
-    const decipher = crypto.createDecipheriv("aes-256-cbc", secretKey, Buffer.from(ENCRYPTED_PAYLOAD.iv, "hex"));
-    let decrypted = decipher.update(ENCRYPTED_PAYLOAD.data, "hex", "utf8");
-    decrypted += decipher.final("utf8");
-    decryptedCache = JSON.parse(decrypted);
-    return decryptedCache!;
-  } catch (err) {
-    console.error("Erro ao decriptografar dados de IDPLOT no servidor:", err);
-    return [];
-  }
-}
 `;
 
   fs.writeFileSync(path.join(process.cwd(), "app/lib/plotMasterData.ts"), fileContent, "utf8");
