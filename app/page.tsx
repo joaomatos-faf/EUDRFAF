@@ -306,9 +306,9 @@ export default function Home() {
         plotId: field === "plotId" ? value.toUpperCase() : nextPlotId,
       };
     });
-    if (shapefileDetailFields.has(field) && mapbiomasCheck.checkedAt) {
-      setMapbiomasCheck(emptyMapbiomasCheck);
-      setMapbiomasConfirmed(false);
+    if (shapefileDetailFields.has(field) && gfwCheck.checkedAt) {
+      setGfwCheck(emptyGfwCheck);
+      setGfwConfirmed(false);
     }
   };
 
@@ -328,9 +328,9 @@ export default function Home() {
         plotId: nextPlotId,
       };
     });
-    if (mapbiomasCheck.checkedAt) {
-      setMapbiomasCheck(emptyMapbiomasCheck);
-      setMapbiomasConfirmed(false);
+    if (gfwCheck.checkedAt) {
+      setGfwCheck(emptyGfwCheck);
+      setGfwConfirmed(false);
     }
   };
 
@@ -347,9 +347,9 @@ export default function Home() {
         plotId: nextPlotId,
       };
     });
-    if (mapbiomasCheck.checkedAt) {
-      setMapbiomasCheck(emptyMapbiomasCheck);
-      setMapbiomasConfirmed(false);
+    if (gfwCheck.checkedAt) {
+      setGfwCheck(emptyGfwCheck);
+      setGfwConfirmed(false);
     }
   };
 
@@ -365,9 +365,9 @@ export default function Home() {
       };
     });
     setLocationSuggestionsOpen(false);
-    if (mapbiomasCheck.checkedAt) {
-      setMapbiomasCheck(emptyMapbiomasCheck);
-      setMapbiomasConfirmed(false);
+    if (gfwCheck.checkedAt) {
+      setGfwCheck(emptyGfwCheck);
+      setGfwConfirmed(false);
     }
   };
 
@@ -530,8 +530,9 @@ export default function Home() {
       return dateStr;
     };
 
-    const automaticNote = mapbiomasCheck.checkedAt
-      ? `MapBiomas Coleção 10.1: ${mapbiomasCheck.changes.length ? `${mapbiomasCheck.changes.length} alteração(ões)` : "sem alteração entre 2020 e 2024"}.`
+    const currentYear = new Date().getFullYear();
+    const automaticNote = gfwCheck.checkedAt
+      ? `Global Forest Watch (2024–${currentYear}): ${gfwCheck.changes.length ? `${gfwCheck.changes.length} alerta(s) de perda florestal` : "sem perda de cobertura florestal"}.`
       : "";
     const notes = [form.notes.trim(), automaticNote].filter(Boolean).join(" ");
 
@@ -673,16 +674,16 @@ export default function Home() {
         <div className="hero-copy">
           <p className="section-kicker">Novo processo</p>
           <h2>Prepare um talhão para EUDR</h2>
-          <p>Identifique a área, importe a geometria e valide a série temporal do MapBiomas antes de gerar o pacote final.</p>
+          <p>Identifique a área, importe a geometria e valide o desmatamento no Global Forest Watch (GFW) antes de gerar o pacote final.</p>
         </div>
         <div className="status-summary" aria-label="Resumo do processo">
           <div className={geometry ? "complete" : ""}><span>Arquivo</span><strong>{geometry ? "Carregado" : "Pendente"}</strong></div>
-          <div className={mapbiomasCheck.checkedAt ? "complete" : ""}><span>MapBiomas</span><strong>{mapbiomasCheck.checkedAt ? "Consultado" : "Pendente"}</strong></div>
+          <div className={gfwCheck.checkedAt ? "complete" : ""}><span>GFW</span><strong>{gfwCheck.checkedAt ? "Consultado" : "Pendente"}</strong></div>
           <div className={ready ? "complete" : ""}><span>Pacote EUDR</span><strong>{ready ? "Pronto" : "Em preparo"}</strong></div>
         </div>
       </section>
 
-      <EudrStepsNav geometryLoaded={Boolean(geometry)} mapbiomasChecked={Boolean(mapbiomasCheck.checkedAt)} />
+      <EudrStepsNav geometryLoaded={Boolean(geometry)} gfwChecked={Boolean(gfwCheck.checkedAt)} />
 
       <section className="workspace-grid">
         <div className="main-column">
@@ -900,7 +901,7 @@ export default function Home() {
             </div>
           </article>
 
-          <article className="side-card note-card"><strong>Privacidade</strong><p>Acesso restrito por credenciais. A consulta envia por HTTPS ao MapBiomas uma cópia temporária da geometria para checagem da série temporal. Os arquivos permanecem salvos localmente.</p></article>
+          <article className="side-card note-card"><strong>Privacidade</strong><p>Acesso restrito por credenciais. A consulta envia por HTTPS ao Global Forest Watch (GFW) uma cópia temporária da geometria para checagem da série temporal. Os arquivos permanecem salvos localmente.</p></article>
         </aside>
       </section>
 

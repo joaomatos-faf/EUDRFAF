@@ -3,7 +3,7 @@ export const APP_CONFIG = {
   version: "0.2.1",
   apis: {
     ibgeMunicipalities: "https://servicodados.ibge.gov.br/api/v1/localidades/municipios?view=nivelado&orderBy=nome",
-    mapbiomasBase: "https://plataforma.alerta.mapbiomas.org",
+    gfwBase: "https://data-api.globalforestwatch.org",
   },
   limits: {
     maxGeometryPoints: 100000,

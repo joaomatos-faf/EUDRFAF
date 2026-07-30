@@ -4,10 +4,10 @@ import React from "react";
 
 interface EudrStepsNavProps {
   geometryLoaded: boolean;
-  mapbiomasChecked: boolean;
+  gfwChecked: boolean;
 }
 
-export function EudrStepsNav({ geometryLoaded, mapbiomasChecked }: EudrStepsNavProps) {
+export function EudrStepsNav({ geometryLoaded, gfwChecked }: EudrStepsNavProps) {
   return (
     <nav className="steps" aria-label="Etapas do processo">
       <div className="step active">
@@ -20,15 +20,15 @@ export function EudrStepsNav({ geometryLoaded, mapbiomasChecked }: EudrStepsNavP
         <b>Geometria</b>
         <small>{geometryLoaded ? "Carregada" : "Pendente"}</small>
       </div>
-      <div className={`step ${mapbiomasChecked ? "active" : ""}`}>
+      <div className={`step ${gfwChecked ? "active" : ""}`}>
         <i>3</i>
         <b>Conformidade</b>
-        <small>{mapbiomasChecked ? "Consultada" : "Pendente"}</small>
+        <small>{gfwChecked ? "Consultada" : "Pendente"}</small>
       </div>
-      <div className={`step ${mapbiomasChecked ? "active" : ""}`}>
+      <div className={`step ${gfwChecked ? "active" : ""}`}>
         <i>4</i>
         <b>Exportação</b>
-        <small>{mapbiomasChecked ? "Pronto" : "Pendente"}</small>
+        <small>{gfwChecked ? "Pronto" : "Pendente"}</small>
       </div>
     </nav>
   );

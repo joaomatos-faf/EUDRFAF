@@ -53,7 +53,7 @@ export function AuditLogModal({ isOpen, onClose }: AuditLogModalProps) {
         return { background: "#f3e8ff", color: "#6b21a8", border: "1px solid #e9d5ff" };
       case "GEOMETRIA":
         return { background: "#ecfdf5", color: "#065f46", border: "1px solid #a7f3d0" };
-      case "MAPBIOMAS":
+      case "GFW":
         return { background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0" };
       case "EXPORTACAO":
         return { background: "#fff7ed", color: "#9a3412", border: "1px solid #fed7aa" };
@@ -70,119 +70,103 @@ export function AuditLogModal({ isOpen, onClose }: AuditLogModalProps) {
         left: 0,
         right: 0,
         bottom: 0,
-        zIndex: 100,
-        background: "rgba(16, 44, 36, 0.65)",
+        background: "rgba(15, 23, 42, 0.5)",
         backdropFilter: "blur(4px)",
-        display: "grid",
-        placeItems: "center",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 9999,
         padding: "20px",
       }}
       onClick={onClose}
     >
       <div
         style={{
-          width: "100%",
-          maxWidth: "1020px",
-          maxHeight: "88vh",
           background: "#fff",
           borderRadius: "16px",
-          boxShadow: "0 24px 60px rgba(0, 0, 0, 0.25)",
+          width: "100%",
+          maxWidth: "1000px",
+          maxHeight: "90vh",
           display: "flex",
           flexDirection: "column",
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+          border: "1px solid var(--line-strong)",
           overflow: "hidden",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal Header */}
+        {/* Header */}
         <div
           style={{
             padding: "20px 24px",
-            borderBottom: "1px solid var(--line)",
+            borderBottom: "1px solid var(--line-light)",
             display: "flex",
-            alignItems: "center",
             justifyContent: "space-between",
-            background: "var(--forest-950)",
-            color: "#fff",
+            alignItems: "center",
+            background: "#fafcfb",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <div
-              style={{
-                width: "36px",
-                height: "36px",
-                borderRadius: "10px",
-                background: "rgba(255, 255, 255, 0.12)",
-                display: "grid",
-                placeItems: "center",
-                fontSize: "18px",
-              }}
-            >
-              📋
-            </div>
-            <div>
-              <h3 style={{ margin: 0, fontSize: "17px", fontWeight: 700, color: "#fff" }}>
-                Logs de Auditoria & Atividades
-              </h3>
-              <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#b8c9c1" }}>
-                Histórico completo de acessos, alterações e exportações do sistema.
-              </p>
-            </div>
+          <div>
+            <h3 style={{ margin: 0, fontSize: "18px", color: "var(--forest-950)", fontWeight: 700 }}>
+              📜 Trilha de Auditoria & Logs do Sistema
+            </h3>
+            <p style={{ margin: "4px 0 0", fontSize: "13px", color: "var(--muted)" }}>
+              Registro cronológico de todas as ações de usuários para governança e segurança EUDR.
+            </p>
           </div>
           <button
             onClick={onClose}
             style={{
-              background: "rgba(255, 255, 255, 0.1)",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-              color: "#fff",
-              borderRadius: "8px",
-              width: "32px",
-              height: "32px",
+              background: "transparent",
+              border: "none",
+              fontSize: "20px",
               cursor: "pointer",
-              fontSize: "16px",
-              display: "grid",
-              placeItems: "center",
+              color: "var(--muted)",
+              padding: "4px 8px",
+              borderRadius: "6px",
             }}
           >
             ✕
           </button>
         </div>
 
-        {/* Filter Controls */}
+        {/* Filters Bar */}
         <div
           style={{
-            padding: "14px 24px",
-            background: "var(--canvas)",
-            borderBottom: "1px solid var(--line)",
+            padding: "16px 24px",
+            borderBottom: "1px solid var(--line-light)",
             display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "14px",
+            gap: "12px",
             flexWrap: "wrap",
+            alignItems: "center",
+            background: "#fff",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1, minWidth: "260px" }}>
+          <div style={{ flex: "1 1 240px" }}>
             <input
               type="text"
-              placeholder="Buscar por usuário, código de talhão ou texto..."
+              placeholder="Buscar por talhão, usuário ou palavra-chave…"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{
+                width: "100%",
                 padding: "8px 12px",
-                fontSize: "12px",
+                fontSize: "13px",
                 borderRadius: "8px",
                 border: "1px solid var(--line-strong)",
-                background: "#fff",
-                minHeight: "36px",
+                outline: "none",
               }}
             />
+          </div>
+
+          <div style={{ flex: "0 0 160px" }}>
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
               style={{
-                width: "auto",
-                minWidth: "150px",
+                width: "100%",
                 padding: "8px 12px",
-                fontSize: "12px",
+                fontSize: "13px",
                 borderRadius: "8px",
                 border: "1px solid var(--line-strong)",
                 background: "#fff",
@@ -193,7 +177,7 @@ export function AuditLogModal({ isOpen, onClose }: AuditLogModalProps) {
               <option value="ACESSO">🔑 Acesso / Login</option>
               <option value="USUARIOS">👤 Usuários</option>
               <option value="GEOMETRIA">🗺️ Geometria</option>
-              <option value="MAPBIOMAS">🌳 MapBiomas</option>
+              <option value="GFW">🌲 Global Forest Watch</option>
               <option value="EXPORTACAO">📦 Exportação</option>
             </select>
           </div>

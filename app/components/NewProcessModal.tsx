@@ -131,7 +131,7 @@ export function NewProcessModal({
               🔁 Próximo Talhão (Mesmo Fornecedor)
             </h4>
             <p style={{ margin: 0, color: "var(--muted)", fontSize: "11.5px", lineHeight: 1.45 }}>
-              Mantém Fornecedor {currentSupplier ? `("${currentSupplier}")` : ""}, Fazenda, Produtor, CAR e Município. Avança o código do talhão para <strong>{nextPlotIdPreview}</strong> e limpa somente os arquivos e o MapBiomas.
+              Mantém Fornecedor {currentSupplier ? `("${currentSupplier}")` : ""}, Fazenda, Produtor, CAR e Município. Avança o código do talhão para <strong>{nextPlotIdPreview}</strong> e limpa somente os arquivos e o GFW.
             </p>
           </div>
 
