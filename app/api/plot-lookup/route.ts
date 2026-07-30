@@ -1,14 +1,23 @@
-import { PLOT_MASTER_LIST, PlotMasterRecord } from "@/app/lib/plotMasterData";
+import { getDecryptedPlotMasterList, PlotMasterRecord } from "@/app/lib/plotMasterData";
 
-let dynamicMasterList: PlotMasterRecord[] = [...PLOT_MASTER_LIST];
+let dynamicMasterList: PlotMasterRecord[] = [];
+
+function getMasterList(): PlotMasterRecord[] {
+  if (dynamicMasterList.length === 0) {
+    dynamicMasterList = [...getDecryptedPlotMasterList()];
+  }
+  return dynamicMasterList;
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const query = (searchParams.get("query") || searchParams.get("plotId") || "").trim().toUpperCase();
 
+  const currentList = getMasterList();
+
   if (query) {
     const cleanQuery = query.replace(/[^A-Z0-9]/g, "");
-    const matched = dynamicMasterList.filter((p) => {
+    const matched = currentList.filter((p) => {
       const cleanP = p.plotId.replace(/[^A-Z0-9]/g, "");
       return (
         p.plotId.includes(query) ||
@@ -23,7 +32,7 @@ export async function GET(request: Request) {
     });
   }
 
-  return new Response(JSON.stringify({ plots: dynamicMasterList }), {
+  return new Response(JSON.stringify({ plots: currentList }), {
     status: 200,
     headers: { "Content-Type": "application/json" },
   });
@@ -39,8 +48,9 @@ export async function POST(request: Request) {
     }
 
     const cleanPlotId = String(plotId).trim().toUpperCase();
+    const currentList = getMasterList();
 
-    const existingIdx = dynamicMasterList.findIndex((p) => p.plotId === cleanPlotId);
+    const existingIdx = currentList.findIndex((p) => p.plotId === cleanPlotId);
     const newRecord: PlotMasterRecord = {
       plotId: cleanPlotId,
       farm: String(farm).trim(),
@@ -51,13 +61,13 @@ export async function POST(request: Request) {
     };
 
     if (existingIdx >= 0) {
-      dynamicMasterList[existingIdx] = newRecord;
+      currentList[existingIdx] = newRecord;
     } else {
-      dynamicMasterList.unshift(newRecord);
+      currentList.unshift(newRecord);
     }
 
     return new Response(
-      JSON.stringify({ success: true, record: newRecord, totalPlots: dynamicMasterList.length }),
+      JSON.stringify({ success: true, record: newRecord, totalPlots: currentList.length }),
       {
         status: 200,
         headers: { "Content-Type": "application/json" },
