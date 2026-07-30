@@ -572,26 +572,6 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                   <h3 style={{ fontSize: "15px", margin: 0, fontWeight: 700, color: "var(--forest-950)" }}>
                     📦 Lotes do Contrato ({lots.length})
                   </h3>
-                  <button
-                    type="button"
-                    onClick={handleAddLot}
-                    style={{
-                      background: "#15803d",
-                      color: "#fff",
-                      border: "none",
-                      padding: "7px 14px",
-                      borderRadius: "6px",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
-                    }}
-                  >
-                    ➕ Adicionar mais um lote
-                  </button>
                 </div>
 
                 <div
@@ -725,22 +705,6 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                                 <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--forest-950)" }}>
                                   🌐 Talhões deste Lote ({lot.plots.length}) • Total: <strong style={{ color: "#0284c7" }}>{lotTotalHectares.toFixed(2)} ha</strong>
                                 </span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleAddPlotToLot(lotIdx)}
-                                  style={{
-                                    background: "#0369a1",
-                                    color: "#fff",
-                                    border: "none",
-                                    padding: "5px 10px",
-                                    borderRadius: "6px",
-                                    fontSize: "11px",
-                                    fontWeight: 700,
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  ➕ Adicionar mais um talhão neste lote
-                                </button>
                               </div>
 
                               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -839,12 +803,64 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                                   </div>
                                 ))}
                               </div>
+
+                              {/* BOTÃO DE ADICIONAR MAIS UM TALHÃO POSICIONADO NO FINAL DO LOTE */}
+                              <button
+                                type="button"
+                                onClick={() => handleAddPlotToLot(lotIdx)}
+                                style={{
+                                  width: "100%",
+                                  marginTop: "12px",
+                                  background: "#f0f9ff",
+                                  color: "#0369a1",
+                                  border: "1px dashed #0284c7",
+                                  padding: "10px",
+                                  borderRadius: "8px",
+                                  fontSize: "12px",
+                                  fontWeight: 800,
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  gap: "6px",
+                                  transition: "all 0.15s ease",
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = "#e0f2fe")}
+                                onMouseLeave={(e) => (e.currentTarget.style.background = "#f0f9ff")}
+                              >
+                                ➕ Adicionar mais um talhão neste lote ({lot.lotNumber || `LOTE ${lotIdx + 1}`})
+                              </button>
                             </div>
                           </>
                         )}
                       </div>
                     );
                   })}
+
+                  {/* BOTÃO DE ADICIONAR MAIS UM LOTE POSICIONADO NO FINAL DA LISTA DE LOTES */}
+                  <button
+                    type="button"
+                    onClick={handleAddLot}
+                    style={{
+                      width: "100%",
+                      marginTop: "6px",
+                      background: "#15803d",
+                      color: "#fff",
+                      border: "none",
+                      padding: "12px",
+                      borderRadius: "10px",
+                      fontSize: "13px",
+                      fontWeight: 800,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      boxShadow: "0 3px 10px rgba(21, 128, 61, 0.2)",
+                    }}
+                  >
+                    ➕ Adicionar mais um lote ao contrato
+                  </button>
                 </div>
               </div>
 
