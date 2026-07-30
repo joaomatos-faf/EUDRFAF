@@ -21,6 +21,7 @@ interface DraftLotItem {
   lotNumber: string;
   region: string;
   plots: DraftPlotItem[];
+  isCollapsed?: boolean;
 }
 
 // Componente de Autocomplete Customizado com Filtro em Tempo Real
@@ -161,6 +162,8 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
   const [isSaving, setIsSaving] = useState(false);
   const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
 
+  const lotsContainerRef = useRef<HTMLDivElement>(null);
+
   // Iniciar TUDO em branco (zero mock data)
   const [lots, setLots] = useState<DraftLotItem[]>([
     {
@@ -169,6 +172,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
       plots: [
         { plotId: "", producer: "", supplier: "", farm: "", hectares: 0 },
       ],
+      isCollapsed: false,
     },
   ]);
 
@@ -198,14 +202,37 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
 
   const handleAddLot = () => {
     const nextLotNum = `LOTE ${String(lots.length + 1).padStart(2, "0")}`;
+    // Recolher lotes anteriores para focar no novo lote
+    const collapsedPreviousLots = lots.map((lot) => ({
+      ...lot,
+      isCollapsed: true,
+    }));
+
     setLots([
-      ...lots,
+      ...collapsedPreviousLots,
       {
         lotNumber: nextLotNum,
         region: "",
         plots: [{ plotId: "", producer: "", supplier: "", farm: "", hectares: 0 }],
+        isCollapsed: false,
       },
     ]);
+
+    // Rolar suavemente ate o final onde o novo lote foi inserido
+    setTimeout(() => {
+      if (lotsContainerRef.current) {
+        lotsContainerRef.current.scrollTo({
+          top: lotsContainerRef.current.scrollHeight,
+          behavior: "smooth",
+        });
+      }
+    }, 120);
+  };
+
+  const handleToggleCollapseLot = (index: number) => {
+    const updated = [...lots];
+    updated[index].isCollapsed = !updated[index].isCollapsed;
+    setLots(updated);
   };
 
   const handleRemoveLot = (index: number) => {
@@ -213,7 +240,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
     setLots(lots.filter((_, i) => i !== index));
   };
 
-  const handleLotChange = (index: number, field: keyof Omit<DraftLotItem, "plots">, value: string) => {
+  const handleLotChange = (index: number, field: keyof Omit<DraftLotItem, "plots" | "isCollapsed">, value: string) => {
     const updated = [...lots];
     updated[index] = { ...updated[index], [field]: value };
     setLots(updated);
@@ -371,6 +398,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
             lotNumber: "LOTE 01",
             region: "",
             plots: [{ plotId: "", producer: "", supplier: "", farm: "", hectares: 0 }],
+            isCollapsed: false,
           },
         ]);
         loadContractsAndPlots();
@@ -556,199 +584,264 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                       fontSize: "12px",
                       fontWeight: 700,
                       cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
                     }}
                   >
                     ➕ Adicionar mais um lote
                   </button>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "18px", maxHeight: "640px", overflowY: "auto", paddingRight: "6px", paddingBottom: "140px" }}>
+                <div
+                  ref={lotsContainerRef}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "18px",
+                    maxHeight: "640px",
+                    overflowY: "auto",
+                    paddingRight: "6px",
+                    paddingBottom: "140px",
+                    scrollBehavior: "smooth",
+                  }}
+                >
                   {lots.map((lot, lotIdx) => {
                     const lotTotalHectares = lot.plots.reduce((sum, p) => sum + (Number(p.hectares) || 0), 0);
+                    const isCollapsed = Boolean(lot.isCollapsed);
 
                     return (
                       <div
                         key={lotIdx}
                         style={{
                           background: "var(--canvas)",
-                          border: "1px solid var(--line-strong)",
+                          border: isCollapsed ? "1px solid var(--line)" : "2px solid #0284c7",
                           borderRadius: "14px",
                           padding: "18px",
+                          transition: "all 0.2s ease-in-out",
+                          boxShadow: isCollapsed ? "none" : "0 4px 14px rgba(2, 132, 199, 0.1)",
                         }}
                       >
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isCollapsed ? "0" : "12px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                             <span style={{ fontSize: "14px", fontWeight: 800, color: "var(--forest-900)" }}>
-                              {lot.lotNumber || `LOTE ${lotIdx + 1}`}
+                              {lot.lotNumber || `LOTE ${lotIdx + 1}`} {lot.region ? `(${lot.region})` : ""}
                             </span>
                             {/* BADGE DA SOMA DOS HECTARES DO LOTE */}
                             <span style={{ fontSize: "12px", background: "#e0f2fe", color: "#0369a1", padding: "4px 10px", borderRadius: "20px", fontWeight: 800, border: "1px solid #bae6fd" }}>
-                              📐 Soma do Lote: {lotTotalHectares.toFixed(2)} ha
+                              📐 Soma: {lotTotalHectares.toFixed(2)} ha
                             </span>
                           </div>
-                          {lots.length > 1 && (
+
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            {/* BOTÃO DE EXPANDIR / RECOLHER A LISTA DO LOTE */}
                             <button
                               type="button"
-                              onClick={() => handleRemoveLot(lotIdx)}
+                              onClick={() => handleToggleCollapseLot(lotIdx)}
                               style={{
-                                background: "transparent",
-                                border: "none",
-                                color: "var(--danger)",
+                                background: isCollapsed ? "#e0f2fe" : "#f1f5f9",
+                                color: isCollapsed ? "#0369a1" : "#475569",
+                                border: "1px solid #bae6fd",
+                                padding: "5px 12px",
+                                borderRadius: "8px",
                                 fontSize: "11px",
-                                fontWeight: 700,
+                                fontWeight: 800,
                                 cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "5px",
                               }}
                             >
-                              🗑️ Remover Lote
+                              {isCollapsed ? "👁️ Ver / Editar Talhões" : "🔼 Recolher Lote"}
                             </button>
-                          )}
-                        </div>
 
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "14px" }}>
-                          <label style={{ fontSize: "11px", fontWeight: 700 }}>
-                            Nome / Código do Lote
-                            <input
-                              type="text"
-                              value={lot.lotNumber}
-                              onChange={(e) => handleLotChange(lotIdx, "lotNumber", e.target.value)}
-                              placeholder="Ex: LOTE 01"
-                              style={{ width: "100%", padding: "7px 9px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "12px" }}
-                            />
-                          </label>
-
-                          <label style={{ fontSize: "11px", fontWeight: 700 }}>
-                            Região do Lote
-                            <input
-                              type="text"
-                              value={lot.region}
-                              onChange={(e) => handleLotChange(lotIdx, "region", e.target.value)}
-                              placeholder="Ex: MOGIANA"
-                              style={{ width: "100%", padding: "7px 9px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "12px" }}
-                            />
-                          </label>
-                        </div>
-
-                        {/* Lista Dinâmica de Talhões por Lote */}
-                        <div style={{ background: "#fff", padding: "14px", borderRadius: "10px", border: "1px solid var(--line-light)" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                            <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--forest-950)" }}>
-                              🌐 Talhões deste Lote ({lot.plots.length}) • Total: <strong style={{ color: "#0284c7" }}>{lotTotalHectares.toFixed(2)} ha</strong>
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleAddPlotToLot(lotIdx)}
-                              style={{
-                                background: "#0369a1",
-                                color: "#fff",
-                                border: "none",
-                                padding: "5px 10px",
-                                borderRadius: "6px",
-                                fontSize: "11px",
-                                fontWeight: 700,
-                                cursor: "pointer",
-                              }}
-                            >
-                              ➕ Adicionar mais um talhão neste lote
-                            </button>
-                          </div>
-
-                          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                            {lot.plots.map((plot, plotIdx) => (
-                              <div
-                                key={plotIdx}
+                            {lots.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveLot(lotIdx)}
                                 style={{
-                                  background: "var(--canvas)",
-                                  padding: "12px",
-                                  borderRadius: "8px",
-                                  border: "1px solid var(--line-light)",
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  gap: "8px",
+                                  background: "transparent",
+                                  border: "none",
+                                  color: "var(--danger)",
+                                  fontSize: "11px",
+                                  fontWeight: 700,
+                                  cursor: "pointer",
                                 }}
                               >
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                  <span style={{ fontSize: "11px", fontWeight: 800, color: "#0284c7" }}>
-                                    Talhão #{plotIdx + 1}
-                                  </span>
-                                  {lot.plots.length > 1 && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemovePlotFromLot(lotIdx, plotIdx)}
-                                      style={{
-                                        background: "transparent",
-                                        border: "none",
-                                        color: "var(--danger)",
-                                        fontSize: "11px",
-                                        cursor: "pointer",
-                                        fontWeight: 700,
-                                      }}
-                                    >
-                                      ✖ Remover Talhão
-                                    </button>
-                                  )}
-                                </div>
-
-                                <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr 0.8fr", gap: "8px" }}>
-                                  <label style={{ fontSize: "10px", fontWeight: 700 }}>
-                                    PLOT ID *
-                                    <PlotAutocompleteInput
-                                      value={plot.plotId}
-                                      onChange={(newVal) => handlePlotIdInputChange(lotIdx, plotIdx, newVal)}
-                                      onSelect={(selectedPlot) => handleSelectPlotMaster(lotIdx, plotIdx, selectedPlot)}
-                                      plotMasterList={plotMasterList}
-                                      placeholder="Ex: NAS-02, P2401..."
-                                    />
-                                  </label>
-
-                                  <label style={{ fontSize: "10px", fontWeight: 600 }}>
-                                    Produtor
-                                    <input
-                                      type="text"
-                                      value={plot.producer}
-                                      onChange={(e) => handlePlotFieldChange(lotIdx, plotIdx, "producer", e.target.value)}
-                                      placeholder="Nome do Produtor"
-                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "5px", border: "1px solid var(--line)", fontSize: "11px" }}
-                                    />
-                                  </label>
-
-                                  <label style={{ fontSize: "10px", fontWeight: 600 }}>
-                                    Fornecedor
-                                    <input
-                                      type="text"
-                                      value={plot.supplier}
-                                      onChange={(e) => handlePlotFieldChange(lotIdx, plotIdx, "supplier", e.target.value)}
-                                      placeholder="Nome do Fornecedor"
-                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "5px", border: "1px solid var(--line)", fontSize: "11px" }}
-                                    />
-                                  </label>
-
-                                  <label style={{ fontSize: "10px" }}>
-                                    Fazenda
-                                    <input
-                                      type="text"
-                                      value={plot.farm}
-                                      onChange={(e) => handlePlotFieldChange(lotIdx, plotIdx, "farm", e.target.value)}
-                                      placeholder="Nome da Fazenda"
-                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "5px", border: "1px solid var(--line)", fontSize: "11px" }}
-                                    />
-                                  </label>
-
-                                  <label style={{ fontSize: "10px" }}>
-                                    Área (ha)
-                                    <input
-                                      type="number"
-                                      step="0.01"
-                                      value={plot.hectares || ""}
-                                      onChange={(e) => handlePlotFieldChange(lotIdx, plotIdx, "hectares", e.target.value)}
-                                      placeholder="0.00"
-                                      style={{ width: "100%", padding: "6px 8px", borderRadius: "5px", border: "1px solid var(--line)", fontSize: "11px" }}
-                                    />
-                                  </label>
-                                </div>
-                              </div>
-                            ))}
+                                🗑️ Remover
+                              </button>
+                            )}
                           </div>
                         </div>
+
+                        {/* SE ESTIVER RECOLHIDO: Exibe um resumo compacto e elegante */}
+                        {isCollapsed ? (
+                          <div style={{ background: "#fff", padding: "10px 14px", borderRadius: "10px", border: "1px solid var(--line-light)", marginTop: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div style={{ fontSize: "12px", color: "var(--forest-950)", fontWeight: 700 }}>
+                              🌐 {lot.plots.length} talhão(ões):{" "}
+                              <span style={{ fontWeight: 600, color: "#0369a1" }}>
+                                {lot.plots.map((p) => p.plotId || "Sem ID").filter(Boolean).join(", ") || "Nenhum código preenchido"}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleCollapseLot(lotIdx)}
+                              style={{ background: "#0284c7", color: "#fff", border: "none", padding: "4px 10px", borderRadius: "6px", fontSize: "10px", fontWeight: 700, cursor: "pointer" }}
+                            >
+                              ✏️ Abrir Lote
+                            </button>
+                          </div>
+                        ) : (
+                          /* SE ESTIVER EXPANDIDO: Exibe todos os inputs do lote e dos talhões */
+                          <>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "14px", marginTop: "10px" }}>
+                              <label style={{ fontSize: "11px", fontWeight: 700 }}>
+                                Nome / Código do Lote
+                                <input
+                                  type="text"
+                                  value={lot.lotNumber}
+                                  onChange={(e) => handleLotChange(lotIdx, "lotNumber", e.target.value)}
+                                  placeholder="Ex: LOTE 01"
+                                  style={{ width: "100%", padding: "7px 9px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "12px" }}
+                                />
+                              </label>
+
+                              <label style={{ fontSize: "11px", fontWeight: 700 }}>
+                                Região do Lote
+                                <input
+                                  type="text"
+                                  value={lot.region}
+                                  onChange={(e) => handleLotChange(lotIdx, "region", e.target.value)}
+                                  placeholder="Ex: MOGIANA"
+                                  style={{ width: "100%", padding: "7px 9px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "12px" }}
+                                />
+                              </label>
+                            </div>
+
+                            {/* Lista Dinâmica de Talhões por Lote */}
+                            <div style={{ background: "#fff", padding: "14px", borderRadius: "10px", border: "1px solid var(--line-light)" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                                <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--forest-950)" }}>
+                                  🌐 Talhões deste Lote ({lot.plots.length}) • Total: <strong style={{ color: "#0284c7" }}>{lotTotalHectares.toFixed(2)} ha</strong>
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddPlotToLot(lotIdx)}
+                                  style={{
+                                    background: "#0369a1",
+                                    color: "#fff",
+                                    border: "none",
+                                    padding: "5px 10px",
+                                    borderRadius: "6px",
+                                    fontSize: "11px",
+                                    fontWeight: 700,
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  ➕ Adicionar mais um talhão neste lote
+                                </button>
+                              </div>
+
+                              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                                {lot.plots.map((plot, plotIdx) => (
+                                  <div
+                                    key={plotIdx}
+                                    style={{
+                                      background: "var(--canvas)",
+                                      padding: "12px",
+                                      borderRadius: "8px",
+                                      border: "1px solid var(--line-light)",
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      gap: "8px",
+                                    }}
+                                  >
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                      <span style={{ fontSize: "11px", fontWeight: 800, color: "#0284c7" }}>
+                                        Talhão #{plotIdx + 1}
+                                      </span>
+                                      {lot.plots.length > 1 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemovePlotFromLot(lotIdx, plotIdx)}
+                                          style={{
+                                            background: "transparent",
+                                            border: "none",
+                                            color: "var(--danger)",
+                                            fontSize: "11px",
+                                            cursor: "pointer",
+                                            fontWeight: 700,
+                                          }}
+                                        >
+                                          ✖ Remover Talhão
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr 0.8fr", gap: "8px" }}>
+                                      <label style={{ fontSize: "10px", fontWeight: 700 }}>
+                                        PLOT ID *
+                                        <PlotAutocompleteInput
+                                          value={plot.plotId}
+                                          onChange={(newVal) => handlePlotIdInputChange(lotIdx, plotIdx, newVal)}
+                                          onSelect={(selectedPlot) => handleSelectPlotMaster(lotIdx, plotIdx, selectedPlot)}
+                                          plotMasterList={plotMasterList}
+                                          placeholder="Ex: NAS-02, P2401..."
+                                        />
+                                      </label>
+
+                                      <label style={{ fontSize: "10px", fontWeight: 600 }}>
+                                        Produtor
+                                        <input
+                                          type="text"
+                                          value={plot.producer}
+                                          onChange={(e) => handlePlotFieldChange(lotIdx, plotIdx, "producer", e.target.value)}
+                                          placeholder="Nome do Produtor"
+                                          style={{ width: "100%", padding: "6px 8px", borderRadius: "5px", border: "1px solid var(--line)", fontSize: "11px" }}
+                                        />
+                                      </label>
+
+                                      <label style={{ fontSize: "10px", fontWeight: 600 }}>
+                                        Fornecedor
+                                        <input
+                                          type="text"
+                                          value={plot.supplier}
+                                          onChange={(e) => handlePlotFieldChange(lotIdx, plotIdx, "supplier", e.target.value)}
+                                          placeholder="Nome do Fornecedor"
+                                          style={{ width: "100%", padding: "6px 8px", borderRadius: "5px", border: "1px solid var(--line)", fontSize: "11px" }}
+                                        />
+                                      </label>
+
+                                      <label style={{ fontSize: "10px" }}>
+                                        Fazenda
+                                        <input
+                                          type="text"
+                                          value={plot.farm}
+                                          onChange={(e) => handlePlotFieldChange(lotIdx, plotIdx, "farm", e.target.value)}
+                                          placeholder="Nome da Fazenda"
+                                          style={{ width: "100%", padding: "6px 8px", borderRadius: "5px", border: "1px solid var(--line)", fontSize: "11px" }}
+                                        />
+                                      </label>
+
+                                      <label style={{ fontSize: "10px" }}>
+                                        Área (ha)
+                                        <input
+                                          type="number"
+                                          step="0.01"
+                                          value={plot.hectares || ""}
+                                          onChange={(e) => handlePlotFieldChange(lotIdx, plotIdx, "hectares", e.target.value)}
+                                          placeholder="0.00"
+                                          style={{ width: "100%", padding: "6px 8px", borderRadius: "5px", border: "1px solid var(--line)", fontSize: "11px" }}
+                                        />
+                                      </label>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </div>
                     );
                   })}
