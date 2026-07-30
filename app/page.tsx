@@ -518,7 +518,19 @@ export default function Home() {
     );
   };
 
-  const [activeView, setActiveView] = useState<"landing" | "app">("landing");
+  const [activeView, setActiveView] = useState<"landing" | "app" | "portal">(() => {
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname.toLowerCase();
+      if (host.startsWith("portal.") || host.startsWith("cliente.")) {
+        return "portal";
+      }
+      if (host.startsWith("app.") || host.startsWith("faf.")) {
+        return "app";
+      }
+    }
+    return "landing";
+  });
+
   const [showClientPortal, setShowClientPortal] = useState(false);
   const [contractIdToPublish, setContractIdToPublish] = useState("2026-C001");
   const [isPublishingR2, setIsPublishingR2] = useState(false);
@@ -528,6 +540,7 @@ export default function Home() {
     if (typeof window !== "undefined") {
       const host = window.location.hostname.toLowerCase();
       if (host.startsWith("portal.") || host.startsWith("cliente.")) {
+        setActiveView("portal");
         setShowClientPortal(true);
       } else if (host.startsWith("app.") || host.startsWith("faf.")) {
         setActiveView("app");
@@ -727,12 +740,34 @@ export default function Home() {
     }
   };
 
+  if (activeView === "portal") {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--canvas)" }}>
+        <EudrHeader
+          isAuthenticated={false}
+          loggedUserRole="user"
+          loggedUserKey=""
+          onOpenAdminModal={() => {}}
+          onLogout={() => {}}
+          onOpenLanding={() => setActiveView("landing")}
+        />
+        <ClientPortalModal
+          isOpen={true}
+          onClose={() => setActiveView("landing")}
+        />
+      </div>
+    );
+  }
+
   if (activeView === "landing") {
     return (
       <>
         <LandingPage
           onOpenFafApp={() => setActiveView("app")}
-          onOpenClientPortal={() => setShowClientPortal(true)}
+          onOpenClientPortal={() => {
+            setActiveView("portal");
+            setShowClientPortal(true);
+          }}
         />
         <ClientPortalModal
           isOpen={showClientPortal}
