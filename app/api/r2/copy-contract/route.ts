@@ -40,25 +40,21 @@ export async function POST(request: Request) {
       const lot = lots[i];
       const lotNumber = lot.lotNumber?.trim() || `LOTE_${String(i + 1).padStart(2, "0")}`;
       const cleanLot = sanitizeSegment(lotNumber, `LOTE_${i + 1}`);
+      const cleanRegion = sanitizeSegment(lot.region || "GERAL", "GERAL");
 
-      const region = lot.region || "GERAL";
-      const supplier = lot.supplier || lot.producer || "FORNECEDOR";
-      const farm = lot.farm || "FAZENDA";
-
-      const cleanRegion = sanitizeSegment(region, "GERAL");
-      const cleanSupplier = sanitizeSegment(supplier, "FORNECEDOR");
-      const cleanFarm = sanitizeSegment(farm, "FAZENDA");
-
-      // Suporte a múltiplos talhões no mesmo lote (plots array ou plotId único)
-      const rawPlots: string[] = Array.isArray(lot.plots)
-        ? lot.plots.map((p: any) => (typeof p === "string" ? p : p.plotId || "")).filter(Boolean)
-        : lot.plotId ? [lot.plotId] : [`TALHAO-${i + 1}`];
-
+      const rawPlots = Array.isArray(lot.plots) ? lot.plots : [];
       const processedPlots: ContractPlotItem[] = [];
 
       for (let j = 0; j < rawPlots.length; j++) {
-        const rawPlotId = rawPlots[j];
+        const plotObj = rawPlots[j];
+        const rawPlotId = typeof plotObj === "string" ? plotObj : plotObj.plotId || "";
         const plotId = rawPlotId.trim().toUpperCase() || `TALHAO-${j + 1}`;
+
+        const supplier = typeof plotObj === "object" ? (plotObj.supplier || plotObj.producer || "FORNECEDOR") : "FORNECEDOR";
+        const farm = typeof plotObj === "object" ? (plotObj.farm || "FAZENDA") : "FAZENDA";
+
+        const cleanSupplier = sanitizeSegment(supplier, "FORNECEDOR");
+        const cleanFarm = sanitizeSegment(farm, "FAZENDA");
 
         const sourceKey = `mapping_eudr_data/${cleanRegion}/${cleanSupplier}/${cleanFarm}/${plotId}.geojson`;
         const targetKey = `contratos_clientes/${cleanClient}/${cleanContractCode}/${cleanLot}/${plotId}.geojson`;
@@ -118,6 +114,8 @@ export async function POST(request: Request) {
 
         processedPlots.push({
           plotId,
+          supplier: cleanSupplier,
+          farm: cleanFarm,
           sourceGeojsonKey: sourceKey,
           targetGeojsonKey: targetKey,
         });
@@ -127,8 +125,6 @@ export async function POST(request: Request) {
         id: `lot-${Date.now()}-${i}`,
         lotNumber: cleanLot,
         region: cleanRegion,
-        supplier: cleanSupplier,
-        farm: cleanFarm,
         plots: processedPlots,
       });
     }
