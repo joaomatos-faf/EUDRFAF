@@ -34,18 +34,18 @@ interface DraftLotItem {
 export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos" }: ContractManagerViewProps) {
   const [contracts, setContracts] = useState<ContractRecord[]>([]);
   const [plotMasterList, setPlotMasterList] = useState<PlotMasterRecord[]>([]);
-  const [contractCode, setContractCode] = useState("2026-C001");
+  const [contractCode, setContractCode] = useState("");
   const [clientName, setClientName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
 
+  // Iniciar sem nenhum valor padrao / mock data
   const [lots, setLots] = useState<DraftLotItem[]>([
     {
       lotNumber: "LOTE 01",
-      region: "MOGIANA",
+      region: "",
       plots: [
-        { plotId: "P2401", producer: "Adonis Cerri", supplier: "Produtor / Gram Cerri", farm: "Fazenda da Mata", hectares: 9.13 },
-        { plotId: "P2402", producer: "Adonis Cerri", supplier: "Produtor / Gram Cerri", farm: "Fazenda da Mata", hectares: 16.8 },
+        { plotId: "", producer: "", supplier: "", farm: "", hectares: 0 },
       ],
     },
   ]);
@@ -73,12 +73,11 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
 
   const handleAddLot = () => {
     const nextLotNum = `LOTE ${String(lots.length + 1).padStart(2, "0")}`;
-    const lastLot = lots[lots.length - 1] || { region: "MOGIANA" };
     setLots([
       ...lots,
       {
         lotNumber: nextLotNum,
-        region: lastLot.region || "MOGIANA",
+        region: "",
         plots: [{ plotId: "", producer: "", supplier: "", farm: "", hectares: 0 }],
       },
     ]);
@@ -98,10 +97,9 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
   const handleAddPlotToLot = (lotIndex: number) => {
     const updated = [...lots];
     const lotPlots = updated[lotIndex].plots;
-    const lastPlot = lotPlots[lotPlots.length - 1] || { producer: "", supplier: "", farm: "", hectares: 0 };
     updated[lotIndex].plots = [
       ...lotPlots,
-      { plotId: "", producer: lastPlot.producer || "", supplier: lastPlot.supplier || "", farm: lastPlot.farm || "", hectares: 0 },
+      { plotId: "", producer: "", supplier: "", farm: "", hectares: 0 },
     ];
     setLots(updated);
   };
@@ -115,23 +113,26 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
 
   const handlePlotIdChange = (lotIndex: number, plotIndex: number, rawValue: string) => {
     const cleanId = rawValue.toUpperCase().trim();
+    const normId = cleanId.replace(/[^A-Z0-9]/g, "");
     const updated = [...lots];
 
-    // Verificar se o ID do talhão existe na lista master do Excel (256 talhões)
-    const matched = plotMasterList.find((p) => p.plotId === cleanId);
+    // Busca inteligente no Excel master (256 talhões) por ID exato ou normalizado sem traço/espaço
+    const matched = plotMasterList.find(
+      (p) => p.plotId === cleanId || p.plotId.replace(/[^A-Z0-9]/g, "") === normId
+    );
 
     if (matched) {
-      // Preencher AUTOMATICAMENTE os dois campos (Produtor E Fornecedor) vindos do Excel!
+      // Preenchimento AUTOMÁTICO garantido de Produtor, Fornecedor, Fazenda e Hectares
       updated[lotIndex].plots[plotIndex] = {
-        plotId: cleanId,
+        plotId: matched.plotId || cleanId,
         producer: matched.producer,
         supplier: matched.supplier,
         farm: matched.farm,
         hectares: matched.hectares,
       };
 
-      // Atualizar a Região do Lote caso esteja em branco
-      if (matched.region && (!updated[lotIndex].region || updated[lotIndex].region === "GERAL")) {
+      // Atualizar Região do Lote caso em branco
+      if (matched.region && !updated[lotIndex].region) {
         updated[lotIndex].region = matched.region.toUpperCase();
       }
     } else {
@@ -211,7 +212,15 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
       const data = await res.json();
       if (data.success) {
         alert(`✅ Contrato ${data.record.contractCode} criado com sucesso!\n\n${data.record.lots.length} lote(s) salvos no Cloudflare R2.`);
+        setContractCode("");
         setClientName("");
+        setLots([
+          {
+            lotNumber: "LOTE 01",
+            region: "",
+            plots: [{ plotId: "", producer: "", supplier: "", farm: "", hectares: 0 }],
+          },
+        ]);
         loadContractsAndPlots();
       } else {
         throw new Error(data.error || "Erro ao criar pacote do contrato.");
@@ -261,7 +270,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
       <datalist id="plot-master-list">
         {plotMasterList.map((p) => (
           <option key={p.plotId} value={p.plotId}>
-            {`${p.producer} | Fornecedor: ${p.supplier} - ${p.farm} (${p.hectares} ha)`}
+            {`${p.plotId} | ${p.producer} | Fornecedor: ${p.supplier} - ${p.farm} (${p.hectares} ha)`}
           </option>
         ))}
       </datalist>
@@ -329,7 +338,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
               📜 Criar Novo Contrato de Cliente
             </h2>
             <p style={{ fontSize: "13px", color: "var(--muted)", margin: "0 0 24px" }}>
-              Ao digitar o PLOT ID, o sistema preenche separadamente as informações de <strong>Produtor</strong>, <strong>Fornecedor</strong>, <strong>Fazenda</strong> e <strong>Área (ha)</strong>.
+              Digite o PLOT ID para buscar automaticamente da planilha Lista IDPLOT. Todos os campos iniciam em branco.
             </p>
 
             <form onSubmit={handleSaveContract} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
@@ -508,7 +517,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                                     list="plot-master-list"
                                     value={plot.plotId}
                                     onChange={(e) => handlePlotIdChange(lotIdx, plotIdx, e.target.value)}
-                                    placeholder="Ex: P2401 ou AMR-01"
+                                    placeholder="Ex: NAS-02, P2401 ou AMR-01"
                                     required
                                     style={{
                                       width: "100%",
@@ -528,7 +537,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                                     type="text"
                                     value={plot.producer}
                                     onChange={(e) => handlePlotFieldChange(lotIdx, plotIdx, "producer", e.target.value)}
-                                    placeholder="Adonis Cerri"
+                                    placeholder="Ex: Natal Alcino"
                                     style={{ width: "100%", padding: "6px 8px", borderRadius: "5px", border: "1px solid var(--line)", fontSize: "11px" }}
                                   />
                                 </label>
@@ -539,7 +548,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                                     type="text"
                                     value={plot.supplier}
                                     onChange={(e) => handlePlotFieldChange(lotIdx, plotIdx, "supplier", e.target.value)}
-                                    placeholder="Produtor / Gram Cerri"
+                                    placeholder="Ex: Washing Station SDC"
                                     style={{ width: "100%", padding: "6px 8px", borderRadius: "5px", border: "1px solid var(--line)", fontSize: "11px" }}
                                   />
                                 </label>
@@ -550,7 +559,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                                     type="text"
                                     value={plot.farm}
                                     onChange={(e) => handlePlotFieldChange(lotIdx, plotIdx, "farm", e.target.value)}
-                                    placeholder="Fazenda da Mata"
+                                    placeholder="Ex: Sitio Cachoeirinha"
                                     style={{ width: "100%", padding: "6px 8px", borderRadius: "5px", border: "1px solid var(--line)", fontSize: "11px" }}
                                   />
                                 </label>
@@ -562,7 +571,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                                     step="0.01"
                                     value={plot.hectares || ""}
                                     onChange={(e) => handlePlotFieldChange(lotIdx, plotIdx, "hectares", e.target.value)}
-                                    placeholder="9.13"
+                                    placeholder="3.21"
                                     style={{ width: "100%", padding: "6px 8px", borderRadius: "5px", border: "1px solid var(--line)", fontSize: "11px" }}
                                   />
                                 </label>
