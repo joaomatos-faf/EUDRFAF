@@ -15,7 +15,6 @@ import { recordAuditLog } from "./lib/auditLogger";
 import {
   GeometryData,
   buildEudrGeoJson,
-  buildEudrGeoJsonString,
   buildShapefileZip,
   buildShapefileParts,
   zipStore,
@@ -456,7 +455,7 @@ export default function Home() {
 
   const downloadGeoJson = () => {
     if (!geometry || !normalizedId) return;
-    const content = buildEudrGeoJsonString(geometry, normalizedId, area);
+    const content = JSON.stringify(buildEudrGeoJson(geometry, normalizedId, area), null, 2);
     downloadBlob(`${normalizedId}.geojson`, new Blob([content], { type: "application/geo+json" }));
   };
 
@@ -479,8 +478,8 @@ export default function Home() {
   const exportAll = () => {
     if (!geometry || !normalizedId) return;
 
-    // 1. GeoJSON (com vírgula final na linha "productioncountry": "BR",)
-    const geojsonContent = buildEudrGeoJsonString(geometry, normalizedId, area);
+    // 1. GeoJSON
+    const geojsonContent = JSON.stringify(buildEudrGeoJson(geometry, normalizedId, area), null, 2);
     const geojsonBytes = new TextEncoder().encode(geojsonContent);
 
     // 2. XLSX

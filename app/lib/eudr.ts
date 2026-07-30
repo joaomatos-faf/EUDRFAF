@@ -228,12 +228,6 @@ export function buildEudrGeoJson(data: GeometryData, plotId: string, area: numbe
   };
 }
 
-export function buildEudrGeoJsonString(data: GeometryData, plotId: string, area: number): string {
-  const geojsonObj = buildEudrGeoJson(data, plotId, area);
-  const jsonString = JSON.stringify(geojsonObj, null, 2);
-  return jsonString.replace(/"productioncountry":\s*"BR"\s*(?=\n|\r)/g, '"productioncountry": "BR",');
-}
-
 function setAscii(view: DataView, offset: number, value: string, length: number) {
   for (let index = 0; index < length; index += 1) view.setUint8(offset + index, value.charCodeAt(index) || 0);
 }
