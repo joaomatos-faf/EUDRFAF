@@ -324,58 +324,22 @@ export default function ClientPortalModal({ isOpen, onClose, userEmail = "client
                       </span>
                     </td>
                     <td style={{ padding: "14px", textAlign: "right" }}>
-                      <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
-                        <button
-                          onClick={() => handleDownload(plot.geojsonKey, `${plot.plotId}.geojson`)}
-                          disabled={downloadingKey === plot.geojsonKey}
-                          style={{
-                            padding: "6px 10px",
-                            fontSize: "11px",
-                            fontWeight: 700,
-                            borderRadius: "8px",
-                            border: "1px solid var(--forest-900)",
-                            background: "var(--forest-900)",
-                            color: "#fff",
-                            cursor: "pointer",
-                          }}
-                        >
-                          🌐 GeoJSON
-                        </button>
-
-                        <button
-                          onClick={() => handleDownload(plot.xlsxKey, `${plot.plotId}-cadastro.xlsx`)}
-                          disabled={downloadingKey === plot.xlsxKey}
-                          style={{
-                            padding: "6px 10px",
-                            fontSize: "11px",
-                            fontWeight: 700,
-                            borderRadius: "8px",
-                            border: "1px solid #15803d",
-                            background: "#166534",
-                            color: "#fff",
-                            cursor: "pointer",
-                          }}
-                        >
-                          📊 Excel
-                        </button>
-
-                        <button
-                          onClick={() => handleDownload(plot.shapeKey, `${plot.plotId}-shapefile.zip`)}
-                          disabled={downloadingKey === plot.shapeKey}
-                          style={{
-                            padding: "6px 10px",
-                            fontSize: "11px",
-                            fontWeight: 700,
-                            borderRadius: "8px",
-                            border: "1px solid #0369a1",
-                            background: "#075985",
-                            color: "#fff",
-                            cursor: "pointer",
-                          }}
-                        >
-                          📦 Shape ZIP
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => handleDownload(plot.geojsonKey, `${plot.plotId}.geojson`)}
+                        disabled={downloadingKey === plot.geojsonKey}
+                        style={{
+                          padding: "8px 14px",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          borderRadius: "8px",
+                          border: "1px solid var(--forest-900)",
+                          background: "var(--forest-900)",
+                          color: "#fff",
+                          cursor: "pointer",
+                        }}
+                      >
+                        🌐 Baixar GeoJSON (.geojson)
+                      </button>
                     </td>
                   </tr>
                 ))}

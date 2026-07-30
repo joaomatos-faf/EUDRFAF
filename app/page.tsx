@@ -520,35 +520,13 @@ export default function Home() {
   const [showClientPortal, setShowClientPortal] = useState(false);
   const [contractIdToPublish, setContractIdToPublish] = useState("2026-C001");
   const [isPublishingR2, setIsPublishingR2] = useState(false);
+  const [lastPublishedR2Key, setLastPublishedR2Key] = useState<string | null>(null);
 
   const publishToCloudflareR2 = async () => {
     if (!geometry || !normalizedId) return;
     setIsPublishingR2(true);
     try {
       const geojsonContent = buildEudrGeoJsonString(geometry, normalizedId, area);
-
-      const currentYear = new Date().getFullYear();
-      const automaticNote = gfwCheck.checkedAt
-        ? `Global Forest Watch Perda de Cobertura Florestal (2024–${currentYear}): ${gfwCheck.changes.length ? `${gfwCheck.changes.length} alerta(s) de perda florestal` : "sem perda de cobertura florestal detectada"}.${gfwCheck.verificationUrl ? ` Verificação: ${gfwCheck.verificationUrl}.` : ""}`
-        : "Global Forest Watch: consulta automática não realizada.";
-      const notes = [form.notes.trim(), automaticNote].filter(Boolean).join(" ");
-      const xlsxBytes = buildProducerXlsxBytes({ ...form, notes, plotId: normalizedId, area });
-      let xlsxBase64 = "";
-      if (xlsxBytes && xlsxBytes.length) {
-        let binaryStr = "";
-        for (let i = 0; i < xlsxBytes.length; i++) binaryStr += String.fromCharCode(xlsxBytes[i]);
-        xlsxBase64 = btoa(binaryStr);
-      }
-
-      const shapeParts = buildShapefileParts(geometry, normalizedId, area, form);
-      const shapefileZipBytes = zipStoreBytes(shapeParts);
-      let shapeZipBase64 = "";
-      if (shapefileZipBytes && shapefileZipBytes.length) {
-        let binaryStr = "";
-        for (let i = 0; i < shapefileZipBytes.length; i++) binaryStr += String.fromCharCode(shapefileZipBytes[i]);
-        shapeZipBase64 = btoa(binaryStr);
-      }
-
       const activeUser = userMgmt.loggedUserKey || "usuario";
       const activeName = form.mappedBy || activeUser;
 
@@ -559,37 +537,59 @@ export default function Home() {
           plotId: normalizedId,
           contractId: contractIdToPublish || "2026-C001",
           producer: form.producer || "N/A",
+          supplier: form.supplier || form.producer || "N/A",
           farm: form.farm || "N/A",
+          region: form.region || "GERAL",
           municipality: form.municipality || "N/A",
           state: form.state || "N/A",
           area,
           compliance: form.compliance || "CONFORME",
           publishedBy: activeName,
           geojsonContent,
-          xlsxBase64,
-          shapeZipBase64,
         }),
       });
 
       const data = await res.json();
       if (data.success) {
+        setLastPublishedR2Key(data.key);
         recordAuditLog(
           activeUser,
           activeName,
           "PACKAGE_EXPORTED",
           "EXPORTACAO",
-          `Publicou o pacote do talhão ${normalizedId} no Cloudflare R2 para o contrato ${contractIdToPublish || "2026-C001"}.`,
+          `Publicou o GeoJSON do talhão ${normalizedId} no Cloudflare R2 em ${data.key}.`,
           normalizedId
         );
-        alert(`✅ Talhão ${normalizedId} publicado com sucesso no Cloudflare R2 para o contrato ${contractIdToPublish}!`);
+        alert(`✅ Arquivo GeoJSON enviado com sucesso para o Cloudflare R2!\n\nCaminho: ${data.key}`);
       } else {
-        throw new Error(data.error || "Erro ao publicar no Cloudflare R2.");
+        throw new Error(data.error || "Erro ao publicar GeoJSON no Cloudflare R2.");
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro desconhecido ao publicar no R2.";
-      alert(`⚠️ Falha na publicação: ${msg}`);
+      alert(`⚠️ Falha no envio do GeoJSON: ${msg}`);
     } finally {
       setIsPublishingR2(false);
+    }
+  };
+
+  const handleDownloadR2GeoJsonDirect = async (key: string) => {
+    try {
+      const res = await fetch(`/api/r2/download?key=${encodeURIComponent(key)}`);
+      const data = await res.json();
+      if (data.success && data.downloadUrl) {
+        const a = document.createElement("a");
+        a.href = data.downloadUrl;
+        a.download = `${normalizedId}.geojson`;
+        a.target = "_blank";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        throw new Error(data.error || "Não foi possível obter a URL do R2.");
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro ao baixar.";
+      alert(`⚠️ ${msg}`);
     }
   };
 
@@ -979,23 +979,6 @@ export default function Home() {
             </div>
 
             <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid var(--line-light)" }}>
-              <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)", display: "block", marginBottom: "4px" }}>
-                Contrato para o Portal (Cloudflare R2):
-              </label>
-              <input
-                type="text"
-                value={contractIdToPublish}
-                onChange={(e) => setContractIdToPublish(e.target.value.toUpperCase())}
-                placeholder="Ex: 2026-C001"
-                style={{
-                  width: "100%",
-                  padding: "7px 10px",
-                  fontSize: "12px",
-                  borderRadius: "6px",
-                  border: "1px solid var(--line-strong)",
-                  marginBottom: "8px",
-                }}
-              />
               <button
                 disabled={!ready || isPublishingR2}
                 onClick={publishToCloudflareR2}
@@ -1010,10 +993,30 @@ export default function Home() {
                   color: "#fff",
                   cursor: ready && !isPublishingR2 ? "pointer" : "not-allowed",
                   opacity: ready && !isPublishingR2 ? 1 : 0.6,
+                  marginBottom: "8px",
                 }}
               >
-                {isPublishingR2 ? "⏳ Publicando no R2..." : "🚀 Publicar no Portal do Cliente"}
+                {isPublishingR2 ? "⏳ Enviando GeoJSON para a Nuvem..." : "🚀 Enviar GeoJSON para a Nuvem (R2)"}
               </button>
+
+              {lastPublishedR2Key && (
+                <button
+                  onClick={() => handleDownloadR2GeoJsonDirect(lastPublishedR2Key)}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    borderRadius: "8px",
+                    border: "1px solid #0369a1",
+                    background: "#075985",
+                    color: "#fff",
+                    cursor: "pointer",
+                  }}
+                >
+                  📥 Baixar GeoJSON recém-enviado do R2
+                </button>
+              )}
             </div>
           </article>
 
