@@ -108,8 +108,10 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
     }
   }, []);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (e?: React.FormEvent): Promise<boolean> => {
+    if (e && typeof e.preventDefault === "function") {
+      e.preventDefault();
+    }
     const userKey = loginUsername.trim().toLowerCase();
 
     let currentUsersMap = usersMap;
@@ -124,7 +126,7 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
     const profile = currentUsersMap[userKey];
     if (!profile) {
       setLoginError("Usuário ou senha incorretos.");
-      return;
+      return false;
     }
 
     const passToTest = typeof profile === "string" ? profile : profile.pass;
@@ -144,8 +146,10 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
       setLoginError("");
 
       recordAuditLog(userKey, fullName, "LOGIN", "ACESSO", `Usuário @${userKey} (${fullName}) realizou login.`);
+      return true;
     } else {
       setLoginError("Usuário ou senha incorretos.");
+      return false;
     }
   };
 

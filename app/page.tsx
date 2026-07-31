@@ -831,10 +831,10 @@ export default function Home() {
         loginPassword={userMgmt.loginPassword}
         setLoginPassword={userMgmt.setLoginPassword}
         loginError={userMgmt.loginError}
-        onLogin={() => {
-          const success = userMgmt.handleLogin();
+        onLogin={async (e) => {
+          if (e && typeof e.preventDefault === "function") e.preventDefault();
+          const success = await userMgmt.handleLogin(e);
           if (success) setActiveView("app");
-          return success;
         }}
         onBackToLanding={() => setActiveView("landing")}
       />
