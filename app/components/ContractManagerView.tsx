@@ -457,19 +457,19 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
   const handleDownloadGeoJson = async (key: string, filename: string) => {
     setDownloadingKey(key);
     try {
-      const res = await fetch(`/api/r2/download?key=${encodeURIComponent(key)}`);
-      const data = await res.json();
-      if (data.success && data.downloadUrl) {
-        const a = document.createElement("a");
-        a.href = data.downloadUrl;
-        a.download = filename;
-        a.target = "_blank";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } else {
-        throw new Error(data.error || "Erro ao obter URL de download.");
+      const res = await fetch(`/api/r2/download?key=${encodeURIComponent(key)}&raw=true`);
+      if (!res.ok) {
+        throw new Error("Erro ao baixar o arquivo do servidor.");
       }
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro ao baixar.";
       alert(`⚠️ ${msg}`);
