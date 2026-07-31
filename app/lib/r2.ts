@@ -90,9 +90,114 @@ export async function uploadToR2(key: string, body: Buffer | Uint8Array | string
   }
 }
 
+export async function getObjectFromR2(key: string): Promise<Buffer | null> {
+  try {
+    const host = `${ACCOUNT_ID}.r2.cloudflarestorage.com`;
+    const url = `https://${host}/${BUCKET_NAME}/${key}`;
+
+    const now = new Date();
+    const amzDate = now.toISOString().replace(/[:\-\.]/g, "").slice(0, 15) + "Z";
+    const dateStamp = amzDate.slice(0, 8);
+    const payloadHash = sha256Hex("");
+    const region = "auto";
+    const service = "s3";
+
+    const canonicalHeaders =
+      `host:${host}\n` +
+      `x-amz-content-sha256:${payloadHash}\n` +
+      `x-amz-date:${amzDate}\n`;
+
+    const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
+
+    const canonicalRequest =
+      `GET\n` +
+      `/${BUCKET_NAME}/${key}\n` +
+      `\n` +
+      `${canonicalHeaders}\n` +
+      `${signedHeaders}\n` +
+      `${payloadHash}`;
+
+    const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
+    const stringToSign =
+      `AWS4-HMAC-SHA256\n` +
+      `${amzDate}\n` +
+      `${credentialScope}\n` +
+      `${sha256Hex(canonicalRequest)}`;
+
+    const signingKey = getSignatureKey(SECRET_ACCESS_KEY, dateStamp, region, service);
+    const signature = crypto.createHmac("sha256", signingKey).update(stringToSign).digest("hex");
+
+    const authorizationHeader =
+      `AWS4-HMAC-SHA256 ` +
+      `Credential=${ACCESS_KEY_ID}/${credentialScope}, ` +
+      `SignedHeaders=${signedHeaders}, ` +
+      `Signature=${signature}`;
+
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Host": host,
+        "x-amz-date": amzDate,
+        "x-amz-content-sha256": payloadHash,
+        "Authorization": authorizationHeader,
+      },
+    });
+
+    if (res.ok) {
+      const arrayBuffer = await res.arrayBuffer();
+      return Buffer.from(arrayBuffer);
+    }
+  } catch (err) {
+    console.warn("⚠️ getObjectFromR2 error:", err);
+  }
+  return null;
+}
+
 export async function getR2PresignedUrl(key: string, expiresInSeconds = 900): Promise<string> {
-  const host = `${ACCOUNT_ID}.r2.cloudflarestorage.com`;
-  return `https://${BUCKET_NAME}.${host}/${key}`;
+  try {
+    const host = `${ACCOUNT_ID}.r2.cloudflarestorage.com`;
+    const now = new Date();
+    const amzDate = now.toISOString().replace(/[:\-\.]/g, "").slice(0, 15) + "Z";
+    const dateStamp = amzDate.slice(0, 8);
+    const region = "auto";
+    const service = "s3";
+    const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
+
+    const queryParams = new URLSearchParams({
+      "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
+      "X-Amz-Credential": `${ACCESS_KEY_ID}/${credentialScope}`,
+      "X-Amz-Date": amzDate,
+      "X-Amz-Expires": String(expiresInSeconds),
+      "X-Amz-SignedHeaders": "host",
+    });
+
+    const canonicalQueryParams = queryParams.toString();
+    const canonicalHeaders = `host:${host}\n`;
+    const signedHeaders = "host";
+
+    const canonicalRequest =
+      `GET\n` +
+      `/${BUCKET_NAME}/${key}\n` +
+      `${canonicalQueryParams}\n` +
+      `${canonicalHeaders}\n` +
+      `${signedHeaders}\n` +
+      `UNSIGNED-PAYLOAD`;
+
+    const stringToSign =
+      `AWS4-HMAC-SHA256\n` +
+      `${amzDate}\n` +
+      `${credentialScope}\n` +
+      `${sha256Hex(canonicalRequest)}`;
+
+    const signingKey = getSignatureKey(SECRET_ACCESS_KEY, dateStamp, region, service);
+    const signature = crypto.createHmac("sha256", signingKey).update(stringToSign).digest("hex");
+
+    queryParams.append("X-Amz-Signature", signature);
+
+    return `https://${host}/${BUCKET_NAME}/${key}?${queryParams.toString()}`;
+  } catch {
+    return `/api/r2/download?key=${encodeURIComponent(key)}&raw=true`;
+  }
 }
 
 export async function listR2Objects(prefix = "") {
