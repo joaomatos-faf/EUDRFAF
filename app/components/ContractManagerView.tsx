@@ -451,44 +451,47 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
         fontFamily: "system-ui, -apple-system, sans-serif",
       }}
     >
-      {/* Top Navbar */}
+      {/* Top Navbar com fundo verde escuro solido #143022 de alto contraste */}
       <header
         style={{
-          background: "var(--surface-dark)",
-          color: "#fff",
+          background: "#143022",
+          color: "#ffffff",
           padding: "16px 32px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          borderBottom: "1px solid var(--line-dark)",
+          borderBottom: "1px solid #1e4630",
+          boxShadow: "0 4px 14px rgba(0,0,0,0.15)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div className="brand-mark" style={{ width: "42px", height: "42px", fontSize: "14px" }}>FAF</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <div style={{ width: "42px", height: "42px", borderRadius: "10px", background: "#1e4630", border: "1px solid #2d6646", color: "#34d399", fontSize: "14px", fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", letterSpacing: "1px" }}>
+            FAF
+          </div>
           <div>
-            <div style={{ fontSize: "10px", color: "#6ee7b7", fontWeight: 700, letterSpacing: "1px" }}>
+            <div style={{ fontSize: "10px", color: "#34d399", fontWeight: 800, letterSpacing: "1.5px", textTransform: "uppercase" }}>
               CONTRATOS.FAFEU.ONLINE
             </div>
-            <h1 style={{ fontSize: "18px", margin: 0, fontWeight: 700, color: "#fff" }}>
+            <h1 style={{ fontSize: "18px", margin: 0, fontWeight: 800, color: "#ffffff" }}>
               Gerenciador de Contratos & Banco Criptografado (AES-256)
             </h1>
           </div>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <span style={{ fontSize: "11px", background: "rgba(255,255,255,0.15)", padding: "4px 10px", borderRadius: "20px", color: "#a7f3d0", fontWeight: 700 }}>
+          <span style={{ fontSize: "11px", background: "rgba(52, 211, 153, 0.15)", border: "1px solid rgba(52, 211, 153, 0.3)", padding: "5px 12px", borderRadius: "20px", color: "#34d399", fontWeight: 800 }}>
             🔒 {plotMasterList.length} Talhões Protegidos (AES-256)
           </span>
           <button
             onClick={onOpenLanding}
             style={{
-              background: "rgba(255, 255, 255, 0.12)",
-              border: "1px solid rgba(255, 255, 255, 0.25)",
-              color: "#fff",
-              padding: "8px 14px",
+              background: "rgba(255, 255, 255, 0.15)",
+              border: "1px solid rgba(255, 255, 255, 0.3)",
+              color: "#ffffff",
+              padding: "8px 16px",
               borderRadius: "8px",
               fontSize: "12px",
-              fontWeight: 700,
+              fontWeight: 800,
               cursor: "pointer",
             }}
           >
