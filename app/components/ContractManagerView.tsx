@@ -437,6 +437,15 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
     }
   };
 
+  const [expandedContractIds, setExpandedContractIds] = useState<Record<string, boolean>>({});
+
+  const toggleExpandContract = (id: string) => {
+    setExpandedContractIds((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
   // Soma Total dos Hectares de Todos os Lotes do Contrato
   const grandTotalHectares = lots.reduce((acc, lot) => {
     return acc + lot.plots.reduce((sum, p) => sum + (Number(p.hectares) || 0), 0);
@@ -515,8 +524,13 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
               <div>
-                <h2 style={{ fontSize: "20px", margin: 0, color: "var(--forest-950)", fontWeight: 700 }}>
-                  📜 Criar Novo Contrato de Cliente
+                <h2 style={{ fontSize: "20px", margin: 0, color: "var(--forest-950)", fontWeight: 800, display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                  <span>📜 {clientName.trim() ? `Contrato: ${clientName.trim()}` : "Criar Novo Contrato de Cliente"}</span>
+                  {contractCode.trim() && (
+                    <span style={{ fontSize: "12px", background: "#eef2ff", color: "#3730a3", padding: "3px 10px", borderRadius: "6px", fontWeight: 800, border: "1px solid #c7d2fe" }}>
+                      N° {contractCode.trim()}
+                    </span>
+                  )}
                 </h2>
                 <p style={{ fontSize: "13px", color: "var(--muted)", margin: "4px 0 0" }}>
                   Digite o PLOT ID (ex: <strong>NAS-02</strong>, <strong>P2401</strong>) para autopreencher a partir do banco de dados criptografado.
@@ -545,24 +559,24 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
             <form onSubmit={handleSaveContract} style={{ display: "flex", flexDirection: "column", gap: "18px", marginTop: "16px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
                 <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 700 }}>
-                  Código do Contrato *
-                  <input
-                    type="text"
-                    value={contractCode}
-                    onChange={(e) => setContractCode(e.target.value.toUpperCase())}
-                    placeholder="Ex: 2026-C001"
-                    required
-                    style={{ padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--line)", outline: "none", fontSize: "13px" }}
-                  />
-                </label>
-
-                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 700 }}>
                   Nome do Cliente / Importador *
                   <input
                     type="text"
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
                     placeholder="Ex: Bremen Importers GmbH"
+                    required
+                    style={{ padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--line)", outline: "none", fontSize: "13px" }}
+                  />
+                </label>
+
+                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 700 }}>
+                  Código do Contrato *
+                  <input
+                    type="text"
+                    value={contractCode}
+                    onChange={(e) => setContractCode(e.target.value.toUpperCase())}
+                    placeholder="Ex: 2026-C001"
                     required
                     style={{ padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--line)", outline: "none", fontSize: "13px" }}
                   />
@@ -896,83 +910,124 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
               {contracts.length === 0 ? (
                 <p style={{ color: "var(--muted)", fontSize: "13px" }}>Nenhum contrato criado ainda.</p>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   {contracts.map((c) => {
                     const activeContractHectares = c.lots.reduce((acc, l) => {
                       return acc + (l.plots || []).reduce((s, p) => s + (Number(p.hectares) || 0), 0);
                     }, 0);
+
+                    const isExpanded = Boolean(expandedContractIds[c.id]);
 
                     return (
                       <div
                         key={c.id}
                         style={{
                           background: "var(--canvas)",
-                          border: "1px solid var(--line)",
+                          border: isExpanded ? "2px solid #0284c7" : "1px solid var(--line)",
                           borderRadius: "12px",
-                          padding: "18px",
+                          padding: "16px",
+                          transition: "all 0.2s ease-in-out",
+                          boxShadow: isExpanded ? "0 4px 14px rgba(2, 132, 199, 0.08)" : "none",
                         }}
                       >
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                          <span style={{ background: "#eef2ff", color: "#3730a3", padding: "4px 10px", borderRadius: "6px", fontSize: "12px", fontWeight: 800 }}>
-                            {c.contractCode}
-                          </span>
-                          <span style={{ fontSize: "11px", color: "var(--muted)" }}>
-                            {new Date(c.createdAt).toLocaleDateString("pt-BR")}
-                          </span>
+                        {/* Cabeçalho do Contrato (Clicável para Expandir/Recolher) */}
+                        <div
+                          onClick={() => toggleExpandContract(c.id)}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            cursor: "pointer",
+                            userSelect: "none",
+                          }}
+                        >
+                          <div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <span style={{ fontSize: "15px", fontWeight: 800, color: "var(--forest-950)" }}>
+                                {c.clientName}
+                              </span>
+                              <span style={{ background: "#eef2ff", color: "#3730a3", padding: "3px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 800 }}>
+                                Contrato: {c.contractCode}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>
+                              📦 {c.lots ? c.lots.length : 0} lote(s) • 📅 {new Date(c.createdAt).toLocaleDateString("pt-BR")}
+                            </div>
+                          </div>
+
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <span style={{ fontSize: "12px", color: "#166534", fontWeight: 800, background: "#dcfce7", padding: "4px 10px", borderRadius: "12px", border: "1px solid #86efac" }}>
+                              📐 {activeContractHectares.toFixed(2)} ha
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleExpandContract(c.id);
+                              }}
+                              style={{
+                                background: isExpanded ? "#e0f2fe" : "#f1f5f9",
+                                color: isExpanded ? "#0369a1" : "#475569",
+                                border: "1px solid #bae6fd",
+                                padding: "6px 12px",
+                                borderRadius: "8px",
+                                fontSize: "11px",
+                                fontWeight: 800,
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "5px",
+                              }}
+                            >
+                              {isExpanded ? "🔼 Recolher" : "👁️ Ver Lotes & GeoJSONs"}
+                            </button>
+                          </div>
                         </div>
 
-                        <h4 style={{ margin: "0 0 10px", fontSize: "15px", fontWeight: 700, color: "var(--forest-950)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span>{c.clientName}</span>
-                          <span style={{ fontSize: "12px", color: "#166534", fontWeight: 800, background: "#dcfce7", padding: "2px 8px", borderRadius: "10px" }}>
-                            📐 {activeContractHectares.toFixed(2)} ha
-                          </span>
-                        </h4>
+                        {/* Conteúdo Detalhado (Apenas quando Expandido) */}
+                        {isExpanded && (
+                          <div style={{ borderTop: "1px solid var(--line-light)", marginTop: "14px", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                            {c.lots.map((lot) => {
+                              const activeLotHectares = (lot.plots || []).reduce((s, p) => s + (Number(p.hectares) || 0), 0);
 
-                        <div style={{ borderTop: "1px solid var(--line-light)", paddingTop: "10px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                          {c.lots.map((lot) => {
-                            const activeLotHectares = (lot.plots || []).reduce((s, p) => s + (Number(p.hectares) || 0), 0);
-
-                            return (
-                              <div key={lot.id} style={{ background: "#fff", padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--line-light)" }}>
-                                <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--forest-900)", marginBottom: "6px", display: "flex", justifyContent: "space-between" }}>
-                                  <span>📦 {lot.lotNumber} ({lot.plots ? lot.plots.length : 1} talhão(ões))</span>
-                                  <span style={{ color: "#0369a1", fontWeight: 800 }}>{activeLotHectares.toFixed(2)} ha</span>
-                                </div>
-                                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                                  {(lot.plots || []).map((p, pIdx) => (
-                                    <div key={pIdx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px", background: "var(--canvas)", padding: "8px 10px", borderRadius: "6px" }}>
-                                      <div>
-                                        <div style={{ fontWeight: 800, color: "var(--forest-950)" }}>🌐 {p.plotId} ({p.hectares || 0} ha)</div>
-                                        <div style={{ fontSize: "10px", color: "#0369a1", fontWeight: 600 }}>
-                                          Produtor: <strong>{p.producer}</strong> • Fornecedor: <strong>{p.supplier}</strong>
+                              return (
+                                <div key={lot.id} style={{ background: "#fff", padding: "12px", borderRadius: "8px", border: "1px solid var(--line-light)" }}>
+                                  <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--forest-900)", marginBottom: "8px", display: "flex", justifyContent: "space-between" }}>
+                                    <span>📦 {lot.lotNumber} ({lot.plots ? lot.plots.length : 1} talhão(ões))</span>
+                                    <span style={{ color: "#0369a1", fontWeight: 800 }}>{activeLotHectares.toFixed(2)} ha</span>
+                                  </div>
+                                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                    {(lot.plots || []).map((p, pIdx) => (
+                                      <div key={pIdx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px", background: "var(--canvas)", padding: "8px 12px", borderRadius: "6px" }}>
+                                        <div>
+                                          <div style={{ fontWeight: 800, color: "var(--forest-950)", fontSize: "12px" }}>
+                                            🌐 {p.plotId} ({p.hectares || 0} ha)
+                                          </div>
                                         </div>
-                                        <div style={{ fontSize: "10px", color: "var(--muted)" }}>
-                                          Fazenda: {p.farm}
-                                        </div>
+                                        <button
+                                          onClick={() => handleDownloadGeoJson(p.targetGeojsonKey, `${p.plotId}.geojson`)}
+                                          disabled={downloadingKey === p.targetGeojsonKey}
+                                          style={{
+                                            padding: "5px 10px",
+                                            fontSize: "10px",
+                                            fontWeight: 700,
+                                            borderRadius: "5px",
+                                            background: "var(--forest-900)",
+                                            color: "#fff",
+                                            border: "none",
+                                            cursor: "pointer",
+                                          }}
+                                        >
+                                          Baixar GeoJSON
+                                        </button>
                                       </div>
-                                      <button
-                                        onClick={() => handleDownloadGeoJson(p.targetGeojsonKey, `${p.plotId}.geojson`)}
-                                        disabled={downloadingKey === p.targetGeojsonKey}
-                                        style={{
-                                          padding: "4px 8px",
-                                          fontSize: "10px",
-                                          fontWeight: 700,
-                                          borderRadius: "4px",
-                                          background: "var(--forest-900)",
-                                          color: "#fff",
-                                          border: "none",
-                                          cursor: "pointer",
-                                        }}
-                                      >
-                                        Baixar GeoJSON
-                                      </button>
-                                    </div>
-                                  ))}
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
