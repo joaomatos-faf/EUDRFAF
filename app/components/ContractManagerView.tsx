@@ -45,14 +45,24 @@ function PlotAutocompleteInput({ value, onChange, onSelect, plotMasterList, plac
     (p) => p.plotId.toUpperCase() === query || p.plotId.replace(/[^A-Z0-9]/g, "") === normQuery
   );
 
-  // Filtragem estrita: mostra APENAS o que combina exatamente com o que foi digitado!
+  // Filtragem flexível por Código do Talhão, Produtor, Fornecedor ou Fazenda
   const filteredPlots = query
     ? plotMasterList.filter((p) => {
-        const pId = p.plotId.toUpperCase();
+        const pId = (p.plotId || "").toUpperCase();
+        const producer = (p.producer || "").toUpperCase();
+        const supplier = (p.supplier || "").toUpperCase();
+        const farm = (p.farm || "").toUpperCase();
         const normP = pId.replace(/[^A-Z0-9]/g, "");
-        return pId.includes(query) || normP.includes(normQuery);
+
+        return (
+          pId.includes(query) ||
+          (normQuery.length > 0 && normP.includes(normQuery)) ||
+          producer.includes(query) ||
+          supplier.includes(query) ||
+          farm.includes(query)
+        );
       })
-    : plotMasterList.slice(0, 8);
+    : plotMasterList.slice(0, 10);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -332,6 +342,76 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
       [field]: field === "hectares" ? parseFloat(value) || 0 : value,
     };
     setLots(updated);
+  };
+
+  const [lotSearchQueries, setLotSearchQueries] = useState<Record<number, string>>({});
+
+  const handleAddSinglePlotToLot = (lotIdx: number, plot: PlotMasterRecord) => {
+    setLots((prevLots) => {
+      const newLots = [...prevLots];
+      const targetLot = { ...newLots[lotIdx] };
+      const newPlots = [...targetLot.plots];
+
+      const lastPlot = newPlots[newPlots.length - 1];
+      const isLastEmpty = lastPlot && !lastPlot.plotId.trim() && (!lastPlot.hectares || lastPlot.hectares === 0);
+
+      const itemToInsert = {
+        plotId: plot.plotId,
+        producer: plot.producer,
+        supplier: plot.supplier,
+        farm: plot.farm,
+        hectares: plot.hectares,
+      };
+
+      if (isLastEmpty) {
+        newPlots[newPlots.length - 1] = itemToInsert;
+      } else {
+        newPlots.push(itemToInsert);
+      }
+
+      if (plot.region && !targetLot.region) {
+        targetLot.region = plot.region.toUpperCase();
+      }
+
+      targetLot.plots = newPlots;
+      newLots[lotIdx] = targetLot;
+      return newLots;
+    });
+  };
+
+  const handleAddMultiplePlotsToLot = (lotIdx: number, plotsToAdd: PlotMasterRecord[]) => {
+    setLots((prevLots) => {
+      const newLots = [...prevLots];
+      const targetLot = { ...newLots[lotIdx] };
+      let newPlots = [...targetLot.plots];
+
+      const lastPlot = newPlots[newPlots.length - 1];
+      if (lastPlot && !lastPlot.plotId.trim() && (!lastPlot.hectares || lastPlot.hectares === 0)) {
+        newPlots.pop();
+      }
+
+      const existingIds = new Set(newPlots.map((p) => p.plotId.toUpperCase()));
+      plotsToAdd.forEach((p) => {
+        if (!existingIds.has(p.plotId.toUpperCase())) {
+          newPlots.push({
+            plotId: p.plotId,
+            producer: p.producer,
+            supplier: p.supplier,
+            farm: p.farm,
+            hectares: p.hectares,
+          });
+          if (p.region && !targetLot.region) {
+            targetLot.region = p.region.toUpperCase();
+          }
+        }
+      });
+
+      targetLot.plots = newPlots;
+      newLots[lotIdx] = targetLot;
+      return newLots;
+    });
+
+    setLotSearchQueries((prev) => ({ ...prev, [lotIdx]: "" }));
   };
 
   const [editingContractId, setEditingContractId] = useState<string | null>(null);
@@ -858,6 +938,101 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                                   style={{ width: "100%", padding: "7px 9px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "12px" }}
                                 />
                               </label>
+                            </div>
+
+                            {/* Busca Rápida de Talhões por Produtor, Fornecedor ou Fazenda */}
+                            <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: "10px", padding: "12px", marginBottom: "14px" }}>
+                              <div style={{ fontSize: "11px", fontWeight: 800, color: "#0369a1", marginBottom: "6px", display: "flex", alignItems: "center", gap: "6px" }}>
+                                🔍 <span>Buscar e adicionar talhões por Produtor, Fornecedor ou Fazenda</span>
+                              </div>
+                              <input
+                                type="text"
+                                value={lotSearchQueries[lotIdx] || ""}
+                                onChange={(e) => setLotSearchQueries((prev) => ({ ...prev, [lotIdx]: e.target.value }))}
+                                placeholder="Digite o nome do Produtor, Fornecedor ou Fazenda..."
+                                style={{
+                                  width: "100%",
+                                  padding: "8px 12px",
+                                  borderRadius: "6px",
+                                  border: "1px solid #0284c7",
+                                  fontSize: "12px",
+                                  fontWeight: 700,
+                                  background: "#fff",
+                                  outline: "none",
+                                }}
+                              />
+
+                              {/* Resultados da Busca em Lote */}
+                              {lotSearchQueries[lotIdx]?.trim() && (
+                                <div style={{ marginTop: "10px", background: "#fff", borderRadius: "8px", border: "1px solid #cbd5e1", maxHeight: "220px", overflowY: "auto", padding: "8px" }}>
+                                  {(() => {
+                                    const q = (lotSearchQueries[lotIdx] || "").trim().toUpperCase();
+                                    const matches = plotMasterList.filter((p) => {
+                                      const pId = (p.plotId || "").toUpperCase();
+                                      const prod = (p.producer || "").toUpperCase();
+                                      const supp = (p.supplier || "").toUpperCase();
+                                      const farm = (p.farm || "").toUpperCase();
+                                      return pId.includes(q) || prod.includes(q) || supp.includes(q) || farm.includes(q);
+                                    });
+
+                                    if (matches.length === 0) {
+                                      return <div style={{ fontSize: "11px", color: "var(--muted)", padding: "6px" }}>Nenhum talhão encontrado para &quot;{lotSearchQueries[lotIdx]}&quot;.</div>;
+                                    }
+
+                                    return (
+                                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "6px" }}>
+                                          <span style={{ fontSize: "11px", fontWeight: 800, color: "#166534" }}>
+                                            📍 {matches.length} talhão(ões) encontrado(s)
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleAddMultiplePlotsToLot(lotIdx, matches)}
+                                            style={{
+                                              background: "#166534",
+                                              color: "#fff",
+                                              border: "none",
+                                              padding: "4px 10px",
+                                              borderRadius: "6px",
+                                              fontSize: "10px",
+                                              fontWeight: 800,
+                                              cursor: "pointer",
+                                            }}
+                                          >
+                                            ✨ Adicionar Todos os {matches.length} Talhões ao Lote
+                                          </button>
+                                        </div>
+                                        {matches.map((p, mIdx) => (
+                                          <div key={mIdx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px", background: "#f8fafc", padding: "6px 10px", borderRadius: "6px" }}>
+                                            <div>
+                                              <strong style={{ color: "var(--forest-950)" }}>🌐 {p.plotId}</strong> ({p.hectares} ha)
+                                              <div style={{ fontSize: "10px", color: "var(--muted)" }}>
+                                                👤 Produtor: {p.producer} • 🏡 Fazenda: {p.farm}
+                                              </div>
+                                            </div>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleAddSinglePlotToLot(lotIdx, p)}
+                                              style={{
+                                                background: "#0284c7",
+                                                color: "#fff",
+                                                border: "none",
+                                                padding: "4px 8px",
+                                                borderRadius: "4px",
+                                                fontSize: "10px",
+                                                fontWeight: 700,
+                                                cursor: "pointer",
+                                              }}
+                                            >
+                                              ➕ Adicionar
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                              )}
                             </div>
 
                             {/* Lista Dinâmica de Talhões por Lote */}
