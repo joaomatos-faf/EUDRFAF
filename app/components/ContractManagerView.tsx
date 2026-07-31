@@ -457,7 +457,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
   const handleDownloadGeoJson = async (key: string, filename: string) => {
     setDownloadingKey(key);
     try {
-      const res = await fetch(`/api/r2/download?key=${encodeURIComponent(key)}&raw=true`);
+      const res = await fetch(`/api/r2/download?key=${encodeURIComponent(key)}`);
       if (!res.ok) {
         throw new Error("Erro ao baixar o arquivo do servidor.");
       }
