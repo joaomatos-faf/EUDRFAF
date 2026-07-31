@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { ContractRecord } from "@/app/lib/contractStore";
 import { PlotMasterRecord } from "@/app/lib/plotMasterData";
 
@@ -161,6 +161,7 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
   const [clientName, setClientName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const lotsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -333,10 +334,57 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
     setLots(updated);
   };
 
+  const [editingContractId, setEditingContractId] = useState<string | null>(null);
+
+  const handleStartEditContract = (c: ContractRecord) => {
+    setEditingContractId(c.id);
+    setClientName(c.clientName);
+    setContractCode(c.contractCode);
+    setLots(
+      c.lots.map((lot) => ({
+        lotNumber: lot.lotNumber,
+        region: lot.region || "",
+        plots: (lot.plots || []).map((p) => ({
+          plotId: p.plotId || "",
+          producer: p.producer || "",
+          supplier: p.supplier || "",
+          farm: p.farm || "",
+          hectares: Number(p.hectares) || 0,
+        })),
+        isCollapsed: false,
+      }))
+    );
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingContractId(null);
+    setContractCode("");
+    setClientName("");
+    setLots([
+      {
+        lotNumber: "LOTE 01",
+        region: "",
+        plots: [{ plotId: "", producer: "", supplier: "", farm: "", hectares: 0 }],
+        isCollapsed: false,
+      },
+    ]);
+  };
+
+  const isContractCodeDuplicate = !editingContractId && contractCode.trim()
+    ? contracts.some((c) => c.contractCode.trim().toUpperCase() === contractCode.trim().toUpperCase())
+    : false;
+
   const handleSaveContract = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!contractCode.trim() || !clientName.trim()) {
-      alert("⚠️ Código do Contrato e Nome do Cliente são obrigatórios.");
+      alert("⚠️ Preencha o código do contrato e o nome do cliente.");
+      return;
+    }
+
+    if (isContractCodeDuplicate) {
+      alert(`⚠️ Já existe um contrato cadastrado com o código "${contractCode.trim().toUpperCase()}".\n\nPor favor, informe um código de contrato diferente.`);
       return;
     }
 
@@ -376,11 +424,13 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
         }
       }
 
-      // 2. Salvar contrato no R2
+      // 2. Salvar ou Atualizar contrato no R2
+      const isEditing = Boolean(editingContractId);
       const res = await fetch("/api/r2/copy-contract", {
-        method: "POST",
+        method: isEditing ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          id: editingContractId || undefined,
           contractCode: contractCode.trim().toUpperCase(),
           clientName: clientName.trim(),
           lots,
@@ -390,17 +440,8 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
 
       const data = await res.json();
       if (data.success) {
-        alert(`✅ Contrato ${data.record.contractCode} criado com sucesso!\n\n${data.record.lots.length} lote(s) salvos no Cloudflare R2.`);
-        setContractCode("");
-        setClientName("");
-        setLots([
-          {
-            lotNumber: "LOTE 01",
-            region: "",
-            plots: [{ plotId: "", producer: "", supplier: "", farm: "", hectares: 0 }],
-            isCollapsed: false,
-          },
-        ]);
+        alert(`✅ Contrato ${data.record.contractCode} ${isEditing ? "atualizado" : "criado"} com sucesso!\n\n${data.record.lots.length} lote(s) salvos no Cloudflare R2.`);
+        handleCancelEdit();
         loadContractsAndPlots();
       } else {
         throw new Error(data.error || "Erro ao criar pacote do contrato.");
@@ -437,6 +478,27 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
     }
   };
 
+  const handleDeleteContract = async (id: string, contractCode: string) => {
+    if (!confirm(`⚠️ Deseja realmente excluir o contrato ${contractCode} do servidor?`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/r2/copy-contract?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`✅ Contrato ${contractCode} excluído com sucesso do servidor!`);
+        loadContractsAndPlots();
+      } else {
+        throw new Error(data.error || "Erro ao excluir contrato.");
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro ao excluir.";
+      alert(`⚠️ ${msg}`);
+    }
+  };
+
   const [expandedContractIds, setExpandedContractIds] = useState<Record<string, boolean>>({});
 
   const toggleExpandContract = (id: string) => {
@@ -446,10 +508,56 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
     }));
   };
 
+  const [expandedClientNames, setExpandedClientNames] = useState<Record<string, boolean>>({});
+
+  const toggleExpandClient = (clientName: string) => {
+    setExpandedClientNames((prev) => ({
+      ...prev,
+      [clientName]: !prev[clientName],
+    }));
+  };
+
   // Soma Total dos Hectares de Todos os Lotes do Contrato
   const grandTotalHectares = lots.reduce((acc, lot) => {
     return acc + lot.plots.reduce((sum, p) => sum + (Number(p.hectares) || 0), 0);
   }, 0);
+
+  // Filtro de Contratos por Busca (Cliente, Código do Contrato ou Código do Talhão)
+  const filteredContracts = searchQuery.trim()
+    ? contracts.filter((c) => {
+        const q = searchQuery.toLowerCase().trim();
+        const matchClient = c.clientName.toLowerCase().includes(q);
+        const matchCode = c.contractCode.toLowerCase().includes(q);
+        const matchPlot = (c.lots || []).some((l) =>
+          (l.plots || []).some((p) => (p.plotId || "").toLowerCase().includes(q))
+        );
+        return matchClient || matchCode || matchPlot;
+      })
+    : contracts;
+
+  // Agrupar contratos por Nome do Cliente para que apareçam sempre juntos
+  const groupedContracts = useMemo(() => {
+    const map = new Map<string, ContractRecord[]>();
+    filteredContracts.forEach((c) => {
+      const key = c.clientName.trim();
+      if (!map.has(key)) {
+        map.set(key, []);
+      }
+      map.get(key)!.push(c);
+    });
+    return Array.from(map.entries()).map(([clientName, clientContracts]) => ({
+      clientName,
+      contracts: clientContracts,
+      totalHectares: clientContracts.reduce((acc, c) => {
+        return (
+          acc +
+          c.lots.reduce((lAcc, l) => {
+            return lAcc + (l.plots || []).reduce((pAcc, p) => pAcc + (Number(p.hectares) || 0), 0);
+          }, 0)
+        );
+      }, 0),
+    }));
+  }, [filteredContracts]);
 
   return (
     <div
@@ -556,6 +664,30 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
               </div>
             </div>
 
+            {editingContractId && (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fffbe6", border: "1px solid #fef08a", padding: "10px 14px", borderRadius: "10px", marginTop: "14px" }}>
+                <span style={{ fontSize: "12px", fontWeight: 800, color: "#b45309" }}>
+                  ✏️ Editando Contrato: {contractCode} ({clientName})
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  style={{
+                    background: "#dc2626",
+                    color: "#fff",
+                    border: "none",
+                    padding: "5px 12px",
+                    borderRadius: "6px",
+                    fontSize: "11px",
+                    fontWeight: 800,
+                    cursor: "pointer",
+                  }}
+                >
+                  ❌ Cancelar Edição
+                </button>
+              </div>
+            )}
+
             <form onSubmit={handleSaveContract} style={{ display: "flex", flexDirection: "column", gap: "18px", marginTop: "16px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
                 <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 700 }}>
@@ -578,8 +710,20 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                     onChange={(e) => setContractCode(e.target.value.toUpperCase())}
                     placeholder="Ex: 2026-C001"
                     required
-                    style={{ padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--line)", outline: "none", fontSize: "13px" }}
+                    style={{
+                      padding: "10px 12px",
+                      borderRadius: "8px",
+                      border: isContractCodeDuplicate ? "2px solid #ef4444" : "1px solid var(--line)",
+                      background: isContractCodeDuplicate ? "#fef2f2" : "#fff",
+                      outline: "none",
+                      fontSize: "13px",
+                    }}
                   />
+                  {isContractCodeDuplicate && (
+                    <span style={{ fontSize: "11px", color: "#dc2626", fontWeight: 800, marginTop: "2px" }}>
+                      ⚠️ Este contrato já existe no servidor! Informe outro código.
+                    </span>
+                  )}
                 </label>
               </div>
 
@@ -885,9 +1029,21 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                 type="submit"
                 disabled={isSaving}
                 className="primary-button"
-                style={{ width: "100%", padding: "14px", fontSize: "14px", fontWeight: 700, borderRadius: "10px", marginTop: "10px" }}
+                style={{
+                  width: "100%",
+                  padding: "14px",
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  borderRadius: "10px",
+                  marginTop: "10px",
+                  background: editingContractId ? "#d97706" : undefined,
+                }}
               >
-                {isSaving ? "⏳ Criando Pastas e Copiando GeoJSONs no R2..." : `🚀 Criar Pacote do Contrato (${grandTotalHectares.toFixed(2)} ha) no R2`}
+                {isSaving
+                  ? "⏳ Salvando e Atualizando no Cloudflare R2..."
+                  : editingContractId
+                  ? `💾 Salvar Alterações do Contrato (${grandTotalHectares.toFixed(2)} ha) no R2`
+                  : `🚀 Criar Pacote do Contrato (${grandTotalHectares.toFixed(2)} ha) no R2`}
               </button>
             </form>
           </div>
@@ -903,36 +1059,79 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                 boxShadow: "var(--shadow-md)",
               }}
             >
-              <h3 style={{ fontSize: "18px", margin: "0 0 16px", fontWeight: 700, color: "var(--forest-950)" }}>
-                📁 Contratos Ativos no R2 ({contracts.length})
-              </h3>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+                <h3 style={{ fontSize: "18px", margin: 0, fontWeight: 700, color: "var(--forest-950)" }}>
+                  📁 Contratos Ativos no R2 ({contracts.length})
+                </h3>
+              </div>
+
+              {/* Barra de Pesquisa de Contratos & Clientes */}
+              <div style={{ marginBottom: "16px", position: "relative" }}>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="🔍 Pesquisar por cliente, número de contrato ou talhão..."
+                  style={{
+                    width: "100%",
+                    padding: "10px 36px 10px 14px",
+                    borderRadius: "10px",
+                    border: "1px solid #0284c7",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    background: "#f0f9ff",
+                    outline: "none",
+                    boxShadow: "0 2px 6px rgba(2, 132, 199, 0.08)",
+                  }}
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    style={{
+                      position: "absolute",
+                      right: "10px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "transparent",
+                      border: "none",
+                      color: "var(--muted)",
+                      fontSize: "13px",
+                      cursor: "pointer",
+                      fontWeight: 800,
+                    }}
+                  >
+                    ✖
+                  </button>
+                )}
+              </div>
 
               {contracts.length === 0 ? (
                 <p style={{ color: "var(--muted)", fontSize: "13px" }}>Nenhum contrato criado ainda.</p>
+              ) : filteredContracts.length === 0 ? (
+                <p style={{ color: "var(--muted)", fontSize: "13px", textAlign: "center", padding: "16px 0" }}>
+                  🔍 Nenhum contrato encontrado para &quot;<strong>{searchQuery}</strong>&quot;.
+                </p>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  {contracts.map((c) => {
-                    const activeContractHectares = c.lots.reduce((acc, l) => {
-                      return acc + (l.plots || []).reduce((s, p) => s + (Number(p.hectares) || 0), 0);
-                    }, 0);
-
-                    const isExpanded = Boolean(expandedContractIds[c.id]);
+                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                  {groupedContracts.map((group) => {
+                    const isClientExpanded = searchQuery.trim() ? true : Boolean(expandedClientNames[group.clientName]);
 
                     return (
                       <div
-                        key={c.id}
+                        key={group.clientName}
                         style={{
-                          background: "var(--canvas)",
-                          border: isExpanded ? "2px solid #0284c7" : "1px solid var(--line)",
-                          borderRadius: "12px",
+                          background: "#fff",
+                          border: isClientExpanded ? "2px solid #0369a1" : "1px solid #cbd5e1",
+                          borderRadius: "14px",
                           padding: "16px",
+                          boxShadow: isClientExpanded ? "0 4px 14px rgba(3, 105, 161, 0.08)" : "0 2px 6px rgba(0, 0, 0, 0.03)",
                           transition: "all 0.2s ease-in-out",
-                          boxShadow: isExpanded ? "0 4px 14px rgba(2, 132, 199, 0.08)" : "none",
                         }}
                       >
-                        {/* Cabeçalho do Contrato (Clicável para Expandir/Recolher) */}
+                        {/* Cabeçalho do Cliente (Clicável para Expandir/Recolher Todos os Contratos do Cliente) */}
                         <div
-                          onClick={() => toggleExpandContract(c.id)}
+                          onClick={() => toggleExpandClient(group.clientName)}
                           style={{
                             display: "flex",
                             justifyContent: "space-between",
@@ -941,33 +1140,26 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                             userSelect: "none",
                           }}
                         >
-                          <div>
-                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                              <span style={{ fontSize: "15px", fontWeight: 800, color: "var(--forest-950)" }}>
-                                {c.clientName}
-                              </span>
-                              <span style={{ background: "#eef2ff", color: "#3730a3", padding: "3px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 800 }}>
-                                Contrato: {c.contractCode}
-                              </span>
-                            </div>
-                            <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>
-                              📦 {c.lots ? c.lots.length : 0} lote(s) • 📅 {new Date(c.createdAt).toLocaleDateString("pt-BR")}
-                            </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span style={{ fontSize: "16px" }}>🏢</span>
+                            <span style={{ fontSize: "15px", fontWeight: 800, color: "var(--forest-950)" }}>
+                              {group.clientName}
+                            </span>
+                            <span style={{ background: "#e2e8f0", color: "#334155", padding: "2px 8px", borderRadius: "10px", fontSize: "11px", fontWeight: 800 }}>
+                              {group.contracts.length} contrato(s)
+                            </span>
                           </div>
 
-                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                            <span style={{ fontSize: "12px", color: "#166534", fontWeight: 800, background: "#dcfce7", padding: "4px 10px", borderRadius: "12px", border: "1px solid #86efac" }}>
-                              📐 {activeContractHectares.toFixed(2)} ha
-                            </span>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                toggleExpandContract(c.id);
+                                toggleExpandClient(group.clientName);
                               }}
                               style={{
-                                background: isExpanded ? "#e0f2fe" : "#f1f5f9",
-                                color: isExpanded ? "#0369a1" : "#475569",
+                                background: isClientExpanded ? "#e0f2fe" : "#f1f5f9",
+                                color: isClientExpanded ? "#0369a1" : "#475569",
                                 border: "1px solid #bae6fd",
                                 padding: "6px 12px",
                                 borderRadius: "8px",
@@ -976,63 +1168,177 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
                                 cursor: "pointer",
                                 display: "flex",
                                 alignItems: "center",
-                                gap: "5px",
+                                gap: "4px",
                               }}
                             >
-                              {isExpanded ? "🔼 Recolher" : "👁️ Ver Lotes & GeoJSONs"}
+                              {isClientExpanded ? "🔼 Recolher Cliente" : `👁️ Ver Contratos (${group.contracts.length})`}
                             </button>
                           </div>
                         </div>
 
-                        {/* Conteúdo Detalhado (Apenas quando Expandido) */}
-                        {isExpanded && (
-                          <div style={{ borderTop: "1px solid var(--line-light)", marginTop: "14px", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                            {c.lots.map((lot) => {
-                              const activeLotHectares = (lot.plots || []).reduce((s, p) => s + (Number(p.hectares) || 0), 0);
+                        {/* Lista de Contratos deste Cliente (Expansível) */}
+                        {isClientExpanded && (
+                          <div style={{ borderTop: "1px solid #f1f5f9", marginTop: "12px", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                        {group.contracts.map((c) => {
+                          const activeContractHectares = c.lots.reduce((acc, l) => {
+                            return acc + (l.plots || []).reduce((s, p) => s + (Number(p.hectares) || 0), 0);
+                          }, 0);
 
-                              return (
-                                <div key={lot.id} style={{ background: "#fff", padding: "12px", borderRadius: "8px", border: "1px solid var(--line-light)" }}>
-                                  <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--forest-900)", marginBottom: "8px", display: "flex", justifyContent: "space-between" }}>
-                                    <span>📦 {lot.lotNumber} ({lot.plots ? lot.plots.length : 1} talhão(ões))</span>
-                                    <span style={{ color: "#0369a1", fontWeight: 800 }}>{activeLotHectares.toFixed(2)} ha</span>
+                          const isExpanded = Boolean(expandedContractIds[c.id]);
+
+                          return (
+                            <div
+                              key={c.id}
+                              style={{
+                                background: "var(--canvas)",
+                                border: isExpanded ? "2px solid #0284c7" : "1px solid var(--line)",
+                                borderRadius: "10px",
+                                padding: "14px",
+                                transition: "all 0.2s ease-in-out",
+                                boxShadow: isExpanded ? "0 4px 14px rgba(2, 132, 199, 0.08)" : "none",
+                              }}
+                            >
+                              {/* Cabeçalho do Contrato (Clicável para Expandir/Recolher) */}
+                              <div
+                                onClick={() => toggleExpandContract(c.id)}
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  cursor: "pointer",
+                                  userSelect: "none",
+                                }}
+                              >
+                                <div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                    <span style={{ background: "#eef2ff", color: "#3730a3", padding: "3px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 800 }}>
+                                      Contrato: {c.contractCode}
+                                    </span>
                                   </div>
-                                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                                    {(lot.plots || []).map((p, pIdx) => (
-                                      <div key={pIdx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px", background: "var(--canvas)", padding: "8px 12px", borderRadius: "6px" }}>
-                                        <div>
-                                          <div style={{ fontWeight: 800, color: "var(--forest-950)", fontSize: "12px" }}>
-                                            🌐 {p.plotId} ({p.hectares || 0} ha)
-                                          </div>
-                                        </div>
-                                        <button
-                                          onClick={() => handleDownloadGeoJson(p.targetGeojsonKey, `${p.plotId}.geojson`)}
-                                          disabled={downloadingKey === p.targetGeojsonKey}
-                                          style={{
-                                            padding: "5px 10px",
-                                            fontSize: "10px",
-                                            fontWeight: 700,
-                                            borderRadius: "5px",
-                                            background: "var(--forest-900)",
-                                            color: "#fff",
-                                            border: "none",
-                                            cursor: "pointer",
-                                          }}
-                                        >
-                                          Baixar GeoJSON
-                                        </button>
-                                      </div>
-                                    ))}
+                                  <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>
+                                    📦 {c.lots ? c.lots.length : 0} lote(s) • 📅 {new Date(c.createdAt).toLocaleDateString("pt-BR")}
                                   </div>
                                 </div>
-                              );
-                            })}
-                          </div>
-                        )}
+
+                                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                  <span style={{ fontSize: "11px", color: "#166534", fontWeight: 800, background: "#dcfce7", padding: "3px 8px", borderRadius: "10px", border: "1px solid #86efac" }}>
+                                    📐 {activeContractHectares.toFixed(2)} ha
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleExpandContract(c.id);
+                                    }}
+                                    style={{
+                                      background: isExpanded ? "#e0f2fe" : "#f1f5f9",
+                                      color: isExpanded ? "#0369a1" : "#475569",
+                                      border: "1px solid #bae6fd",
+                                      padding: "5px 10px",
+                                      borderRadius: "6px",
+                                      fontSize: "11px",
+                                      fontWeight: 800,
+                                      cursor: "pointer",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                    }}
+                                  >
+                                    {isExpanded ? "🔼 Recolher" : "👁️ Ver Lotes"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleStartEditContract(c);
+                                    }}
+                                    style={{
+                                      background: "#fffbe6",
+                                      color: "#b45309",
+                                      border: "1px solid #fef08a",
+                                      padding: "5px 8px",
+                                      borderRadius: "6px",
+                                      fontSize: "11px",
+                                      fontWeight: 800,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    ✏️ Editar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteContract(c.id, c.contractCode);
+                                    }}
+                                    style={{
+                                      background: "#fef2f2",
+                                      color: "#991b1b",
+                                      border: "1px solid #fecaca",
+                                      padding: "5px 8px",
+                                      borderRadius: "6px",
+                                      fontSize: "11px",
+                                      fontWeight: 800,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    🗑️ Excluir
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Conteúdo Detalhado (Apenas quando Expandido) */}
+                              {isExpanded && (
+                                <div style={{ borderTop: "1px solid var(--line-light)", marginTop: "12px", paddingTop: "10px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                                  {c.lots.map((lot) => {
+                                    const activeLotHectares = (lot.plots || []).reduce((s, p) => s + (Number(p.hectares) || 0), 0);
+
+                                    return (
+                                      <div key={lot.id} style={{ background: "#fff", padding: "10px", borderRadius: "8px", border: "1px solid var(--line-light)" }}>
+                                        <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-900)", marginBottom: "6px", display: "flex", justifyContent: "space-between" }}>
+                                          <span>📦 {lot.lotNumber} ({lot.plots ? lot.plots.length : 1} talhão(ões))</span>
+                                          <span style={{ color: "#0369a1", fontWeight: 800 }}>{activeLotHectares.toFixed(2)} ha</span>
+                                        </div>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                          {(lot.plots || []).map((p, pIdx) => (
+                                            <div key={pIdx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "11px", background: "var(--canvas)", padding: "6px 10px", borderRadius: "6px" }}>
+                                              <div style={{ fontWeight: 800, color: "var(--forest-950)" }}>
+                                                🌐 {p.plotId} ({p.hectares || 0} ha)
+                                              </div>
+                                              <button
+                                                onClick={() => handleDownloadGeoJson(p.targetGeojsonKey, `${p.plotId}.geojson`)}
+                                                disabled={downloadingKey === p.targetGeojsonKey}
+                                                style={{
+                                                  padding: "4px 8px",
+                                                  fontSize: "10px",
+                                                  fontWeight: 700,
+                                                  borderRadius: "4px",
+                                                  background: "var(--forest-900)",
+                                                  color: "#fff",
+                                                  border: "none",
+                                                  cursor: "pointer",
+                                                }}
+                                              >
+                                                Baixar GeoJSON
+                                              </button>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
             </div>
           </div>
         </div>

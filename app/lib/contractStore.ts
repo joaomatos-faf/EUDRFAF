@@ -38,3 +38,25 @@ export function addContract(record: ContractRecord) {
     memoryContractsStore.unshift(record);
   }
 }
+
+export function updateContract(id: string, record: ContractRecord): boolean {
+  const index = memoryContractsStore.findIndex((c) => c.id === id || c.contractCode === id);
+  if (index >= 0) {
+    memoryContractsStore[index] = {
+      ...record,
+      id: memoryContractsStore[index].id,
+      createdAt: memoryContractsStore[index].createdAt,
+    };
+    return true;
+  }
+  addContract(record);
+  return true;
+}
+
+export function deleteContract(id: string): boolean {
+  const initialLen = memoryContractsStore.length;
+  memoryContractsStore = memoryContractsStore.filter(
+    (c) => c.id !== id && c.contractCode !== id
+  );
+  return memoryContractsStore.length < initialLen;
+}
