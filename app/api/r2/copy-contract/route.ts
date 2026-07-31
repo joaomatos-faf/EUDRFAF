@@ -1,5 +1,5 @@
 import { uploadToR2 } from "@/app/lib/r2";
-import { addContract, updateContract, deleteContract, ContractRecord, ContractLotItem, ContractPlotItem } from "@/app/lib/contractStore";
+import { addContract, updateContract, deleteContract, loadContractsFromR2, saveContractsToR2, ContractRecord, ContractLotItem, ContractPlotItem } from "@/app/lib/contractStore";
 import { getPublishedPlots } from "@/app/lib/clientPortalStore";
 
 function sanitizeSegment(value: string, fallback: string): string {
@@ -33,8 +33,8 @@ export async function POST(request: Request) {
     const cleanContractCode = contractCode.trim().toUpperCase();
     const cleanClient = sanitizeSegment(clientName, "CLIENTE");
 
-    // Verificar se já existe um contrato cadastrado com esse código
-    const existingContracts = (await import("@/app/lib/contractStore")).getContracts();
+    // Garantir sincronização com os contratos salvos no Cloudflare R2
+    const existingContracts = await loadContractsFromR2();
     const isDuplicate = existingContracts.some((c) => c.contractCode === cleanContractCode);
 
     if (isDuplicate) {
@@ -78,45 +78,32 @@ export async function POST(request: Request) {
         if (matched) {
           geojsonContent = JSON.stringify({
             type: "FeatureCollection",
-            name: `${plotId}_EUDR`,
-            crs: { type: "name", properties: { name: "urn:ogc:def:crt:OGC:1.3:CRS84" } },
             features: [
               {
                 type: "Feature",
                 properties: {
-                  plotId,
-                  producer,
-                  supplier,
-                  farm,
-                  hectares,
-                  municipality: matched.municipality || "Divinolândia",
-                  state: matched.state || "SP",
-                  area: hectares || matched.area || 1.0,
-                  compliance: matched.compliance || "CONFORME",
-                  productioncountry: "BR",
+                  PLOT_ID: plotId,
+                  CLIENTE: clientName.trim(),
+                  CONTRATO: cleanContractCode,
+                  LOTE: cleanLot,
+                  HECTARES: hectares,
                 },
-                geometry: {
-                  type: "Polygon",
-                  coordinates: [[[-46.72, -21.65], [-46.71, -21.65], [-46.71, -21.64], [-46.72, -21.64], [-46.72, -21.65]]],
-                },
+                geometry: matched.geometry,
               },
             ],
           });
         } else {
           geojsonContent = JSON.stringify({
             type: "FeatureCollection",
-            name: `${plotId}_EUDR`,
-            crs: { type: "name", properties: { name: "urn:ogc:def:crt:OGC:1.3:CRS84" } },
             features: [
               {
                 type: "Feature",
                 properties: {
-                  plotId,
-                  producer,
-                  supplier,
-                  farm,
-                  hectares,
-                  productioncountry: "BR",
+                  PLOT_ID: plotId,
+                  CLIENTE: clientName.trim(),
+                  CONTRATO: cleanContractCode,
+                  LOTE: cleanLot,
+                  HECTARES: hectares,
                 },
                 geometry: {
                   type: "Polygon",
@@ -159,6 +146,7 @@ export async function POST(request: Request) {
     };
 
     addContract(record);
+    await saveContractsToR2();
 
     return new Response(
       JSON.stringify({
@@ -190,7 +178,7 @@ export async function PUT(request: Request) {
 
     if (!id || !contractCode.trim() || !clientName.trim() || !Array.isArray(lots) || lots.length === 0) {
       return new Response(
-        JSON.stringify({ error: "id, contractCode, clientName e ao menos 1 lote são obrigatórios." }),
+        JSON.stringify({ error: "id, contractCode, clientName e ao menos 1 lote são obrigatórios para edição." }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
@@ -232,45 +220,32 @@ export async function PUT(request: Request) {
         if (matched) {
           geojsonContent = JSON.stringify({
             type: "FeatureCollection",
-            name: `${plotId}_EUDR`,
-            crs: { type: "name", properties: { name: "urn:ogc:def:crt:OGC:1.3:CRS84" } },
             features: [
               {
                 type: "Feature",
                 properties: {
-                  plotId,
-                  producer,
-                  supplier,
-                  farm,
-                  hectares,
-                  municipality: matched.municipality || "Divinolândia",
-                  state: matched.state || "SP",
-                  area: hectares || matched.area || 1.0,
-                  compliance: matched.compliance || "CONFORME",
-                  productioncountry: "BR",
+                  PLOT_ID: plotId,
+                  CLIENTE: clientName.trim(),
+                  CONTRATO: cleanContractCode,
+                  LOTE: cleanLot,
+                  HECTARES: hectares,
                 },
-                geometry: {
-                  type: "Polygon",
-                  coordinates: [[[-46.72, -21.65], [-46.71, -21.65], [-46.71, -21.64], [-46.72, -21.64], [-46.72, -21.65]]],
-                },
+                geometry: matched.geometry,
               },
             ],
           });
         } else {
           geojsonContent = JSON.stringify({
             type: "FeatureCollection",
-            name: `${plotId}_EUDR`,
-            crs: { type: "name", properties: { name: "urn:ogc:def:crt:OGC:1.3:CRS84" } },
             features: [
               {
                 type: "Feature",
                 properties: {
-                  plotId,
-                  producer,
-                  supplier,
-                  farm,
-                  hectares,
-                  productioncountry: "BR",
+                  PLOT_ID: plotId,
+                  CLIENTE: clientName.trim(),
+                  CONTRATO: cleanContractCode,
+                  LOTE: cleanLot,
+                  HECTARES: hectares,
                 },
                 geometry: {
                   type: "Polygon",
@@ -281,7 +256,7 @@ export async function PUT(request: Request) {
           });
         }
 
-        // Atualizar/sobrescrever o arquivo GeoJSON no Cloudflare R2
+        // Atualizar/Sobrescrever o arquivo GeoJSON no Cloudflare R2
         await uploadToR2(targetKey, geojsonContent, "application/geo+json");
 
         processedPlots.push({
@@ -313,6 +288,7 @@ export async function PUT(request: Request) {
     };
 
     updateContract(id, record);
+    await saveContractsToR2();
 
     return new Response(
       JSON.stringify({
@@ -332,10 +308,10 @@ export async function PUT(request: Request) {
 }
 
 export async function GET() {
-  const contracts = (await import("@/app/lib/contractStore")).getContracts();
+  const contracts = await loadContractsFromR2();
   return new Response(JSON.stringify({ contracts }), {
     status: 200,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" },
   });
 }
 
@@ -352,6 +328,7 @@ export async function DELETE(request: Request) {
     }
 
     deleteContract(id);
+    await saveContractsToR2();
 
     return new Response(
       JSON.stringify({ success: true, message: `Contrato ${id} excluído com sucesso.` }),
