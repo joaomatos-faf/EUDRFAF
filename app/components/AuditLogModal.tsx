@@ -302,7 +302,7 @@ export function AuditLogModal({ isOpen, onClose }: AuditLogModalProps) {
             background: "var(--canvas)",
             borderTop: "1px solid var(--line)",
             display: "flex",
-            justify: "space-between",
+            justifyContent: "space-between",
             alignItems: "center",
             fontSize: "11px",
             color: "var(--muted)",

@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 
     const filename = key.split("/").pop() || "talhao.geojson";
 
-    return new Response(fileBuffer, {
+    return new Response(new Uint8Array(fileBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/geo+json; charset=utf-8",

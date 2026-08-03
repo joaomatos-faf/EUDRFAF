@@ -25,7 +25,6 @@ import {
   calculateAreaHectares,
   downloadBlob,
   parseGeometryFile,
-  producerCsv,
   buildProducerXlsxBytes,
   sanitizePlotId,
   generateAutoPlotId,
@@ -175,8 +174,7 @@ export default function Home() {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleLogout = () => {
-    sessionStorage.removeItem("faf_eudr_auth");
-    setIsAuthenticated(false);
+    userMgmt.handleLogout();
   };
 
   useEffect(() => {
