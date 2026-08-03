@@ -96,7 +96,7 @@ export function EudrHeader({
               </button>
             )}
 
-            {onOpenClientPortal && (
+            {loggedUserRole !== "client" && onOpenClientPortal && (
               <button
                 onClick={onOpenClientPortal}
                 style={{
@@ -110,7 +110,7 @@ export function EudrHeader({
                   cursor: "pointer",
                 }}
               >
-                🌐 Portal do Cliente
+                ☁️ Arquivos na Nuvem R2
               </button>
             )}
 
