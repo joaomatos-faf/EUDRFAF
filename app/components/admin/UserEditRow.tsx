@@ -5,13 +5,14 @@ import React from "react";
 interface UserProfile {
   pass: string;
   fullName: string;
-  role: "admin" | "user";
+  role: "admin" | "user" | "client";
+  clientName?: string;
 }
 
 interface UserEditRowProps {
   userKey: string;
   profile: UserProfile | string;
-  loggedUserRole: "admin" | "user";
+  loggedUserRole: "admin" | "user" | "client";
   idx: number;
   totalCount: number;
   editingUser: string | null;
@@ -20,8 +21,10 @@ interface UserEditRowProps {
   setEditUsernameInput: (val: string) => void;
   editFullNameInput: string;
   setEditFullNameInput: (val: string) => void;
-  editRoleInput: "admin" | "user";
-  setEditRoleInput: (role: "admin" | "user") => void;
+  editRoleInput: "admin" | "user" | "client";
+  setEditRoleInput: (role: "admin" | "user" | "client") => void;
+  editClientNameInput?: string;
+  setEditClientNameInput?: (val: string) => void;
   editNewPassInput: string;
   setEditNewPassInput: (val: string) => void;
   editingCurrentPassInput: string;
@@ -46,6 +49,8 @@ export function UserEditRow({
   setEditFullNameInput,
   editRoleInput,
   setEditRoleInput,
+  editClientNameInput = "",
+  setEditClientNameInput,
   editNewPassInput,
   setEditNewPassInput,
   editingCurrentPassInput,
@@ -77,9 +82,11 @@ export function UserEditRow({
           <span style={{ color: "var(--forest-800)", marginLeft: "6px", fontSize: "12px", fontWeight: 650, wordBreak: "break-word" }}>
             ({profileObj.fullName || userKey})
           </span>
-          {profileObj.role === "admin" && (
+          {profileObj.role === "admin" ? (
             <span style={{ marginLeft: "6px", fontSize: "10px", background: "var(--forest-100)", color: "var(--forest-900)", padding: "2px 6px", borderRadius: "4px", fontWeight: 800 }}>ADM</span>
-          )}
+          ) : profileObj.role === "client" ? (
+            <span style={{ marginLeft: "6px", fontSize: "10px", background: "#e0f2fe", color: "#0369a1", padding: "2px 6px", borderRadius: "4px", fontWeight: 800 }}>CLIENTE ({profileObj.clientName || "Geral"})</span>
+          ) : null}
         </div>
         <div className="user-item-actions">
           <button
@@ -136,11 +143,12 @@ export function UserEditRow({
                   Perfil de Acesso
                   <select
                     value={editRoleInput}
-                    onChange={(e) => setEditRoleInput(e.target.value as "admin" | "user")}
+                    onChange={(e) => setEditRoleInput(e.target.value as "admin" | "user" | "client")}
                     style={{ width: "100%", marginTop: "4px", padding: "6px 10px", borderRadius: "4px", border: "1px solid var(--line)", fontSize: "12px", background: "var(--surface)" }}
                   >
-                    <option value="user">Usuário Padrão</option>
-                    <option value="admin">Administrador (ADM)</option>
+                    <option value="user">Usuário Operador (App + Contratos)</option>
+                    <option value="admin">Administrador ADM (Acesso Total)</option>
+                    <option value="client">🏢 Cliente / Importador (Apenas Portal)</option>
                   </select>
                 </label>
                 <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--forest-950)" }}>
@@ -154,6 +162,21 @@ export function UserEditRow({
                   />
                 </label>
               </div>
+
+              {editRoleInput === "client" && setEditClientNameInput && (
+                <div>
+                  <label style={{ fontSize: "11px", fontWeight: 700, color: "#0369a1" }}>
+                    🏢 Nome da Empresa do Cliente (para vincular contratos)
+                    <input
+                      type="text"
+                      value={editClientNameInput}
+                      onChange={(e) => setEditClientNameInput(e.target.value)}
+                      placeholder="Ex: BELCO, AMANDA..."
+                      style={{ width: "100%", marginTop: "4px", padding: "6px 10px", borderRadius: "4px", border: "1px solid #0284c7", fontSize: "12px", background: "#f0f9ff" }}
+                    />
+                  </label>
+                </div>
+              )}
               <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "4px" }}>
                 <button
                   onClick={() => onAdminUpdateUser(userKey)}

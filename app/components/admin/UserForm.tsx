@@ -9,8 +9,10 @@ interface UserFormProps {
   setNewAdminPass: (val: string) => void;
   newAdminFullName: string;
   setNewAdminFullName: (val: string) => void;
-  newAdminRole: "admin" | "user";
-  setNewAdminRole: (role: "admin" | "user") => void;
+  newAdminRole: "admin" | "user" | "client";
+  setNewAdminRole: (role: "admin" | "user" | "client") => void;
+  newAdminClientName?: string;
+  setNewAdminClientName?: (val: string) => void;
   adminErrorMsg: string;
   adminSuccessMsg: string;
   onAddUser: (e: React.FormEvent) => void;
@@ -25,6 +27,8 @@ export function UserForm({
   setNewAdminFullName,
   newAdminRole,
   setNewAdminRole,
+  newAdminClientName = "",
+  setNewAdminClientName,
   adminErrorMsg,
   adminSuccessMsg,
   onAddUser,
@@ -40,7 +44,7 @@ export function UserForm({
               type="text"
               value={newAdminUser}
               onChange={(e) => setNewAdminUser(e.target.value)}
-              placeholder="Ex: marcos"
+              placeholder="Ex: belco"
               style={{ width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)" }}
             />
           </label>
@@ -62,7 +66,7 @@ export function UserForm({
               type="text"
               value={newAdminFullName}
               onChange={(e) => setNewAdminFullName(e.target.value)}
-              placeholder="Ex: Marcos Oliveira"
+              placeholder="Ex: Belco Mogi"
               style={{ width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)" }}
             />
           </label>
@@ -70,14 +74,30 @@ export function UserForm({
             Perfil de Acesso *
             <select
               value={newAdminRole}
-              onChange={(e) => setNewAdminRole(e.target.value as "admin" | "user")}
+              onChange={(e) => setNewAdminRole(e.target.value as "admin" | "user" | "client")}
               style={{ width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "6px", border: "1px solid var(--line)", fontSize: "13px", background: "var(--surface)" }}
             >
-              <option value="user">Usuário Padrão</option>
-              <option value="admin">Administrador (ADM)</option>
+              <option value="user">Usuário Operador (App + Contratos)</option>
+              <option value="admin">Administrador ADM (Acesso Total)</option>
+              <option value="client">🏢 Cliente / Importador (Apenas Portal)</option>
             </select>
           </label>
         </div>
+
+        {newAdminRole === "client" && setNewAdminClientName && (
+          <div>
+            <label style={{ fontSize: "11px", fontWeight: 700, color: "#0369a1" }}>
+              🏢 Nome da Empresa do Cliente (para vincular contratos) *
+              <input
+                type="text"
+                value={newAdminClientName}
+                onChange={(e) => setNewAdminClientName(e.target.value)}
+                placeholder="Ex: BELCO, AMANDA..."
+                style={{ width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "6px", border: "1px solid #0284c7", fontSize: "13px", background: "#f0f9ff" }}
+              />
+            </label>
+          </div>
+        )}
       </div>
 
       {adminErrorMsg && <p style={{ color: "var(--danger)", fontSize: "12px", margin: "0 0 10px", fontWeight: 600 }}>{adminErrorMsg}</p>}

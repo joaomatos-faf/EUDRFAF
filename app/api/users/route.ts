@@ -1,7 +1,8 @@
 interface UserProfile {
   pass: string;
   fullName: string;
-  role: "admin" | "user";
+  role: "admin" | "user" | "client";
+  clientName?: string;
 }
 
 const DEFAULT_USERS_DATA: Record<string, UserProfile> = {
@@ -9,6 +10,7 @@ const DEFAULT_USERS_DATA: Record<string, UserProfile> = {
   admin: { pass: "faf2026", fullName: "Administrador FAF", role: "admin" },
   joao: { pass: "faf1234", fullName: "João Silva", role: "user" },
   joaomatos: { pass: "123", fullName: "João Matos", role: "admin" },
+  cliente: { pass: "cliente123", fullName: "Cliente Demo", role: "client", clientName: "BELCO" },
 };
 
 let memoryUsersStore: Record<string, UserProfile> | null = null;

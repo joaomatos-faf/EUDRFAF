@@ -4,7 +4,7 @@ import React from "react";
 
 interface EudrHeaderProps {
   isAuthenticated: boolean;
-  loggedUserRole: "admin" | "user";
+  loggedUserRole: "admin" | "user" | "client";
   loggedUserKey: string;
   onOpenAdminModal: () => void;
   onLogout: () => void;
@@ -60,7 +60,7 @@ export function EudrHeader({
 
         {isAuthenticated && (
           <>
-            {onNewProcess && (
+            {loggedUserRole !== "client" && onNewProcess && (
               <button
                 onClick={onNewProcess}
                 style={{
@@ -78,7 +78,7 @@ export function EudrHeader({
               </button>
             )}
 
-            {onOpenLogsModal && (
+            {loggedUserRole !== "client" && onOpenLogsModal && (
               <button
                 onClick={onOpenLogsModal}
                 style={{
