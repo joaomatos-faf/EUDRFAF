@@ -3,7 +3,7 @@ export interface PublishedPlotRecord {
   plotId: string;
   contractId: string;
   producer: string;
-  supplier: string;
+  supplier?: string;
   farm: string;
   region: string;
   municipality: string;
@@ -13,6 +13,8 @@ export interface PublishedPlotRecord {
   publishedAt: string;
   publishedBy: string;
   geojsonKey: string;
+  clientName?: string;
+  geometry?: any;
 }
 
 let memoryPublishedStore: PublishedPlotRecord[] = [

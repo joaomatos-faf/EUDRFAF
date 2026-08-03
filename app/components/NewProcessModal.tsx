@@ -166,7 +166,7 @@ export function NewProcessModal({
             background: "var(--canvas)",
             borderTop: "1px solid var(--line)",
             display: "flex",
-            justify: "flex-end",
+            justifyContent: "flex-end",
           }}
         >
           <button
