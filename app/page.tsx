@@ -579,7 +579,7 @@ export default function Home() {
     if (!geometry || !normalizedId) return;
     setIsPublishingR2(true);
     try {
-      const geojsonContent = buildEudrGeoJsonString(geometry, normalizedId, area);
+      const geojsonContent = JSON.stringify(buildEudrGeoJson(geometry, normalizedId, area), null, 2);
       const activeUser = userMgmt.loggedUserKey || "usuario";
       const activeName = form.mappedBy || activeUser;
 
