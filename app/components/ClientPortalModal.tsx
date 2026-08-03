@@ -7,9 +7,17 @@ interface ClientPortalModalProps {
   isOpen: boolean;
   onClose: () => void;
   userEmail?: string;
+  loggedUserRole?: "admin" | "user" | "client";
+  loggedClientName?: string;
 }
 
-export default function ClientPortalModal({ isOpen, onClose, userEmail = "cliente@fafcoffees.com" }: ClientPortalModalProps) {
+export default function ClientPortalModal({
+  isOpen,
+  onClose,
+  userEmail = "cliente@fafcoffees.com",
+  loggedUserRole = "user",
+  loggedClientName = "",
+}: ClientPortalModalProps) {
   const [plots, setPlots] = useState<PublishedPlotRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [contractFilter, setContractFilter] = useState("TODOS");
@@ -50,7 +58,6 @@ export default function ClientPortalModal({ isOpen, onClose, userEmail = "client
       const res = await fetch(`/api/r2/download?key=${encodeURIComponent(key)}`);
       const data = await res.json();
       if (data.success && data.downloadUrl) {
-        // Open download link in new tab or trigger download
         const a = document.createElement("a");
         a.href = data.downloadUrl;
         a.download = filename;
@@ -74,14 +81,20 @@ export default function ClientPortalModal({ isOpen, onClose, userEmail = "client
   if (!isOpen) return null;
 
   const filteredPlots = plots.filter((plot) => {
+    if (loggedUserRole === "client" && loggedClientName) {
+      const targetClient = loggedClientName.toLowerCase().trim();
+      const plotClient = (plot.clientName || plot.producer || "").toLowerCase().trim();
+      if (plotClient && !plotClient.includes(targetClient) && !targetClient.includes(plotClient)) {
+        return false;
+      }
+    }
+
     const q = searchQuery.toLowerCase().trim();
     if (!q) return true;
     return (
-      plot.plotId.toLowerCase().includes(q) ||
+      (plot.clientName || plot.producer || "").toLowerCase().includes(q) ||
       plot.contractId.toLowerCase().includes(q) ||
-      plot.producer.toLowerCase().includes(q) ||
-      plot.farm.toLowerCase().includes(q) ||
-      plot.municipality.toLowerCase().includes(q)
+      plot.plotId.toLowerCase().includes(q)
     );
   });
 
@@ -152,7 +165,7 @@ export default function ClientPortalModal({ isOpen, onClose, userEmail = "client
                 Portal do Cliente & Downloads EUDR
               </h2>
               <p style={{ margin: "3px 0 0", fontSize: "13px", color: "#c2e6d6" }}>
-                Acesso seguro via Cloudflare R2 Storage • Logado como: <strong>{userEmail}</strong>
+                Acesso seguro via Cloudflare R2 Storage • Logado como: <strong>{userEmail}</strong> {loggedClientName ? `(${loggedClientName})` : ""}
               </p>
             </div>
           </div>
@@ -215,7 +228,7 @@ export default function ClientPortalModal({ isOpen, onClose, userEmail = "client
           <div style={{ flex: "1 1 280px" }}>
             <input
               type="text"
-              placeholder="Buscar por talhão, contrato, produtor ou município…"
+              placeholder="Buscar por cliente, contrato ou código do talhão…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
@@ -257,7 +270,7 @@ export default function ClientPortalModal({ isOpen, onClose, userEmail = "client
         {/* Plots List Content */}
         <div style={{ flex: 1, overflowY: "auto", padding: "20px 28px" }}>
           {loading ? (
-            <div style={{ padding: "40px 0", textContent: "center", color: "var(--muted)", textAlign: "center" }}>
+            <div style={{ padding: "40px 0", color: "var(--muted)", textAlign: "center" }}>
               ⏳ Carregando dados do Cloudflare R2...
             </div>
           ) : filteredPlots.length === 0 ? (
@@ -272,19 +285,19 @@ export default function ClientPortalModal({ isOpen, onClose, userEmail = "client
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
               <thead>
                 <tr style={{ background: "#f8faf9", borderBottom: "2px solid var(--line-light)", textAlign: "left" }}>
-                  <th style={{ padding: "12px 14px", color: "var(--forest-950)", fontWeight: 700 }}>Código Talhão</th>
+                  <th style={{ padding: "12px 14px", color: "var(--forest-950)", fontWeight: 700 }}>Cliente</th>
                   <th style={{ padding: "12px 14px", color: "var(--forest-950)", fontWeight: 700 }}>Contrato</th>
-                  <th style={{ padding: "12px 14px", color: "var(--forest-950)", fontWeight: 700 }}>Produtor / Fazenda</th>
-                  <th style={{ padding: "12px 14px", color: "var(--forest-950)", fontWeight: 700 }}>Município</th>
+                  <th style={{ padding: "12px 14px", color: "var(--forest-950)", fontWeight: 700 }}>Código Talhão</th>
                   <th style={{ padding: "12px 14px", color: "var(--forest-950)", fontWeight: 700 }}>Área (ha)</th>
-                  <th style={{ padding: "12px 14px", color: "var(--forest-950)", fontWeight: 700 }}>Status EUDR</th>
                   <th style={{ padding: "12px 14px", color: "var(--forest-950)", fontWeight: 700, textAlign: "right" }}>Downloads R2</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredPlots.map((plot) => (
                   <tr key={plot.id} style={{ borderBottom: "1px solid var(--line-light)" }}>
-                    <td style={{ padding: "14px", fontWeight: 700, color: "var(--forest-950)" }}>{plot.plotId}</td>
+                    <td style={{ padding: "14px" }}>
+                      <strong style={{ color: "var(--forest-950)" }}>{plot.clientName || plot.producer || "CLIENTE"}</strong>
+                    </td>
                     <td style={{ padding: "14px" }}>
                       <span
                         style={{
@@ -300,29 +313,8 @@ export default function ClientPortalModal({ isOpen, onClose, userEmail = "client
                         {plot.contractId}
                       </span>
                     </td>
-                    <td style={{ padding: "14px" }}>
-                      <div style={{ fontWeight: 600 }}>{plot.producer}</div>
-                      <div style={{ fontSize: "11px", color: "var(--muted)" }}>{plot.farm}</div>
-                    </td>
-                    <td style={{ padding: "14px" }}>
-                      {plot.municipality} - {plot.state}
-                    </td>
+                    <td style={{ padding: "14px", fontWeight: 700, color: "var(--forest-950)" }}>{plot.plotId}</td>
                     <td style={{ padding: "14px", fontWeight: 600 }}>{plot.area.toFixed(2)} ha</td>
-                    <td style={{ padding: "14px" }}>
-                      <span
-                        style={{
-                          background: plot.compliance === "CONFORME" ? "#ecfdf5" : "#fff7ed",
-                          color: plot.compliance === "CONFORME" ? "#065f46" : "#c2410c",
-                          padding: "4px 10px",
-                          borderRadius: "999px",
-                          fontSize: "11px",
-                          fontWeight: 700,
-                          border: `1px solid ${plot.compliance === "CONFORME" ? "#a7f3d0" : "#fed7aa"}`,
-                        }}
-                      >
-                        {plot.compliance === "CONFORME" ? "✓ CONFORME" : "⚠️ EM ANÁLISE"}
-                      </span>
-                    </td>
                     <td style={{ padding: "14px", textAlign: "right" }}>
                       <button
                         onClick={() => handleDownload(plot.geojsonKey, `${plot.plotId}.geojson`)}

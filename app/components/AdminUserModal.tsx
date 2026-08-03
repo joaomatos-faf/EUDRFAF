@@ -7,13 +7,14 @@ import { UserTable } from "./admin/UserTable";
 interface UserProfile {
   pass: string;
   fullName: string;
-  role: "admin" | "user";
+  role: "admin" | "user" | "client";
+  clientName?: string;
 }
 
 interface AdminUserModalProps {
   showAdminModal: boolean;
   setShowAdminModal: (show: boolean) => void;
-  loggedUserRole: "admin" | "user";
+  loggedUserRole: "admin" | "user" | "client";
   loggedUserKey: string;
   usersMap: Record<string, UserProfile>;
   newAdminUser: string;
@@ -22,8 +23,10 @@ interface AdminUserModalProps {
   setNewAdminPass: (val: string) => void;
   newAdminFullName: string;
   setNewAdminFullName: (val: string) => void;
-  newAdminRole: "admin" | "user";
-  setNewAdminRole: (role: "admin" | "user") => void;
+  newAdminRole: "admin" | "user" | "client";
+  setNewAdminRole: (role: "admin" | "user" | "client") => void;
+  newAdminClientName?: string;
+  setNewAdminClientName?: (val: string) => void;
   adminErrorMsg: string;
   adminSuccessMsg: string;
   onAddUser: (e: React.FormEvent) => void;
@@ -33,8 +36,10 @@ interface AdminUserModalProps {
   setEditUsernameInput: (val: string) => void;
   editFullNameInput: string;
   setEditFullNameInput: (val: string) => void;
-  editRoleInput: "admin" | "user";
-  setEditRoleInput: (role: "admin" | "user") => void;
+  editRoleInput: "admin" | "user" | "client";
+  setEditRoleInput: (role: "admin" | "user" | "client") => void;
+  editClientNameInput?: string;
+  setEditClientNameInput?: (val: string) => void;
   editNewPassInput: string;
   setEditNewPassInput: (val: string) => void;
   editingCurrentPassInput: string;
@@ -59,6 +64,8 @@ export function AdminUserModal({
   setNewAdminFullName,
   newAdminRole,
   setNewAdminRole,
+  newAdminClientName,
+  setNewAdminClientName,
   adminErrorMsg,
   adminSuccessMsg,
   onAddUser,
@@ -70,6 +77,8 @@ export function AdminUserModal({
   setEditFullNameInput,
   editRoleInput,
   setEditRoleInput,
+  editClientNameInput,
+  setEditClientNameInput,
   editNewPassInput,
   setEditNewPassInput,
   editingCurrentPassInput,
@@ -111,6 +120,8 @@ export function AdminUserModal({
             setNewAdminFullName={setNewAdminFullName}
             newAdminRole={newAdminRole}
             setNewAdminRole={setNewAdminRole}
+            newAdminClientName={newAdminClientName}
+            setNewAdminClientName={setNewAdminClientName}
             adminErrorMsg={adminErrorMsg}
             adminSuccessMsg={adminSuccessMsg}
             onAddUser={onAddUser}
@@ -121,8 +132,8 @@ export function AdminUserModal({
           {loggedUserRole === "admin" ? `📋 Usuários Ativos (${Object.keys(usersMap).length})` : "👤 Seu Perfil"}
         </h4>
 
-        {adminErrorMsg && loggedUserRole === "user" && <p style={{ color: "var(--danger)", fontSize: "12px", margin: "0 0 10px", fontWeight: 600 }}>{adminErrorMsg}</p>}
-        {adminSuccessMsg && loggedUserRole === "user" && <p style={{ color: "var(--success)", fontSize: "12px", margin: "0 0 10px", fontWeight: 600 }}>{adminSuccessMsg}</p>}
+        {adminErrorMsg && loggedUserRole !== "admin" && <p style={{ color: "var(--danger)", fontSize: "12px", margin: "0 0 10px", fontWeight: 600 }}>{adminErrorMsg}</p>}
+        {adminSuccessMsg && loggedUserRole !== "admin" && <p style={{ color: "var(--success)", fontSize: "12px", margin: "0 0 10px", fontWeight: 600 }}>{adminSuccessMsg}</p>}
 
         <UserTable
           loggedUserRole={loggedUserRole}
@@ -136,6 +147,8 @@ export function AdminUserModal({
           setEditFullNameInput={setEditFullNameInput}
           editRoleInput={editRoleInput}
           setEditRoleInput={setEditRoleInput}
+          editClientNameInput={editClientNameInput}
+          setEditClientNameInput={setEditClientNameInput}
           editNewPassInput={editNewPassInput}
           setEditNewPassInput={setEditNewPassInput}
           editingCurrentPassInput={editingCurrentPassInput}

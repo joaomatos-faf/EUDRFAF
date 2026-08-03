@@ -6,11 +6,12 @@ import { UserEditRow } from "./UserEditRow";
 interface UserProfile {
   pass: string;
   fullName: string;
-  role: "admin" | "user";
+  role: "admin" | "user" | "client";
+  clientName?: string;
 }
 
 interface UserTableProps {
-  loggedUserRole: "admin" | "user";
+  loggedUserRole: "admin" | "user" | "client";
   loggedUserKey: string;
   usersMap: Record<string, UserProfile>;
   editingUser: string | null;
@@ -19,8 +20,10 @@ interface UserTableProps {
   setEditUsernameInput: (val: string) => void;
   editFullNameInput: string;
   setEditFullNameInput: (val: string) => void;
-  editRoleInput: "admin" | "user";
-  setEditRoleInput: (role: "admin" | "user") => void;
+  editRoleInput: "admin" | "user" | "client";
+  setEditRoleInput: (role: "admin" | "user" | "client") => void;
+  editClientNameInput?: string;
+  setEditClientNameInput?: (val: string) => void;
   editNewPassInput: string;
   setEditNewPassInput: (val: string) => void;
   editingCurrentPassInput: string;

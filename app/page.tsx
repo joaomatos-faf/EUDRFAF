@@ -172,6 +172,7 @@ export default function Home() {
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
   const [locationsReload, setLocationsReload] = useState(0);
   const [showLogsModal, setShowLogsModal] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleLogout = () => {
     sessionStorage.removeItem("faf_eudr_auth");
@@ -374,14 +375,10 @@ export default function Home() {
     }
   };
 
-  const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const processSelectedFile = async (file: File) => {
     setError("");
     try {
       const parsed = await parseGeometryFile(file);
-      setGeometry(parsed);
-      setFileName(file.name);
       setGeometry(parsed);
       setFileName(file.name);
       setGfwCheck(emptyGfwCheck);
@@ -402,6 +399,28 @@ export default function Home() {
       setFileName("");
       setError(problem instanceof Error ? problem.message : "Não foi possível ler o arquivo.");
     }
+  };
+
+  const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) processSelectedFile(file);
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    if (!isDragging) setIsDragging(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+    const file = event.dataTransfer.files?.[0];
+    if (file) processSelectedFile(file);
   };
 
   const checkGfw = async () => {
@@ -748,6 +767,13 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+    if (userMgmt.loggedUserRole === "client" && activeView !== "portal") {
+      setActiveView("portal");
+      setShowClientPortal(true);
+    }
+  }, [userMgmt.loggedUserRole, activeView]);
+
   if (userMgmt.isAuthenticated === null) {
     return (
       <div style={{ minHeight: "100vh", background: "var(--canvas)", display: "grid", placeItems: "center" }}>
@@ -779,19 +805,43 @@ export default function Home() {
   }
 
   if (activeView === "portal") {
+    if (userMgmt.isAuthenticated === false) {
+      return (
+        <LoginScreen
+          loginUsername={userMgmt.loginUsername}
+          setLoginUsername={userMgmt.setLoginUsername}
+          loginPassword={userMgmt.loginPassword}
+          setLoginPassword={userMgmt.setLoginPassword}
+          loginError={userMgmt.loginError}
+          onLogin={async (e) => {
+            if (e && typeof e.preventDefault === "function") e.preventDefault();
+            const success = await userMgmt.handleLogin(e);
+            if (success) {
+              setActiveView("portal");
+              setShowClientPortal(true);
+            }
+          }}
+          onBackToLanding={() => setActiveView("landing")}
+        />
+      );
+    }
+
     return (
       <div style={{ minHeight: "100vh", background: "var(--canvas)" }}>
         <EudrHeader
-          isAuthenticated={false}
-          loggedUserRole="user"
-          loggedUserKey=""
-          onOpenAdminModal={() => {}}
-          onLogout={() => {}}
+          isAuthenticated={Boolean(userMgmt.isAuthenticated)}
+          loggedUserRole={userMgmt.loggedUserRole}
+          loggedUserKey={userMgmt.loggedUserKey}
+          onOpenAdminModal={() => userMgmt.setShowAdminModal(true)}
+          onLogout={userMgmt.handleLogout}
           onOpenLanding={() => setActiveView("landing")}
         />
         <ClientPortalModal
           isOpen={true}
           onClose={() => setActiveView("landing")}
+          userEmail={userMgmt.loggedUserKey ? `${userMgmt.loggedUserKey}@fafcoffees.com` : "cliente@fafcoffees.com"}
+          loggedUserRole={userMgmt.loggedUserRole}
+          loggedClientName={userMgmt.loggedClientName}
         />
       </div>
     );
@@ -810,6 +860,9 @@ export default function Home() {
         <ClientPortalModal
           isOpen={showClientPortal}
           onClose={() => setShowClientPortal(false)}
+          userEmail={userMgmt.loggedUserKey ? `${userMgmt.loggedUserKey}@fafcoffees.com` : "cliente@fafcoffees.com"}
+          loggedUserRole={userMgmt.loggedUserRole}
+          loggedClientName={userMgmt.loggedClientName}
         />
       </>
     );
@@ -834,7 +887,15 @@ export default function Home() {
         onLogin={async (e) => {
           if (e && typeof e.preventDefault === "function") e.preventDefault();
           const success = await userMgmt.handleLogin(e);
-          if (success) setActiveView("app");
+          if (success) {
+            const role = sessionStorage.getItem("faf_eudr_user_role");
+            if (role === "client") {
+              setActiveView("portal");
+              setShowClientPortal(true);
+            } else {
+              setActiveView("app");
+            }
+          }
         }}
         onBackToLanding={() => setActiveView("landing")}
       />
@@ -962,11 +1023,45 @@ export default function Home() {
 
           <article className="card">
             <div className="card-title"><span>02</span><div><h3>Geometria da área</h3><p>A área em hectares é calculada automaticamente.</p></div></div>
-            <label className={`dropzone ${geometry ? "loaded" : ""}`}>
-              <input type="file" accept=".kml,.geojson,.json" onChange={handleFile} />
-              <span className="upload-icon">↥</span>
-              <strong>{fileName || "Selecionar arquivo KML ou GeoJSON"}</strong>
-              <small>{geometry ? "Arquivo validado. Clique para substituir." : "O arquivo permanece somente neste navegador."}</small>
+            <label
+              className={`dropzone ${geometry ? "loaded" : ""} ${isDragging ? "dragging" : ""}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              style={{
+                border: isDragging ? "2px dashed #0284c7" : geometry ? "2px solid #166534" : "2px dashed var(--line-strong)",
+                background: isDragging ? "#e0f2fe" : geometry ? "#f0fdf4" : "var(--canvas)",
+                padding: "26px 20px",
+                borderRadius: "14px",
+                textAlign: "center",
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                transition: "all 0.2s ease-in-out",
+                boxShadow: isDragging ? "0 8px 25px rgba(2, 132, 199, 0.22)" : "none",
+              }}
+            >
+              <input type="file" accept=".kml,.geojson,.json" onChange={handleFile} style={{ display: "none" }} />
+              <span className="upload-icon" style={{ fontSize: "28px", transform: isDragging ? "scale(1.2)" : "scale(1)", transition: "transform 0.2s" }}>
+                {isDragging ? "📥" : geometry ? "✅" : "↥"}
+              </span>
+              <strong style={{ fontSize: "14px", color: isDragging ? "#0369a1" : "var(--forest-950)" }}>
+                {isDragging
+                  ? "Solte o arquivo KML ou GeoJSON aqui..."
+                  : fileName
+                  ? `Arquivo: ${fileName}`
+                  : "Arraste e solte o arquivo KML/GeoJSON aqui ou clique para selecionar"}
+              </strong>
+              <small style={{ color: isDragging ? "#0284c7" : "var(--muted)", fontSize: "12px" }}>
+                {isDragging
+                  ? "Suporta arquivos .kml, .geojson e .json"
+                  : geometry
+                  ? "Arquivo validado. Arraste outro arquivo ou clique para substituir."
+                  : "Formatos aceitos: .kml, .geojson ou .json"}
+              </small>
             </label>
             {error && <p className="error-box">{error}</p>}
             {geometry && (
@@ -1145,6 +1240,8 @@ export default function Home() {
         setNewAdminFullName={userMgmt.setNewAdminFullName}
         newAdminRole={userMgmt.newAdminRole}
         setNewAdminRole={userMgmt.setNewAdminRole}
+        newAdminClientName={userMgmt.newAdminClientName}
+        setNewAdminClientName={userMgmt.setNewAdminClientName}
         adminErrorMsg={userMgmt.adminErrorMsg}
         adminSuccessMsg={userMgmt.adminSuccessMsg}
         onAddUser={userMgmt.handleAddUser}
@@ -1156,6 +1253,8 @@ export default function Home() {
         setEditFullNameInput={userMgmt.setEditFullNameInput}
         editRoleInput={userMgmt.editRoleInput}
         setEditRoleInput={userMgmt.setEditRoleInput}
+        editClientNameInput={userMgmt.editClientNameInput}
+        setEditClientNameInput={userMgmt.setEditClientNameInput}
         editNewPassInput={userMgmt.editNewPassInput}
         setEditNewPassInput={userMgmt.setEditNewPassInput}
         editingCurrentPassInput={userMgmt.editingCurrentPassInput}
@@ -1184,7 +1283,9 @@ export default function Home() {
       <ClientPortalModal
         isOpen={showClientPortal}
         onClose={() => setShowClientPortal(false)}
-        userEmail={userMgmt.loggedUserKey || "cliente@fafcoffees.com"}
+        userEmail={userMgmt.loggedUserKey ? `${userMgmt.loggedUserKey}@fafcoffees.com` : "cliente@fafcoffees.com"}
+        loggedUserRole={userMgmt.loggedUserRole}
+        loggedClientName={userMgmt.loggedClientName}
       />
     </main>
   );
