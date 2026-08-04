@@ -206,7 +206,7 @@ export interface R2ObjectItem {
   lastModified: string;
 }
 
-export async function listR2Objects(prefix = ""): Promise<R2ObjectItem[]> {
+export async function listR2Objects(prefix = "", includeAll = false): Promise<R2ObjectItem[]> {
   try {
     const host = `${ACCOUNT_ID}.r2.cloudflarestorage.com`;
     const query = `list-type=2${prefix ? `&prefix=${encodeURIComponent(prefix)}` : ""}`;
@@ -269,13 +269,13 @@ export async function listR2Objects(prefix = ""): Promise<R2ObjectItem[]> {
       const items: R2ObjectItem[] = [];
       for (let i = 0; i < keys.length; i++) {
         const k = keys[i];
-        if (k && !k.endsWith(".json") && !k.endsWith("/")) {
-          items.push({
-            key: k,
-            size: sizes[i] || 0,
-            lastModified: dates[i] || new Date().toISOString(),
-          });
-        }
+        if (!k || k.endsWith("/")) continue;
+        if (!includeAll && k.endsWith(".json")) continue;
+        items.push({
+          key: k,
+          size: sizes[i] || 0,
+          lastModified: dates[i] || new Date().toISOString(),
+        });
       }
       return items;
     }
@@ -283,4 +283,64 @@ export async function listR2Objects(prefix = ""): Promise<R2ObjectItem[]> {
     console.warn("⚠️ listR2Objects error:", err);
   }
   return [];
+}
+
+export async function deleteObjectFromR2(key: string): Promise<boolean> {
+  try {
+    const host = `${ACCOUNT_ID}.r2.cloudflarestorage.com`;
+    const url = `https://${host}/${BUCKET_NAME}/${key}`;
+
+    const now = new Date();
+    const amzDate = now.toISOString().replace(/[:\-\.]/g, "").slice(0, 15) + "Z";
+    const dateStamp = amzDate.slice(0, 8);
+    const payloadHash = sha256Hex("");
+    const region = "auto";
+    const service = "s3";
+
+    const canonicalHeaders =
+      `host:${host}\n` +
+      `x-amz-content-sha256:${payloadHash}\n` +
+      `x-amz-date:${amzDate}\n`;
+
+    const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
+
+    const canonicalRequest =
+      `DELETE\n` +
+      `/${BUCKET_NAME}/${key}\n` +
+      `\n` +
+      `${canonicalHeaders}\n` +
+      `${signedHeaders}\n` +
+      `${payloadHash}`;
+
+    const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
+    const stringToSign =
+      `AWS4-HMAC-SHA256\n` +
+      `${amzDate}\n` +
+      `${credentialScope}\n` +
+      `${sha256Hex(canonicalRequest)}`;
+
+    const signingKey = getSignatureKey(SECRET_ACCESS_KEY, dateStamp, region, service);
+    const signature = crypto.createHmac("sha256", signingKey).update(stringToSign).digest("hex");
+
+    const authorizationHeader =
+      `AWS4-HMAC-SHA256 ` +
+      `Credential=${ACCESS_KEY_ID}/${credentialScope}, ` +
+      `SignedHeaders=${signedHeaders}, ` +
+      `Signature=${signature}`;
+
+    const res = await fetch(url, {
+      method: "DELETE",
+      headers: {
+        "Host": host,
+        "x-amz-date": amzDate,
+        "x-amz-content-sha256": payloadHash,
+        "Authorization": authorizationHeader,
+      },
+    });
+
+    return res.ok || res.status === 204;
+  } catch (err) {
+    console.warn("⚠️ deleteObjectFromR2 error:", err);
+    return false;
+  }
 }

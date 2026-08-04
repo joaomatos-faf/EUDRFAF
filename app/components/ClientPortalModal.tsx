@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { ServerStorageExplorer } from "./ServerStorageExplorer";
 
 export interface PublishedPlotRecord {
   id: string;
@@ -42,6 +43,7 @@ export function ClientPortalModal({
   userName = "",
   onLogout,
 }: ClientPortalModalProps) {
+  const [currentPortalTab, setCurrentPortalTab] = useState<"contracts" | "server-files">("contracts");
   const [plots, setPlots] = useState<PublishedPlotRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [contractFilter, setContractFilter] = useState("TODOS");
@@ -212,6 +214,17 @@ export function ClientPortalModal({
       ? loggedClientName
       : "FAF Operator");
 
+  if (currentPortalTab === "server-files") {
+    return (
+      <ServerStorageExplorer
+        isOpen={true}
+        onClose={() => setCurrentPortalTab("contracts")}
+        userName={displayName}
+        userRole={loggedUserRole}
+      />
+    );
+  }
+
   return (
     <div
       style={{
@@ -326,6 +339,26 @@ export function ClientPortalModal({
           >
             👤 {displayName}
           </span>
+
+          <button
+            onClick={() => setCurrentPortalTab("server-files")}
+            style={{
+              background: "rgba(245, 158, 11, 0.2)",
+              border: "1px solid rgba(245, 158, 11, 0.45)",
+              color: "#fbbf24",
+              padding: "8px 16px",
+              borderRadius: "8px",
+              fontSize: "12px",
+              fontWeight: 800,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              transition: "all 0.15s ease",
+            }}
+          >
+            ☁️ Acessar Nuvem / Servidor
+          </button>
 
           <button
             onClick={onClose}

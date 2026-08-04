@@ -13,6 +13,7 @@ import { AdminUserModal } from "./components/AdminUserModal";
 import { AuditLogModal } from "./components/AuditLogModal";
 import { NewProcessModal } from "./components/NewProcessModal";
 import { ClientPortalModal } from "./components/ClientPortalModal";
+import { ServerStorageExplorer } from "./components/ServerStorageExplorer";
 import { useUserManagement } from "./hooks/useUserManagement";
 import { recordAuditLog } from "./lib/auditLogger";
 import {
@@ -172,6 +173,7 @@ export default function Home() {
   const [locationSuggestionsOpen, setLocationSuggestionsOpen] = useState(false);
   const [locationsReload, setLocationsReload] = useState(0);
   const [showLogsModal, setShowLogsModal] = useState(false);
+  const [showCloudExplorer, setShowCloudExplorer] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
   const handleLogout = () => {
@@ -894,6 +896,7 @@ export default function Home() {
         onNewProcess={handleNewProcessClick}
         onOpenLogsModal={() => setShowLogsModal(true)}
         onOpenClientPortal={() => setActiveView("portal")}
+        onOpenCloudExplorer={() => setShowCloudExplorer(true)}
         onOpenLanding={() => setActiveView("landing")}
       />
 
@@ -1259,6 +1262,13 @@ export default function Home() {
         currentPlotId={normalizedId || form.plotId}
         currentSupplier={form.supplier || form.producer}
         nextPlotIdPreview={nextPlotIdPreview}
+      />
+
+      <ServerStorageExplorer
+        isOpen={showCloudExplorer}
+        onClose={() => setShowCloudExplorer(false)}
+        userName={userMgmt.loggedUserName || userMgmt.loggedUserKey}
+        userRole={userMgmt.loggedUserRole}
       />
     </main>
   );
