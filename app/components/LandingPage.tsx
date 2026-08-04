@@ -8,7 +8,6 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPageProps) {
-
   return (
     <div
       style={{
@@ -20,6 +19,28 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
         flexDirection: "column",
       }}
     >
+      <style>{`
+        .landing-cards-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 24px;
+          width: 100%;
+          max-width: 1180px;
+        }
+        @media (max-width: 980px) {
+          .landing-cards-grid {
+            grid-template-columns: 1fr;
+            max-width: 520px;
+          }
+        }
+        .landing-card {
+          transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .landing-card:hover {
+          transform: translateY(-4px);
+        }
+      `}</style>
+
       {/* Top Navbar */}
       <header
         style={{
@@ -73,10 +94,10 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
       <main
         style={{
           flex: 1,
-          maxWidth: "1000px",
+          maxWidth: "1260px",
           width: "100%",
           margin: "0 auto",
-          padding: "60px 24px",
+          padding: "50px 24px 60px",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
@@ -84,15 +105,15 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
         }}
       >
         {/* Central Logo & Title */}
-        <div style={{ textAlign: "center", marginBottom: "48px" }}>
+        <div style={{ textAlign: "center", marginBottom: "40px" }}>
           <img
             src="/faf-symbol.png"
             alt="FAF Coffees"
             style={{
-              height: "88px",
+              height: "84px",
               width: "auto",
               objectFit: "contain",
-              margin: "0 auto 24px",
+              margin: "0 auto 20px",
               display: "block",
               filter: "drop-shadow(0 12px 28px rgba(179, 44, 37, 0.35))",
             }}
@@ -100,10 +121,10 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
 
           <h1
             style={{
-              fontSize: "36px",
+              fontSize: "34px",
               fontWeight: 800,
               color: "#ffffff",
-              margin: "0 0 12px",
+              margin: "0 0 10px",
               letterSpacing: "-0.8px",
             }}
           >
@@ -112,33 +133,27 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
 
           <p
             style={{
-              fontSize: "16px",
+              fontSize: "15px",
               color: "#94a3b8",
               margin: 0,
-              maxWidth: "540px",
+              maxWidth: "580px",
+              lineHeight: 1.5,
             }}
           >
             Geospatial traceability and due diligence dossiers for specialty coffee exports.
           </p>
         </div>
 
-        {/* 2 Primary Access Cards */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: "24px",
-            width: "100%",
-            maxWidth: "840px",
-          }}
-        >
+        {/* 3 Cards in 1 Single Line */}
+        <div className="landing-cards-grid">
           {/* Card 1: FAF Team */}
           <div
+            className="landing-card"
             style={{
-              background: "linear-gradient(145deg, rgba(17, 43, 31, 0.8) 0%, rgba(10, 26, 19, 0.9) 100%)",
+              background: "linear-gradient(145deg, rgba(17, 43, 31, 0.85) 0%, rgba(10, 26, 19, 0.95) 100%)",
               borderRadius: "20px",
-              padding: "32px 28px",
-              border: "1px solid rgba(52, 211, 153, 0.2)",
+              padding: "30px 26px",
+              border: "1px solid rgba(52, 211, 153, 0.25)",
               boxShadow: "0 16px 36px rgba(0, 0, 0, 0.3)",
               display: "flex",
               flexDirection: "column",
@@ -149,7 +164,7 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
               <div
                 style={{
                   fontSize: "11px",
-                  fontWeight: 700,
+                  fontWeight: 800,
                   color: "#34d399",
                   textTransform: "uppercase",
                   letterSpacing: "1px",
@@ -162,7 +177,7 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
                 FAF Internal Portal
               </h2>
               <p style={{ fontSize: "13.5px", color: "#cbd5e1", lineHeight: 1.5, margin: "0 0 28px" }}>
-                Restricted access for agronomists and technical staff to upload plots, validate deforestation on MapBiomas, and publish cloud dossiers.
+                Restricted access for agronomists to upload plots, validate deforestation on MapBiomas, and publish dossiers.
               </p>
             </div>
 
@@ -194,11 +209,12 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
 
           {/* Card 2: Importers & Clients */}
           <div
+            className="landing-card"
             style={{
-              background: "linear-gradient(145deg, rgba(18, 32, 54, 0.8) 0%, rgba(10, 20, 36, 0.9) 100%)",
+              background: "linear-gradient(145deg, rgba(18, 32, 54, 0.85) 0%, rgba(10, 20, 36, 0.95) 100%)",
               borderRadius: "20px",
-              padding: "32px 28px",
-              border: "1px solid rgba(96, 165, 250, 0.2)",
+              padding: "30px 26px",
+              border: "1px solid rgba(96, 165, 250, 0.25)",
               boxShadow: "0 16px 36px rgba(0, 0, 0, 0.3)",
               display: "flex",
               flexDirection: "column",
@@ -209,7 +225,7 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
               <div
                 style={{
                   fontSize: "11px",
-                  fontWeight: 700,
+                  fontWeight: 800,
                   color: "#93c5fd",
                   textTransform: "uppercase",
                   letterSpacing: "1px",
@@ -252,13 +268,14 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
             </a>
           </div>
 
-          {/* Card 3: FAF Cloud Storage (cloud.fafeu.online) */}
+          {/* Card 3: FAF Cloud Storage */}
           <div
+            className="landing-card"
             style={{
-              background: "linear-gradient(145deg, rgba(30, 27, 75, 0.8) 0%, rgba(15, 14, 38, 0.9) 100%)",
+              background: "linear-gradient(145deg, rgba(30, 27, 75, 0.85) 0%, rgba(15, 14, 38, 0.95) 100%)",
               borderRadius: "20px",
-              padding: "32px 28px",
-              border: "1px solid rgba(167, 139, 250, 0.2)",
+              padding: "30px 26px",
+              border: "1px solid rgba(167, 139, 250, 0.25)",
               boxShadow: "0 16px 36px rgba(0, 0, 0, 0.3)",
               display: "flex",
               flexDirection: "column",
@@ -269,7 +286,7 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
               <div
                 style={{
                   fontSize: "11px",
-                  fontWeight: 700,
+                  fontWeight: 800,
                   color: "#c4b5fd",
                   textTransform: "uppercase",
                   letterSpacing: "1px",
@@ -282,7 +299,7 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
                 Cloud Explorer
               </h2>
               <p style={{ fontSize: "13.5px", color: "#cbd5e1", lineHeight: 1.5, margin: "0 0 28px" }}>
-                Visualize, download, upload and delete raw geometries, datasets, dossiers and metadata in real-time.
+                Visualize geometries, download datasets, upload packages and manage cloud files in real-time.
               </p>
             </div>
 
