@@ -11,5 +11,5 @@ export const APP_CONFIG = {
     douglasPeuckerMinTolerance: 1e-9,
     maxSuggestions: 60,
   },
-  years: [2020, 2021, 2022, 2023, 2024],
+  years: Array.from({ length: Math.max(1, new Date().getFullYear() - 2020 + 1) }, (_, i) => 2020 + i),
 };

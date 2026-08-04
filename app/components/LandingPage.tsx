@@ -162,7 +162,7 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
                 FAF Internal Portal
               </h2>
               <p style={{ fontSize: "13.5px", color: "#cbd5e1", lineHeight: 1.5, margin: "0 0 28px" }}>
-                Restricted access for agronomists and technical staff to upload plots, validate deforestation on GFW, and publish cloud dossiers.
+                Restricted access for agronomists and technical staff to upload plots, validate deforestation on MapBiomas, and publish cloud dossiers.
               </p>
             </div>
 
