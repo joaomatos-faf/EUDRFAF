@@ -1,23 +1,45 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { PublishedPlotRecord } from "@/app/lib/clientPortalStore";
+
+export interface PublishedPlotRecord {
+  id: string;
+  contractId: string;
+  clientName?: string;
+  plotId: string;
+  producer?: string;
+  supplier?: string;
+  farm?: string;
+  area?: number;
+  geojsonKey: string;
+  updatedAt?: string;
+}
 
 interface ClientPortalModalProps {
-  isOpen?: boolean;
+  isOpen: boolean;
   onClose: () => void;
-  userName?: string;
-  loggedUserRole?: "admin" | "user" | "client";
+  loggedUserRole?: "admin" | "operator" | "client" | "user";
   loggedClientName?: string;
+  userName?: string;
   onLogout?: () => void;
 }
 
-export default function ClientPortalModal({
-  isOpen = true,
+interface AggregatedContractRecord {
+  contractId: string;
+  clientName: string;
+  producer: string;
+  farm: string;
+  totalArea: number;
+  geojsonKey: string;
+  plotCount: number;
+}
+
+export function ClientPortalModal({
+  isOpen,
   onClose,
-  userName = "Authorized User",
-  loggedUserRole = "user",
+  loggedUserRole = "operator",
   loggedClientName = "",
+  userName = "",
   onLogout,
 }: ClientPortalModalProps) {
   const [plots, setPlots] = useState<PublishedPlotRecord[]>([]);
@@ -25,7 +47,10 @@ export default function ClientPortalModal({
   const [contractFilter, setContractFilter] = useState("TODOS");
   const [searchQuery, setSearchQuery] = useState("");
   const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [feedback, setFeedback] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   const fetchPlots = async () => {
     setLoading(true);
@@ -37,14 +62,19 @@ export default function ClientPortalModal({
       if (loggedUserRole === "client" && loggedClientName) {
         params.set("clientName", loggedClientName);
       }
-      const url = `/api/r2/list${params.toString() ? `?${params.toString()}` : ""}`;
+      const url = `/api/r2/list${
+        params.toString() ? `?${params.toString()}` : ""
+      }`;
       const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
         setPlots(data.plots || []);
       }
     } catch {
-      setFeedback({ type: "error", text: "Unable to load portal records from Cloudflare R2." });
+      setFeedback({
+        type: "error",
+        text: "Unable to load portal records from Cloudflare R2.",
+      });
     } finally {
       setLoading(false);
     }
@@ -58,13 +88,18 @@ export default function ClientPortalModal({
 
   const handleDownload = async (key: string, filename: string) => {
     if (!key) {
-      setFeedback({ type: "error", text: "File is not available in Cloudflare R2 storage." });
+      setFeedback({
+        type: "error",
+        text: "File is not available in Cloudflare R2 storage.",
+      });
       return;
     }
     setDownloadingKey(key);
     setFeedback(null);
     try {
-      const res = await fetch(`/api/r2/download?key=${encodeURIComponent(key)}`);
+      const res = await fetch(
+        `/api/r2/download?key=${encodeURIComponent(key)}`
+      );
       const data = await res.json();
       if (data.success && data.downloadUrl) {
         const a = document.createElement("a");
@@ -75,12 +110,18 @@ export default function ClientPortalModal({
         a.click();
         document.body.removeChild(a);
 
-        setFeedback({ type: "success", text: `Download of ${filename} started successfully via Cloudflare R2!` });
+        setFeedback({
+          type: "success",
+          text: `Download of ${filename} started successfully via Cloudflare R2!`,
+        });
       } else {
-        throw new Error(data.error || "Failed to retrieve secure download URL.");
+        throw new Error(
+          data.error || "Failed to retrieve secure download URL."
+        );
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to download file.";
+      const msg =
+        err instanceof Error ? err.message : "Failed to download file.";
       setFeedback({ type: "error", text: msg });
     } finally {
       setDownloadingKey(null);
@@ -95,61 +136,97 @@ export default function ClientPortalModal({
         const pProducer = (plot.producer || "").toLowerCase().trim();
         const pSupplier = (plot.supplier || "").toLowerCase().trim();
         return (
-          (pClient && (pClient.includes(targetClient) || targetClient.includes(pClient))) ||
-          (pProducer && (pProducer.includes(targetClient) || targetClient.includes(pProducer))) ||
-          (pSupplier && (pSupplier.includes(targetClient) || targetClient.includes(pSupplier)))
+          (pClient &&
+            (pClient.includes(targetClient) ||
+              targetClient.includes(pClient))) ||
+          (pProducer &&
+            (pProducer.includes(targetClient) ||
+              targetClient.includes(pProducer))) ||
+          (pSupplier &&
+            (pSupplier.includes(targetClient) ||
+              targetClient.includes(pSupplier)))
         );
       });
     }
     return plots;
   }, [plots, loggedUserRole, loggedClientName]);
 
-  const availableContracts = useMemo(() => {
-    return Array.from(new Set(clientScopedPlots.map((p) => p.contractId).filter(Boolean)));
+  // Agrupamento exclusivo por Contrato para atender ao pedido do usuário
+  const aggregatedContracts = useMemo(() => {
+    const map = new Map<string, AggregatedContractRecord>();
+
+    clientScopedPlots.forEach((p) => {
+      const contractCode = p.contractId || "SEM CONTRATO";
+      if (!map.has(contractCode)) {
+        map.set(contractCode, {
+          contractId: contractCode,
+          clientName: p.clientName || p.producer || "GENERAL CLIENT",
+          producer: p.producer || "",
+          farm: p.farm || "",
+          totalArea: p.area || 0,
+          geojsonKey: p.geojsonKey,
+          plotCount: 1,
+        });
+      } else {
+        const current = map.get(contractCode)!;
+        current.totalArea += p.area || 0;
+        current.plotCount += 1;
+        if (!current.geojsonKey && p.geojsonKey) {
+          current.geojsonKey = p.geojsonKey;
+        }
+      }
+    });
+
+    return Array.from(map.values());
   }, [clientScopedPlots]);
 
-  const filteredPlots = useMemo(() => {
-    return clientScopedPlots.filter((plot) => {
-      const q = searchQuery.toLowerCase().trim();
+  const availableContracts = useMemo(() => {
+    return aggregatedContracts.map((c) => c.contractId);
+  }, [aggregatedContracts]);
+
+  const filteredContracts = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return aggregatedContracts.filter((c) => {
+      if (contractFilter !== "TODOS" && c.contractId !== contractFilter) {
+        return false;
+      }
       if (!q) return true;
       return (
-        (plot.clientName || "").toLowerCase().includes(q) ||
-        (plot.producer || "").toLowerCase().includes(q) ||
-        plot.contractId.toLowerCase().includes(q) ||
-        plot.plotId.toLowerCase().includes(q) ||
-        (plot.farm || "").toLowerCase().includes(q)
+        c.contractId.toLowerCase().includes(q) ||
+        c.clientName.toLowerCase().includes(q)
       );
     });
-  }, [clientScopedPlots, searchQuery]);
+  }, [aggregatedContracts, contractFilter, searchQuery]);
 
-  const totalHectares = useMemo(() => {
-    return filteredPlots.reduce((acc, p) => acc + (p.area || 0), 0);
-  }, [filteredPlots]);
-
-  // Compute clean display name without any email address
-  const displayName = useMemo(() => {
-    let raw = (userName || "").trim();
-    if (raw.includes("@")) {
-      raw = raw.split("@")[0];
-    }
-    if (loggedClientName && loggedClientName.trim() && loggedClientName.toLowerCase() !== raw.toLowerCase()) {
-      return `${raw} (${loggedClientName})`;
-    }
-    return raw || loggedClientName || "Authorized User";
-  }, [userName, loggedClientName]);
+  const totalVerifiedHectares = useMemo(() => {
+    return filteredContracts.reduce((acc, c) => acc + (c.totalArea || 0), 0);
+  }, [filteredContracts]);
 
   if (!isOpen) return null;
+
+  const displayName =
+    userName ||
+    (loggedUserRole === "admin"
+      ? "Administrator"
+      : loggedUserRole === "client" && loggedClientName
+      ? loggedClientName
+      : "FAF Operator");
 
   return (
     <div
       style={{
-        minHeight: "100vh",
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
         background: "var(--canvas, #f3f5f2)",
-        color: "var(--ink, #18211d)",
-        fontFamily: "'Segoe UI Variable', 'Segoe UI', -apple-system, sans-serif",
+        overflowY: "auto",
+        display: "flex",
+        flexDirection: "column",
+        fontFamily:
+          "'Segoe UI Variable', 'Segoe UI', -apple-system, sans-serif",
       }}
     >
-      {/* Top Navbar Matching corporate FAF EUDR design */}
+      {/* Top Navbar */}
       <header
         style={{
           position: "sticky",
@@ -170,7 +247,12 @@ export default function ClientPortalModal({
           <img
             src="/faf-symbol.png"
             alt="FAF Coffees"
-            style={{ height: "42px", width: "auto", objectFit: "contain", display: "block" }}
+            style={{
+              height: "42px",
+              width: "auto",
+              objectFit: "contain",
+              display: "block",
+            }}
           />
           <div>
             <p
@@ -185,7 +267,15 @@ export default function ClientPortalModal({
             >
               PORTAL.FAFEU.ONLINE • CLOUDFLARE R2 STORAGE
             </p>
-            <h1 style={{ margin: 0, color: "#ffffff", fontSize: "19px", fontWeight: 700, letterSpacing: "-.02em" }}>
+            <h1
+              style={{
+                margin: 0,
+                color: "#ffffff",
+                fontSize: "19px",
+                fontWeight: 700,
+                letterSpacing: "-.02em",
+              }}
+            >
               Client Portal & EUDR Dossiers
             </h1>
           </div>
@@ -276,7 +366,13 @@ export default function ClientPortalModal({
       </header>
 
       {/* Main Page Layout */}
-      <main style={{ maxWidth: "1480px", margin: "0 auto", padding: "28px 28px 80px" }}>
+      <main
+        style={{
+          maxWidth: "1480px",
+          margin: "0 auto",
+          padding: "28px 28px 80px",
+        }}
+      >
         {/* Feedback Alert */}
         {feedback && (
           <div
@@ -284,27 +380,31 @@ export default function ClientPortalModal({
               marginBottom: "20px",
               padding: "14px 20px",
               borderRadius: "12px",
-              background: feedback.type === "success" ? "#ecfdf5" : "#fef2f2",
+              background:
+                feedback.type === "success" ? "#ecfdf5" : "#fef2f2",
+              border:
+                feedback.type === "success"
+                  ? "1px solid #6ee7b7"
+                  : "1px solid #fca5a5",
               color: feedback.type === "success" ? "#065f46" : "#991b1b",
-              border: `1px solid ${feedback.type === "success" ? "#a7f3d0" : "#fecaca"}`,
+              fontWeight: 700,
               fontSize: "13.5px",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              fontWeight: 600,
-              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
             }}
           >
-            <span>{feedback.text}</span>
+            <span>
+              {feedback.type === "success" ? "✅" : "⚠️"} {feedback.text}
+            </span>
             <button
               onClick={() => setFeedback(null)}
               style={{
-                background: "transparent",
+                background: "none",
                 border: "none",
+                fontSize: "16px",
                 cursor: "pointer",
                 color: "inherit",
-                fontSize: "16px",
-                fontWeight: 700,
               }}
             >
               ✕
@@ -312,75 +412,65 @@ export default function ClientPortalModal({
           </div>
         )}
 
-        {/* Hero Header Overview */}
+        {/* Hero Section */}
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-end",
-            flexWrap: "wrap",
-            gap: "20px",
+            background:
+              "linear-gradient(135deg, #092e20 0%, #134e38 50%, #1e6b4e 100%)",
+            color: "#ffffff",
+            padding: "36px 40px",
+            borderRadius: "20px",
             marginBottom: "28px",
+            boxShadow:
+              "0 12px 30px rgba(9, 46, 32, 0.25), 0 4px 10px rgba(0,0,0,0.1)",
+            position: "relative",
+            overflow: "hidden",
           }}
         >
-          <div>
-            <p
+          <div style={{ maxWidth: "880px", position: "relative", zIndex: 1 }}>
+            <div
               style={{
-                margin: "0 0 6px",
-                color: "var(--orange-500, #d77442)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                background: "rgba(255, 255, 255, 0.12)",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                padding: "6px 14px",
+                borderRadius: "999px",
                 fontSize: "11px",
                 fontWeight: 800,
-                letterSpacing: ".12em",
+                letterSpacing: ".08em",
                 textTransform: "uppercase",
+                marginBottom: "16px",
               }}
             >
-              FAF COFFEES • VERIFIED COMPLIANCE ARCHIVE
-            </p>
+              <span>🌿</span> EUDR COMPLIANCE DIRECTORY (EU 2023/1115)
+            </div>
             <h2
               style={{
-                margin: 0,
-                color: "var(--forest-950, #102c24)",
-                fontSize: "30px",
+                margin: "0 0 10px",
+                fontSize: "28px",
                 fontWeight: 800,
-                letterSpacing: "-0.03em",
+                letterSpacing: "-.02em",
               }}
             >
-              EUDR Lots & GeoJSON Downloads
+              {loggedClientName
+                ? `EUDR Contract Dossiers • ${loggedClientName}`
+                : "EUDR Client Contract & GeoJSON Download Portal"}
             </h2>
             <p
               style={{
-                margin: "8px 0 0",
-                color: "var(--muted, #66736d)",
-                fontSize: "14px",
+                margin: 0,
+                fontSize: "14.5px",
+                lineHeight: "1.6",
+                color: "rgba(255, 255, 255, 0.88)",
                 maxWidth: "760px",
-                lineHeight: "1.5",
               }}
             >
-              Access verified coffee parcel coordinates, plot metadata, and download signed GeoJSON geometry files
-              directly from Cloudflare R2 secure storage.
+              Download polygon coordinates and EUDR compliance files validated
+              against MapBiomas and Brazilian environmental databases for import
+              customs clearance in the European Union.
             </p>
-          </div>
-
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <button
-              onClick={fetchPlots}
-              style={{
-                background: "#ffffff",
-                border: "1px solid var(--line-strong, #c8d3cc)",
-                color: "var(--forest-900, #173b30)",
-                padding: "10px 18px",
-                borderRadius: "10px",
-                fontSize: "13px",
-                fontWeight: 700,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-              }}
-            >
-              🔄 Refresh Data
-            </button>
           </div>
         </div>
 
@@ -388,7 +478,7 @@ export default function ClientPortalModal({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
             gap: "16px",
             marginBottom: "28px",
           }}
@@ -411,13 +501,35 @@ export default function ClientPortalModal({
                 letterSpacing: "0.08em",
               }}
             >
-              Listed Plots
+              Verified Contracts
             </div>
-            <div style={{ fontSize: "28px", fontWeight: 800, color: "var(--forest-950, #102c24)", marginTop: "4px" }}>
-              {filteredPlots.length} <span style={{ fontSize: "13px", color: "var(--muted, #66736d)", fontWeight: 500 }}>plots</span>
+            <div
+              style={{
+                fontSize: "28px",
+                fontWeight: 800,
+                color: "#1d4ed8",
+                marginTop: "4px",
+              }}
+            >
+              {filteredContracts.length}{" "}
+              <span
+                style={{
+                  fontSize: "13px",
+                  color: "var(--muted, #66736d)",
+                  fontWeight: 500,
+                }}
+              >
+                {filteredContracts.length === 1 ? "contract" : "contracts"}
+              </span>
             </div>
-            <div style={{ fontSize: "12px", color: "var(--muted, #66736d)", marginTop: "4px" }}>
-              Available for download
+            <div
+              style={{
+                fontSize: "12px",
+                color: "var(--muted, #66736d)",
+                marginTop: "4px",
+              }}
+            >
+              Ready for EUDR GeoJSON downloads
             </div>
           </div>
 
@@ -439,65 +551,7 @@ export default function ClientPortalModal({
                 letterSpacing: "0.08em",
               }}
             >
-              Total Mapped Area
-            </div>
-            <div style={{ fontSize: "28px", fontWeight: 800, color: "#065f46", marginTop: "4px" }}>
-              {totalHectares.toFixed(2)}{" "}
-              <span style={{ fontSize: "13px", color: "var(--muted, #66736d)", fontWeight: 500 }}>hectares</span>
-            </div>
-            <div style={{ fontSize: "12px", color: "#10b981", fontWeight: 700, marginTop: "4px" }}>
-              ✓ 100% Polygon Verified
-            </div>
-          </div>
-
-          <div
-            style={{
-              background: "#ffffff",
-              padding: "20px 24px",
-              borderRadius: "16px",
-              border: "1px solid var(--line, #dce3de)",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "11px",
-                fontWeight: 800,
-                color: "var(--subtle, #8a958f)",
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-              }}
-            >
-              Cloud Contracts
-            </div>
-            <div style={{ fontSize: "28px", fontWeight: 800, color: "#1d4ed8", marginTop: "4px" }}>
-              {availableContracts.length}{" "}
-              <span style={{ fontSize: "13px", color: "var(--muted, #66736d)", fontWeight: 500 }}>contracts</span>
-            </div>
-            <div style={{ fontSize: "12px", color: "var(--muted, #66736d)", marginTop: "4px" }}>
-              Active export lots
-            </div>
-          </div>
-
-          <div
-            style={{
-              background: "#ffffff",
-              padding: "20px 24px",
-              borderRadius: "16px",
-              border: "1px solid var(--line, #dce3de)",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "11px",
-                fontWeight: 800,
-                color: "var(--subtle, #8a958f)",
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-              }}
-            >
-              EUDR 2026 Compliance
+              EUDR 2026 Compliance Status
             </div>
             <div
               style={{
@@ -521,13 +575,19 @@ export default function ClientPortalModal({
               ></span>
               Compliant & Verified
             </div>
-            <div style={{ fontSize: "12px", color: "var(--muted, #66736d)", marginTop: "6px" }}>
-              Cloudflare R2 Storage
+            <div
+              style={{
+                fontSize: "12px",
+                color: "var(--muted, #66736d)",
+                marginTop: "6px",
+              }}
+            >
+              Cloudflare R2 Global Storage ({totalVerifiedHectares.toFixed(2)} ha)
             </div>
           </div>
         </div>
 
-        {/* Search & Filter Card */}
+        {/* Search By Contract Only */}
         <div
           style={{
             background: "#ffffff",
@@ -557,7 +617,7 @@ export default function ClientPortalModal({
             </span>
             <input
               type="text"
-              placeholder="Search by client, contract, plot code, producer, or farm..."
+              placeholder="Search by contract number (e.g. 2026-C001)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
@@ -591,8 +651,8 @@ export default function ClientPortalModal({
             >
               <option value="TODOS">
                 {loggedUserRole === "client"
-                  ? `🌐 My Contracts (${clientScopedPlots.length})`
-                  : `🌐 All Contracts (${plots.length})`}
+                  ? `🌐 My Contracts (${availableContracts.length})`
+                  : `🌐 All Contracts (${availableContracts.length})`}
               </option>
               {availableContracts.map((c) => (
                 <option key={c} value={c}>
@@ -603,7 +663,7 @@ export default function ClientPortalModal({
           </div>
         </div>
 
-        {/* Main Table Card */}
+        {/* Main Contracts Table */}
         <div
           style={{
             background: "#ffffff",
@@ -614,21 +674,55 @@ export default function ClientPortalModal({
           }}
         >
           {loading ? (
-            <div style={{ padding: "80px 20px", textAlign: "center", color: "var(--muted, #66736d)" }}>
+            <div
+              style={{
+                padding: "80px 20px",
+                textAlign: "center",
+                color: "var(--muted, #66736d)",
+              }}
+            >
               <div style={{ fontSize: "36px", marginBottom: "12px" }}>⏳</div>
-              <p style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "var(--forest-950, #102c24)" }}>
-                Loading plots and files from Cloudflare R2...
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "16px",
+                  fontWeight: 700,
+                  color: "var(--forest-950, #102c24)",
+                }}
+              >
+                Loading contracts and GeoJSON files from Cloudflare R2...
               </p>
-              <p style={{ margin: "4px 0 0", fontSize: "13px" }}>Please wait while we verify your data.</p>
+              <p style={{ margin: "4px 0 0", fontSize: "13px" }}>
+                Please wait while we verify your data.
+              </p>
             </div>
-          ) : filteredPlots.length === 0 ? (
-            <div style={{ padding: "80px 20px", textAlign: "center", color: "var(--muted, #66736d)" }}>
+          ) : filteredContracts.length === 0 ? (
+            <div
+              style={{
+                padding: "80px 20px",
+                textAlign: "center",
+                color: "var(--muted, #66736d)",
+              }}
+            >
               <div style={{ fontSize: "48px", marginBottom: "16px" }}>📂</div>
-              <h4 style={{ margin: 0, fontSize: "19px", color: "var(--forest-950, #102c24)", fontWeight: 700 }}>
-                No published plots found
+              <h4
+                style={{
+                  margin: 0,
+                  fontSize: "19px",
+                  color: "var(--forest-950, #102c24)",
+                  fontWeight: 700,
+                }}
+              >
+                No published contracts found
               </h4>
-              <p style={{ margin: "8px 0 20px", fontSize: "14px", color: "var(--muted, #66736d)" }}>
-                No plot records match your current filter or search criteria.
+              <p
+                style={{
+                  margin: "8px 0 20px",
+                  fontSize: "14px",
+                  color: "var(--muted, #66736d)",
+                }}
+              >
+                No contract records match your search criteria.
               </p>
               {(contractFilter !== "TODOS" || searchQuery.trim()) && (
                 <button
@@ -653,9 +747,33 @@ export default function ClientPortalModal({
             </div>
           ) : (
             <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "13.5px" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  textAlign: "left",
+                  fontSize: "13.5px",
+                }}
+              >
                 <thead>
-                  <tr style={{ background: "var(--forest-50, #f2f7f4)", borderBottom: "2px solid var(--line, #dce3de)" }}>
+                  <tr
+                    style={{
+                      background: "var(--forest-50, #f2f7f4)",
+                      borderBottom: "2px solid var(--line, #dce3de)",
+                    }}
+                  >
+                    <th
+                      style={{
+                        padding: "16px 22px",
+                        color: "var(--forest-950, #102c24)",
+                        fontWeight: 800,
+                        fontSize: "12px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      Contract Number
+                    </th>
                     <th
                       style={{
                         padding: "16px 22px",
@@ -678,7 +796,7 @@ export default function ClientPortalModal({
                         letterSpacing: "0.05em",
                       }}
                     >
-                      Contract
+                      Total Verified Area
                     </th>
                     <th
                       style={{
@@ -690,19 +808,7 @@ export default function ClientPortalModal({
                         letterSpacing: "0.05em",
                       }}
                     >
-                      Plot Code
-                    </th>
-                    <th
-                      style={{
-                        padding: "16px 22px",
-                        color: "var(--forest-950, #102c24)",
-                        fontWeight: 800,
-                        fontSize: "12px",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
-                      Area (ha)
+                      EUDR Status
                     </th>
                     <th
                       style={{
@@ -715,50 +821,23 @@ export default function ClientPortalModal({
                         textAlign: "right",
                       }}
                     >
-                      GeoJSON File (R2)
+                      EUDR GeoJSON Package (R2)
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredPlots.map((plot, idx) => (
+                  {filteredContracts.map((contract, idx) => (
                     <tr
-                      key={plot.id || idx}
+                      key={contract.contractId || idx}
                       style={{
-                        borderBottom: idx === filteredPlots.length - 1 ? 0 : "1px solid var(--line, #dce3de)",
+                        borderBottom:
+                          idx === filteredContracts.length - 1
+                            ? 0
+                            : "1px solid var(--line, #dce3de)",
                         background: idx % 2 === 0 ? "#ffffff" : "#fdfefe",
                         transition: "background 0.15s ease",
                       }}
                     >
-                      {/* Client / Producer / Farm */}
-                      <td style={{ padding: "18px 22px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                          <div
-                            style={{
-                              width: "40px",
-                              height: "40px",
-                              borderRadius: "12px",
-                              background: "#e0f2fe",
-                              color: "#0369a1",
-                              display: "grid",
-                              placeItems: "center",
-                              fontWeight: 800,
-                              fontSize: "16px",
-                            }}
-                          >
-                            🏢
-                          </div>
-                          <div>
-                            <div style={{ fontWeight: 800, color: "var(--forest-950, #102c24)", fontSize: "14px" }}>
-                              {plot.clientName || plot.producer || "GENERAL CLIENT"}
-                            </div>
-                            <div style={{ fontSize: "12px", color: "var(--muted, #66736d)", marginTop: "2px" }}>
-                              {plot.producer && plot.producer !== plot.clientName ? `Producer: ${plot.producer} • ` : ""}
-                              {plot.farm ? `Farm: ${plot.farm}` : "Cloud R2"}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-
                       {/* Contract */}
                       <td style={{ padding: "18px 22px" }}>
                         <span
@@ -767,7 +846,7 @@ export default function ClientPortalModal({
                             color: "#3730a3",
                             padding: "6px 12px",
                             borderRadius: "10px",
-                            fontSize: "12px",
+                            fontSize: "13px",
                             fontWeight: 800,
                             border: "1px solid #c7d2fe",
                             display: "inline-flex",
@@ -775,11 +854,75 @@ export default function ClientPortalModal({
                             gap: "6px",
                           }}
                         >
-                          📋 {plot.contractId}
+                          📋 {contract.contractId}
                         </span>
                       </td>
 
-                      {/* Plot Code */}
+                      {/* Client / Importer */}
+                      <td style={{ padding: "18px 22px" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "38px",
+                              height: "38px",
+                              borderRadius: "10px",
+                              background: "#e0f2fe",
+                              color: "#0369a1",
+                              display: "grid",
+                              placeItems: "center",
+                              fontWeight: 800,
+                              fontSize: "15px",
+                            }}
+                          >
+                            🏢
+                          </div>
+                          <div>
+                            <div
+                              style={{
+                                fontWeight: 800,
+                                color: "var(--forest-950, #102c24)",
+                                fontSize: "14px",
+                              }}
+                            >
+                              {contract.clientName}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                color: "var(--muted, #66736d)",
+                                marginTop: "2px",
+                              }}
+                            >
+                              {contract.producer
+                                ? `Producer: ${contract.producer}`
+                                : "Cloudflare R2 Synchronized"}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Total Area */}
+                      <td style={{ padding: "18px 22px" }}>
+                        <div
+                          style={{
+                            fontWeight: 800,
+                            color: "var(--forest-950, #102c24)",
+                            fontSize: "14px",
+                          }}
+                        >
+                          {contract.totalArea
+                            ? `${contract.totalArea.toFixed(2)} ha`
+                            : "N/A"}
+                        </div>
+                      </td>
+
+                      {/* EUDR Status */}
                       <td style={{ padding: "18px 22px" }}>
                         <span
                           style={{
@@ -795,44 +938,41 @@ export default function ClientPortalModal({
                             gap: "6px",
                           }}
                         >
-                          🌱 {plot.plotId}
+                          <span>✓</span> Compliant & Verified
                         </span>
                       </td>
 
-                      {/* Area */}
-                      <td style={{ padding: "18px 22px" }}>
-                        <div style={{ fontWeight: 800, color: "var(--forest-950, #102c24)", fontSize: "14px" }}>
-                          {plot.area ? `${plot.area.toFixed(2)} ha` : "N/A"}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "11px",
-                            color: "#10b981",
-                            fontWeight: 700,
-                            marginTop: "2px",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                          }}
-                        >
-                          <span>✓</span> EUDR Verified
-                        </div>
-                      </td>
-
                       {/* Download Action */}
-                      <td style={{ padding: "18px 22px", textAlign: "right" }}>
+                      <td
+                        style={{
+                          padding: "18px 22px",
+                          textAlign: "right",
+                        }}
+                      >
                         <button
-                          onClick={() => handleDownload(plot.geojsonKey, `${plot.plotId}.geojson`)}
-                          disabled={downloadingKey === plot.geojsonKey}
+                          onClick={() =>
+                            handleDownload(
+                              contract.geojsonKey,
+                              `${contract.contractId}.geojson`
+                            )
+                          }
+                          disabled={
+                            downloadingKey === contract.geojsonKey ||
+                            !contract.geojsonKey
+                          }
                           style={{
                             padding: "10px 18px",
                             fontSize: "13px",
                             fontWeight: 800,
                             borderRadius: "10px",
                             border: "none",
-                            background: "linear-gradient(135deg, #092e20 0%, #134e38 100%)",
+                            background:
+                              "linear-gradient(135deg, #092e20 0%, #134e38 100%)",
                             color: "#ffffff",
-                            cursor: "pointer",
+                            cursor: contract.geojsonKey
+                              ? "pointer"
+                              : "not-allowed",
+                            opacity: contract.geojsonKey ? 1 : 0.6,
                             boxShadow: "0 4px 12px rgba(9, 46, 32, 0.2)",
                             transition: "all 0.15s ease",
                             display: "inline-flex",
@@ -840,7 +980,9 @@ export default function ClientPortalModal({
                             gap: "7px",
                           }}
                         >
-                          {downloadingKey === plot.geojsonKey ? "⏳ Downloading..." : "🌐 Download GeoJSON (.geojson)"}
+                          {downloadingKey === contract.geojsonKey
+                            ? "⏳ Downloading..."
+                            : "🌐 Download Contract GeoJSON (.geojson)"}
                         </button>
                       </td>
                     </tr>
@@ -868,9 +1010,18 @@ export default function ClientPortalModal({
             color: "var(--muted, #66736d)",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
             <span style={{ color: "#10b981", fontSize: "16px" }}>⚡</span>
-            <span>Cloudflare R2 Global Storage Infrastructure • Signed private links with SHA-256 integrity.</span>
+            <span>
+              Cloudflare R2 Global Storage Infrastructure • Signed private links
+              with SHA-256 integrity.
+            </span>
           </div>
           <div>© 2026 FAF Coffees. All rights reserved.</div>
         </div>

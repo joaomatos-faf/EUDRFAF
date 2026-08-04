@@ -4,10 +4,13 @@ import React from "react";
 
 interface EudrStepsNavProps {
   geometryLoaded: boolean;
-  gfwChecked: boolean;
+  mapbiomasChecked?: boolean;
+  gfwChecked?: boolean;
 }
 
-export function EudrStepsNav({ geometryLoaded, gfwChecked }: EudrStepsNavProps) {
+export function EudrStepsNav({ geometryLoaded, mapbiomasChecked, gfwChecked }: EudrStepsNavProps) {
+  const isChecked = Boolean(mapbiomasChecked ?? gfwChecked);
+
   return (
     <nav className="steps" aria-label="Etapas do processo">
       <div className="step active">
@@ -20,15 +23,15 @@ export function EudrStepsNav({ geometryLoaded, gfwChecked }: EudrStepsNavProps) 
         <b>Geometria</b>
         <small>{geometryLoaded ? "Carregada" : "Pendente"}</small>
       </div>
-      <div className={`step ${gfwChecked ? "active" : ""}`}>
+      <div className={`step ${isChecked ? "active" : ""}`}>
         <i>3</i>
         <b>Conformidade</b>
-        <small>{gfwChecked ? "Consultada" : "Pendente"}</small>
+        <small>{isChecked ? "Consultada" : "Pendente"}</small>
       </div>
-      <div className={`step ${gfwChecked ? "active" : ""}`}>
+      <div className={`step ${isChecked ? "active" : ""}`}>
         <i>4</i>
         <b>Exportação</b>
-        <small>{gfwChecked ? "Pronto" : "Pendente"}</small>
+        <small>{isChecked ? "Pronto" : "Pendente"}</small>
       </div>
     </nav>
   );

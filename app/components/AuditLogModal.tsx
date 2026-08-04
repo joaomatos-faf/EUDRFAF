@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { AuditLogEntry } from "../api/logs/route";
-import { fetchAuditLogs, exportAuditLogsCsv } from "../lib/auditLogger";
+import { AuditLogEntry, fetchAuditLogs, exportAuditLogsCsv } from "../lib/auditLogger";
 import { downloadBlob } from "../lib/eudr";
 
 interface AuditLogModalProps {
@@ -53,6 +52,7 @@ export function AuditLogModal({ isOpen, onClose }: AuditLogModalProps) {
         return { background: "#f3e8ff", color: "#6b21a8", border: "1px solid #e9d5ff" };
       case "GEOMETRIA":
         return { background: "#ecfdf5", color: "#065f46", border: "1px solid #a7f3d0" };
+      case "MAPBIOMAS":
       case "GFW":
         return { background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0" };
       case "EXPORTACAO":
@@ -177,6 +177,7 @@ export function AuditLogModal({ isOpen, onClose }: AuditLogModalProps) {
               <option value="ACESSO">🔑 Acesso / Login</option>
               <option value="USUARIOS">👤 Usuários</option>
               <option value="GEOMETRIA">🗺️ Geometria</option>
+              <option value="MAPBIOMAS">🌿 MapBiomas</option>
               <option value="GFW">🌲 Global Forest Watch</option>
               <option value="EXPORTACAO">📦 Exportação</option>
             </select>
