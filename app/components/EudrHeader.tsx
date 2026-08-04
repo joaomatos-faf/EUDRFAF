@@ -11,6 +11,7 @@ interface EudrHeaderProps {
   onNewProcess?: () => void;
   onOpenLogsModal?: () => void;
   onOpenClientPortal?: () => void;
+  onOpenCloudExplorer?: () => void;
   onOpenLanding?: () => void;
 }
 
@@ -23,6 +24,7 @@ export function EudrHeader({
   onNewProcess,
   onOpenLogsModal,
   onOpenClientPortal,
+  onOpenCloudExplorer,
   onOpenLanding,
 }: EudrHeaderProps) {
   return (
@@ -101,10 +103,11 @@ export function EudrHeader({
             )}
 
             {loggedUserRole !== "client" && (
-              <a
-                href="https://portal.fafeu.online"
-                target="_blank"
-                rel="noreferrer"
+              <button
+                onClick={() => {
+                  if (onOpenCloudExplorer) onOpenCloudExplorer();
+                  else window.open("https://portal.fafeu.online", "_blank");
+                }}
                 style={{
                   background: "rgba(52, 211, 153, 0.2)",
                   border: "1px solid rgba(52, 211, 153, 0.4)",
@@ -113,14 +116,14 @@ export function EudrHeader({
                   padding: "7px 12px",
                   fontSize: "12px",
                   fontWeight: 700,
-                  textDecoration: "none",
+                  cursor: "pointer",
                   display: "inline-flex",
                   alignItems: "center",
                   gap: "5px",
                 }}
               >
-                ☁️ Arquivos na Nuvem R2 ↗
-              </a>
+                ☁️ Arquivos na Nuvem R2
+              </button>
             )}
 
             {loggedUserRole === "admin" && (

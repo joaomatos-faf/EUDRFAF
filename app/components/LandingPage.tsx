@@ -251,6 +251,60 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
               🌐 Access Client Portal ➔
             </a>
           </div>
+
+          {/* Card 3: FAF Cloud Storage (cloud.fafeu.online) */}
+          <div
+            style={{
+              background: "linear-gradient(145deg, rgba(30, 27, 75, 0.8) 0%, rgba(15, 14, 38, 0.9) 100%)",
+              borderRadius: "20px",
+              padding: "32px 28px",
+              border: "1px solid rgba(167, 139, 250, 0.2)",
+              boxShadow: "0 16px 36px rgba(0, 0, 0, 0.3)",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  color: "#c4b5fd",
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                  marginBottom: "8px",
+                }}
+              >
+                Cloudflare R2 Storage
+              </div>
+              <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#ffffff", margin: "0 0 10px" }}>
+                Cloud Explorer
+              </h2>
+              <p style={{ fontSize: "13.5px", color: "#cbd5e1", lineHeight: 1.5, margin: "0 0 28px" }}>
+                Visualize, download, upload and delete raw geometries, datasets, dossiers and metadata in real-time.
+              </p>
+            </div>
+
+            <a
+              href="/cloud"
+              style={{
+                padding: "13px 20px",
+                fontSize: "14px",
+                fontWeight: 700,
+                borderRadius: "12px",
+                background: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)",
+                color: "#ffffff",
+                textDecoration: "none",
+                textAlign: "center",
+                display: "block",
+                boxShadow: "0 8px 20px rgba(124, 58, 237, 0.25)",
+                transition: "all 0.15s ease",
+              }}
+            >
+              ☁️ Access Cloud Storage ➔
+            </a>
+          </div>
         </div>
       </main>
 
