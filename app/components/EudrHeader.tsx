@@ -28,7 +28,11 @@ export function EudrHeader({
   return (
     <header className="topbar">
       <div className="brand-lockup">
-        <div className="brand-mark">FAF</div>
+        <img
+          src="/faf-symbol.png"
+          alt="FAF Coffees"
+          style={{ height: "36px", width: "auto", objectFit: "contain", display: "block" }}
+        />
         <div>
           <p className="eyebrow">FAF COFFEES · SUSTENTABILIDADE & CONFORMIDADE</p>
           <h1>Preparador de Dossiê EUDR</h1>
@@ -96,9 +100,11 @@ export function EudrHeader({
               </button>
             )}
 
-            {loggedUserRole !== "client" && onOpenClientPortal && (
-              <button
-                onClick={onOpenClientPortal}
+            {loggedUserRole !== "client" && (
+              <a
+                href="https://portal.fafeu.online"
+                target="_blank"
+                rel="noreferrer"
                 style={{
                   background: "rgba(52, 211, 153, 0.2)",
                   border: "1px solid rgba(52, 211, 153, 0.4)",
@@ -107,11 +113,14 @@ export function EudrHeader({
                   padding: "7px 12px",
                   fontSize: "12px",
                   fontWeight: 700,
-                  cursor: "pointer",
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "5px",
                 }}
               >
-                ☁️ Arquivos na Nuvem R2
-              </button>
+                ☁️ Arquivos na Nuvem R2 ↗
+              </a>
             )}
 
             {loggedUserRole === "admin" && (

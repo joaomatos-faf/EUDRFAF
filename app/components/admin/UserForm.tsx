@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { ClientSelectAutocomplete } from "../ClientSelectAutocomplete";
 
 interface UserFormProps {
   newAdminUser: string;
@@ -86,16 +87,13 @@ export function UserForm({
 
         {newAdminRole === "client" && setNewAdminClientName && (
           <div>
-            <label style={{ fontSize: "11px", fontWeight: 700, color: "#0369a1" }}>
-              🏢 Nome da Empresa do Cliente (para vincular contratos) *
-              <input
-                type="text"
-                value={newAdminClientName}
-                onChange={(e) => setNewAdminClientName(e.target.value)}
-                placeholder="Ex: BELCO, AMANDA..."
-                style={{ width: "100%", marginTop: "4px", padding: "8px 10px", borderRadius: "6px", border: "1px solid #0284c7", fontSize: "13px", background: "#f0f9ff" }}
-              />
-            </label>
+            <ClientSelectAutocomplete
+              value={newAdminClientName}
+              onChange={(name) => setNewAdminClientName(name)}
+              label="Nome da Empresa do Cliente (para vincular contratos)"
+              placeholder="Selecione uma empresa europeia ou cadastre nova..."
+              required={true}
+            />
           </div>
         )}
       </div>

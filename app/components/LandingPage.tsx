@@ -3,40 +3,19 @@
 import React from "react";
 
 interface LandingPageProps {
-  onOpenFafApp: () => void;
-  onOpenClientPortal: () => void;
+  onOpenFafApp?: () => void;
+  onOpenClientPortal?: () => void;
 }
 
 export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPageProps) {
-  const handleFafAppClick = () => {
-    if (typeof window !== "undefined") {
-      const host = window.location.hostname.toLowerCase();
-      if (host.includes("fafeu.online") && !host.startsWith("app.")) {
-        window.location.href = "https://app.fafeu.online";
-        return;
-      }
-    }
-    onOpenFafApp();
-  };
-
-  const handleClientPortalClick = () => {
-    if (typeof window !== "undefined") {
-      const host = window.location.hostname.toLowerCase();
-      if (host.includes("fafeu.online") && !host.startsWith("portal.")) {
-        window.location.href = "https://portal.fafeu.online";
-        return;
-      }
-    }
-    onOpenClientPortal();
-  };
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(145deg, #071c14 0%, #0d2b1f 50%, #05140e 100%)",
-        color: "#f0f7f3",
-        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        background: "radial-gradient(ellipse at 50% 0%, #133324 0%, #091a13 50%, #050e0a 100%)",
+        color: "#f1f6f3",
+        fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         display: "flex",
         flexDirection: "column",
       }}
@@ -44,330 +23,248 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
       {/* Top Navbar */}
       <header
         style={{
-          padding: "20px 40px",
+          padding: "20px 36px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-          background: "rgba(7, 28, 20, 0.8)",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+          background: "rgba(9, 26, 19, 0.6)",
           backdropFilter: "blur(12px)",
-          position: "sticky",
-          top: 0,
-          zIndex: 100,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-          <div
-            style={{
-              background: "#15803d",
-              color: "#fff",
-              fontWeight: 900,
-              fontSize: "18px",
-              padding: "6px 12px",
-              borderRadius: "8px",
-              letterSpacing: "1px",
-            }}
-          >
-            FAF
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <img
+            src="/faf-symbol.png"
+            alt="FAF Coffees"
+            style={{ height: "36px", width: "auto", objectFit: "contain", display: "block" }}
+          />
           <div>
-            <div style={{ fontSize: "11px", color: "#6ee7b7", fontWeight: 700, letterSpacing: "1.5px" }}>
-              FAF COFFEES • EUDR COMPLIANCE
+            <div style={{ fontSize: "14px", fontWeight: 800, color: "#ffffff", letterSpacing: "0.5px" }}>
+              FAF COFFEES
             </div>
-            <div style={{ fontSize: "16px", fontWeight: 700, color: "#fff" }}>
-              Plataforma de Conformidade EUDR
+            <div style={{ fontSize: "11px", color: "#d1a068", fontWeight: 600 }}>
+              Fazenda Ambiental Fortaleza
             </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+        <div>
           <span
             style={{
-              fontSize: "11px",
-              background: "rgba(16, 185, 129, 0.15)",
+              fontSize: "12px",
+              background: "rgba(16, 185, 129, 0.12)",
               color: "#34d399",
-              border: "1px solid rgba(52, 211, 153, 0.3)",
-              padding: "4px 10px",
+              border: "1px solid rgba(52, 211, 153, 0.25)",
+              padding: "6px 14px",
               borderRadius: "999px",
               fontWeight: 700,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
             }}
           >
-            ● Regulamento (UE) 2023/1115
+            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#10b981" }}></span>
+            Regulation (EU) 2023/1115 (EUDR)
           </span>
-          <button
-            onClick={handleFafAppClick}
-            style={{
-              background: "rgba(255, 255, 255, 0.1)",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-              color: "#fff",
-              padding: "8px 16px",
-              borderRadius: "8px",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Entrar
-          </button>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <main style={{ flex: 1, maxWidth: "1200px", width: "100%", margin: "0 auto", padding: "60px 24px" }}>
-        <div style={{ textAlign: "center", maxWidth: "800px", margin: "0 auto 60px" }}>
-          <div
+      {/* Main Content */}
+      <main
+        style={{
+          flex: 1,
+          maxWidth: "1000px",
+          width: "100%",
+          margin: "0 auto",
+          padding: "60px 24px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        {/* Central Logo & Title */}
+        <div style={{ textAlign: "center", marginBottom: "48px" }}>
+          <img
+            src="/faf-symbol.png"
+            alt="FAF Coffees"
             style={{
-              display: "inline-block",
-              background: "rgba(21, 128, 61, 0.2)",
-              color: "#6ee7b7",
-              border: "1px solid rgba(110, 231, 183, 0.3)",
-              padding: "6px 16px",
-              borderRadius: "999px",
-              fontSize: "12px",
-              fontWeight: 700,
-              marginBottom: "20px",
-              letterSpacing: "0.5px",
+              height: "88px",
+              width: "auto",
+              objectFit: "contain",
+              margin: "0 auto 24px",
+              display: "block",
+              filter: "drop-shadow(0 12px 28px rgba(179, 44, 37, 0.35))",
             }}
-          >
-            🌿 SUSTENTABILIDADE & RASTREABILIDADE DO CAFÉ
-          </div>
+          />
+
           <h1
             style={{
-              fontSize: "44px",
+              fontSize: "36px",
               fontWeight: 800,
               color: "#ffffff",
-              margin: "0 0 20px",
-              lineHeight: 1.15,
-              letterSpacing: "-1px",
+              margin: "0 0 12px",
+              letterSpacing: "-0.8px",
             }}
           >
-            Mapeamento Geoespacial e Dossiês EUDR da FAF Coffees
+            EUDR Compliance Platform
           </h1>
-          <p style={{ fontSize: "17px", color: "#a7f3d0", lineHeight: 1.6, margin: 0 }}>
-            Plataforma corporativa para validação de desmatamento no Global Forest Watch (GFW), geração de arquivos GeoJSON e distribuição segura de dossiês de rastreabilidade para a União Europeia.
+
+          <p
+            style={{
+              fontSize: "16px",
+              color: "#94a3b8",
+              margin: 0,
+              maxWidth: "540px",
+            }}
+          >
+            Geospatial traceability and due diligence dossiers for specialty coffee exports.
           </p>
         </div>
 
-        {/* 2 Main Call to Action Cards */}
+        {/* 2 Primary Access Cards */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-            gap: "28px",
-            marginBottom: "70px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+            gap: "24px",
+            width: "100%",
+            maxWidth: "840px",
           }}
         >
-          {/* Card 1: Equipe FAF */}
+          {/* Card 1: FAF Team */}
           <div
             style={{
-              background: "linear-gradient(135deg, rgba(15, 45, 34, 0.9) 0%, rgba(8, 28, 20, 0.95) 100%)",
-              borderRadius: "24px",
-              padding: "36px",
-              border: "1px solid rgba(52, 211, 153, 0.25)",
-              boxShadow: "0 20px 50px rgba(0, 0, 0, 0.4)",
+              background: "linear-gradient(145deg, rgba(17, 43, 31, 0.8) 0%, rgba(10, 26, 19, 0.9) 100%)",
+              borderRadius: "20px",
+              padding: "32px 28px",
+              border: "1px solid rgba(52, 211, 153, 0.2)",
+              boxShadow: "0 16px 36px rgba(0, 0, 0, 0.3)",
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
-              position: "relative",
-              overflow: "hidden",
             }}
           >
-            <div
-              style={{
-                position: "absolute",
-                top: "-40px",
-                right: "-40px",
-                width: "140px",
-                height: "140px",
-                background: "rgba(16, 185, 129, 0.1)",
-                borderRadius: "50%",
-              }}
-            />
             <div>
               <div
                 style={{
-                  width: "56px",
-                  height: "56px",
-                  borderRadius: "16px",
-                  background: "rgba(16, 185, 129, 0.15)",
-                  border: "1px solid rgba(52, 211, 153, 0.3)",
-                  display: "grid",
-                  placeItems: "center",
-                  fontSize: "26px",
-                  marginBottom: "24px",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  color: "#34d399",
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                  marginBottom: "8px",
                 }}
               >
-                🔒
+                FAF Team
               </div>
-              <h3 style={{ fontSize: "24px", fontWeight: 700, color: "#fff", margin: "0 0 12px" }}>
-                Área Restrita FAF
-              </h3>
-              <p style={{ fontSize: "14px", color: "#cbd5e1", lineHeight: 1.6, margin: "0 0 24px" }}>
-                Acesso exclusivo para funcionários da FAF Coffees. Permite importar KML/GeoJSON, consultar análises temporais no GFW, validar o CAR e publicar os arquivos na nuvem Cloudflare R2.
+              <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#ffffff", margin: "0 0 10px" }}>
+                FAF Internal Portal
+              </h2>
+              <p style={{ fontSize: "13.5px", color: "#cbd5e1", lineHeight: 1.5, margin: "0 0 28px" }}>
+                Restricted access for agronomists and technical staff to upload plots, validate deforestation on GFW, and publish cloud dossiers.
               </p>
-              <ul style={{ paddingLeft: "20px", color: "#a7f3d0", fontSize: "13px", lineHeight: 1.8, margin: "0 0 30px" }}>
-                <li>Validação temporal GFW (2024–Presente)</li>
-                <li>Geração automática do Código FAF de Talhão</li>
-                <li>Publicação estruturada no Cloudflare R2</li>
-              </ul>
             </div>
-            <button
-              onClick={handleFafAppClick}
+
+            <a
+              href="https://app.fafeu.online"
+              onClick={(e) => {
+                if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
+                  e.preventDefault();
+                  onOpenFafApp?.();
+                }
+              }}
               style={{
-                width: "100%",
-                padding: "14px 24px",
-                fontSize: "15px",
+                padding: "13px 20px",
+                fontSize: "14px",
                 fontWeight: 700,
                 borderRadius: "12px",
-                border: "none",
                 background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                color: "#fff",
-                cursor: "pointer",
-                boxShadow: "0 10px 25px rgba(16, 185, 129, 0.3)",
-                transition: "transform 0.15s ease",
+                color: "#ffffff",
+                textDecoration: "none",
+                textAlign: "center",
+                display: "block",
+                boxShadow: "0 8px 20px rgba(16, 185, 129, 0.25)",
+                transition: "all 0.15s ease",
               }}
             >
-              🔒 Acessar Área FAF (app.fafeu.online) ➔
-            </button>
+              🔒 Access FAF System ➔
+            </a>
           </div>
 
-          {/* Card 2: Portal do Cliente */}
+          {/* Card 2: Importers & Clients */}
           <div
             style={{
-              background: "linear-gradient(135deg, rgba(17, 34, 64, 0.9) 0%, rgba(10, 20, 40, 0.95) 100%)",
-              borderRadius: "24px",
-              padding: "36px",
-              border: "1px solid rgba(96, 165, 250, 0.25)",
-              boxShadow: "0 20px 50px rgba(0, 0, 0, 0.4)",
+              background: "linear-gradient(145deg, rgba(18, 32, 54, 0.8) 0%, rgba(10, 20, 36, 0.9) 100%)",
+              borderRadius: "20px",
+              padding: "32px 28px",
+              border: "1px solid rgba(96, 165, 250, 0.2)",
+              boxShadow: "0 16px 36px rgba(0, 0, 0, 0.3)",
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
-              position: "relative",
-              overflow: "hidden",
             }}
           >
-            <div
-              style={{
-                position: "absolute",
-                top: "-40px",
-                right: "-40px",
-                width: "140px",
-                height: "140px",
-                background: "rgba(59, 130, 246, 0.1)",
-                borderRadius: "50%",
-              }}
-            />
             <div>
               <div
                 style={{
-                  width: "56px",
-                  height: "56px",
-                  borderRadius: "16px",
-                  background: "rgba(59, 130, 246, 0.15)",
-                  border: "1px solid rgba(96, 165, 250, 0.3)",
-                  display: "grid",
-                  placeItems: "center",
-                  fontSize: "26px",
-                  marginBottom: "24px",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  color: "#93c5fd",
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                  marginBottom: "8px",
                 }}
               >
-                🌐
+                Importers & Roasters
               </div>
-              <h3 style={{ fontSize: "24px", fontWeight: 700, color: "#fff", margin: "0 0 12px" }}>
-                Portal do Cliente & Importador
-              </h3>
-              <p style={{ fontSize: "14px", color: "#cbd5e1", lineHeight: 1.6, margin: "0 0 24px" }}>
-                Espaço dedicado aos importadores e torrefadores parceiros. Permite consultar os talhões vinculados aos seus contratos e baixar os arquivos `.geojson` para submissão à UE.
+              <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#ffffff", margin: "0 0 10px" }}>
+                Client Portal
+              </h2>
+              <p style={{ fontSize: "13.5px", color: "#cbd5e1", lineHeight: 1.5, margin: "0 0 28px" }}>
+                Search lots by purchase contract and download verified GeoJSON files ready for EU Due Diligence submission.
               </p>
-              <ul style={{ paddingLeft: "20px", color: "#93c5fd", fontSize: "13px", lineHeight: 1.8, margin: "0 0 30px" }}>
-                <li>Filtro direto por Código de Contrato</li>
-                <li>Download em 1-clique do GeoJSON padronizado</li>
-                <li>Links privados seguros via Cloudflare R2</li>
-              </ul>
             </div>
-            <button
-              onClick={handleClientPortalClick}
+
+            <a
+              href="https://portal.fafeu.online"
+              onClick={(e) => {
+                if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
+                  e.preventDefault();
+                  onOpenClientPortal?.();
+                }
+              }}
               style={{
-                width: "100%",
-                padding: "14px 24px",
-                fontSize: "15px",
+                padding: "13px 20px",
+                fontSize: "14px",
                 fontWeight: 700,
                 borderRadius: "12px",
-                border: "none",
                 background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-                color: "#fff",
-                cursor: "pointer",
-                boxShadow: "0 10px 25px rgba(37, 99, 235, 0.3)",
-                transition: "transform 0.15s ease",
+                color: "#ffffff",
+                textDecoration: "none",
+                textAlign: "center",
+                display: "block",
+                boxShadow: "0 8px 20px rgba(37, 99, 235, 0.25)",
+                transition: "all 0.15s ease",
               }}
             >
-              🌐 Acessar Portal do Cliente (portal.fafeu.online) ➔
-            </button>
-          </div>
-        </div>
-
-        {/* Feature Grid Section */}
-        <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.1)", paddingTop: "50px" }}>
-          <h4 style={{ textAlign: "center", fontSize: "20px", fontWeight: 700, color: "#fff", marginBottom: "36px" }}>
-            Recursos da Infraestrutura EUDR FAF Coffees
-          </h4>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px" }}>
-            <div style={{ background: "rgba(255, 255, 255, 0.03)", padding: "20px", borderRadius: "16px", border: "1px solid rgba(255, 255, 255, 0.06)" }}>
-              <div style={{ fontSize: "20px", marginBottom: "8px" }}>🌲</div>
-              <h5 style={{ margin: "0 0 6px", color: "#fff", fontSize: "15px" }}>Global Forest Watch</h5>
-              <p style={{ margin: 0, fontSize: "12px", color: "#94a3b8", lineHeight: 1.5 }}>
-                Análise automatizada da série temporal de cobertura florestal a partir do início de 2024.
-              </p>
-            </div>
-
-            <div style={{ background: "rgba(255, 255, 255, 0.03)", padding: "20px", borderRadius: "16px", border: "1px solid rgba(255, 255, 255, 0.06)" }}>
-              <div style={{ fontSize: "20px", marginBottom: "8px" }}>⚡</div>
-              <h5 style={{ margin: "0 0 6px", color: "#fff", fontSize: "15px" }}>Cloudflare R2 Storage</h5>
-              <p style={{ margin: 0, fontSize: "12px", color: "#94a3b8", lineHeight: 1.5 }}>
-                Armazenamento em nuvem ultra-rápido organizado por Região, Fornecedor e Fazenda.
-              </p>
-            </div>
-
-            <div style={{ background: "rgba(255, 255, 255, 0.03)", padding: "20px", borderRadius: "16px", border: "1px solid rgba(255, 255, 255, 0.06)" }}>
-              <div style={{ fontSize: "20px", marginBottom: "8px" }}>🌐</div>
-              <h5 style={{ margin: "0 0 6px", color: "#fff", fontSize: "15px" }}>Padrão GeoJSON OGC</h5>
-              <p style={{ margin: 0, fontSize: "12px", color: "#94a3b8", lineHeight: 1.5 }}>
-                Arquivos geométricos em sistema de referência CRS84 totalmente válidos para a UE.
-              </p>
-            </div>
-
-            <div style={{ background: "rgba(255, 255, 255, 0.03)", padding: "20px", borderRadius: "16px", border: "1px solid rgba(255, 255, 255, 0.06)" }}>
-              <div style={{ fontSize: "20px", marginBottom: "8px" }}>📜</div>
-              <h5 style={{ margin: "0 0 6px", color: "#fff", fontSize: "15px" }}>Trilha de Auditoria</h5>
-              <p style={{ margin: 0, fontSize: "12px", color: "#94a3b8", lineHeight: 1.5 }}>
-                Registro imutável de todas as análises e exportações para governança e Due Diligence.
-              </p>
-            </div>
+              🌐 Access Client Portal ➔
+            </a>
           </div>
         </div>
       </main>
 
-      {/* Footer */}
+      {/* Minimal Footer */}
       <footer
         style={{
-          padding: "24px 40px",
-          borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-          background: "rgba(5, 20, 14, 0.9)",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "12px",
+          padding: "20px 36px",
+          borderTop: "1px solid rgba(255, 255, 255, 0.05)",
+          textAlign: "center",
           fontSize: "12px",
           color: "#64748b",
         }}
       >
-        <div>
-          © {new Date().getFullYear()} <strong>FAF Coffees</strong> • Todos os direitos reservados.
-        </div>
-        <div>
-          Plataforma Corporativa de Conformidade EUDR • União Europeia Regulamento 2023/1115
-        </div>
+        © {new Date().getFullYear()} <strong>FAF Coffees</strong> • Mococa, SP — Brazil • Regulation (EU) 2023/1115
       </footer>
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { ClientSelectAutocomplete } from "../ClientSelectAutocomplete";
 
 interface UserProfile {
   pass: string;
@@ -165,16 +166,12 @@ export function UserEditRow({
 
               {editRoleInput === "client" && setEditClientNameInput && (
                 <div>
-                  <label style={{ fontSize: "11px", fontWeight: 700, color: "#0369a1" }}>
-                    🏢 Nome da Empresa do Cliente (para vincular contratos)
-                    <input
-                      type="text"
-                      value={editClientNameInput}
-                      onChange={(e) => setEditClientNameInput(e.target.value)}
-                      placeholder="Ex: BELCO, AMANDA..."
-                      style={{ width: "100%", marginTop: "4px", padding: "6px 10px", borderRadius: "4px", border: "1px solid #0284c7", fontSize: "12px", background: "#f0f9ff" }}
-                    />
-                  </label>
+                  <ClientSelectAutocomplete
+                    value={editClientNameInput}
+                    onChange={(name) => setEditClientNameInput(name)}
+                    label="Nome da Empresa do Cliente (para vincular contratos)"
+                    placeholder="Selecione uma empresa europeia ou cadastre nova..."
+                  />
                 </div>
               )}
               <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "4px" }}>
