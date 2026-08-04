@@ -22,6 +22,7 @@ const DEFAULT_USERS_DATA: Record<string, UserProfile> = {
 export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [loggedUserKey, setLoggedUserKey] = useState("");
+  const [loggedUserName, setLoggedUserName] = useState<string>("");
   const [loggedUserRole, setLoggedUserRole] = useState<"admin" | "user" | "client">("user");
   const [loggedClientName, setLoggedClientName] = useState<string>("");
   const [loginUsername, setLoginUsername] = useState("");
@@ -108,6 +109,7 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
       const savedRole = sessionStorage.getItem("faf_eudr_user_role") as "admin" | "user" | "client";
       const savedClient = sessionStorage.getItem("faf_eudr_client_name");
       if (savedName && onUserLoggedIn) onUserLoggedIn(savedName);
+      if (savedName) setLoggedUserName(savedName);
       if (savedKey) setLoggedUserKey(savedKey);
       if (savedRole) setLoggedUserRole(savedRole);
       if (savedClient) setLoggedClientName(savedClient);
@@ -151,6 +153,7 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
       sessionStorage.setItem("faf_eudr_client_name", clientName);
       setIsAuthenticated(true);
       setLoggedUserKey(userKey);
+      setLoggedUserName(fullName);
       setLoggedUserRole(role);
       setLoggedClientName(clientName);
       if (onUserLoggedIn) onUserLoggedIn(fullName);
@@ -165,7 +168,7 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
   };
 
   const handleLogout = () => {
-    const currentName = sessionStorage.getItem("faf_eudr_user_name") || loggedUserKey;
+    const currentName = sessionStorage.getItem("faf_eudr_user_name") || loggedUserName || loggedUserKey;
     recordAuditLog(loggedUserKey, currentName, "LOGOUT", "ACESSO", `Usuário @${loggedUserKey} encerrou a sessão.`);
     sessionStorage.removeItem("faf_eudr_auth");
     sessionStorage.removeItem("faf_eudr_user_name");
@@ -174,6 +177,7 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
     sessionStorage.removeItem("faf_eudr_client_name");
     setIsAuthenticated(false);
     setLoggedUserKey("");
+    setLoggedUserName("");
     setLoggedUserRole("user");
     setLoggedClientName("");
   };
@@ -349,6 +353,7 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
   return {
     isAuthenticated,
     loggedUserKey,
+    loggedUserName,
     loggedUserRole,
     loggedClientName,
     loginUsername,

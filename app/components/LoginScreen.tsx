@@ -10,6 +10,15 @@ interface LoginScreenProps {
   loginError: string;
   onLogin: (e: React.FormEvent) => void;
   onBackToLanding?: () => void;
+  title?: string;
+  eyebrow?: string;
+  subtitle?: string;
+  buttonText?: string;
+  userLabel?: string;
+  passLabel?: string;
+  userPlaceholder?: string;
+  passPlaceholder?: string;
+  backText?: string;
 }
 
 export function LoginScreen({
@@ -20,6 +29,15 @@ export function LoginScreen({
   loginError,
   onLogin,
   onBackToLanding,
+  title = "Acesso Restrito FAF",
+  eyebrow = "FAF Coffees",
+  subtitle = "Digite suas credenciais autorizadas para acessar o Preparador de Dossiês EUDR.",
+  buttonText = "Entrar no Preparador EUDR ➔",
+  userLabel = "Usuário",
+  passLabel = "Senha",
+  userPlaceholder = "Informe o usuário",
+  passPlaceholder = "Informe a senha",
+  backText = "← Voltar à Página Inicial",
 }: LoginScreenProps) {
   return (
     <main className="app-shell" style={{ display: "grid", minHeight: "100vh", placeItems: "center", background: "var(--canvas)", padding: "20px" }}>
@@ -41,41 +59,45 @@ export function LoginScreen({
               padding: 0,
             }}
           >
-            ← Voltar à Página Inicial
+            {backText}
           </button>
         )}
 
         <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "20px" }}>
-          <div className="brand-mark" style={{ width: "46px", height: "46px", fontSize: "15px" }}>FAF</div>
+          <img
+            src="/faf-symbol.png"
+            alt="FAF Coffees"
+            style={{ height: "46px", width: "auto", objectFit: "contain", display: "block" }}
+          />
           <div>
-            <p className="eyebrow" style={{ margin: 0 }}>FAF Coffees</p>
-            <h1 style={{ margin: 0, fontSize: "20px", color: "var(--forest-950)", fontWeight: 700 }}>Acesso Restrito FAF</h1>
+            <p className="eyebrow" style={{ margin: 0 }}>{eyebrow}</p>
+            <h1 style={{ margin: 0, fontSize: "20px", color: "var(--forest-950)", fontWeight: 700 }}>{title}</h1>
           </div>
         </div>
         <p style={{ margin: "0 0 24px", color: "var(--muted)", fontSize: "13.5px", lineHeight: "1.5" }}>
-          Digite suas credenciais autorizadas para acessar o Preparador de Dossiês EUDR.
+          {subtitle}
         </p>
 
         <form onSubmit={onLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 700, color: "var(--forest-950)" }}>
-            Usuário
+            {userLabel}
             <input
               type="text"
               value={loginUsername}
               onChange={(e) => setLoginUsername(e.target.value)}
-              placeholder="Informe o usuário"
+              placeholder={userPlaceholder}
               autoFocus
               style={{ padding: "12px 14px", borderRadius: "8px", border: "1px solid var(--line)", outline: "none", fontSize: "14px", background: "var(--canvas)" }}
             />
           </label>
 
           <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 700, color: "var(--forest-950)" }}>
-            Senha
+            {passLabel}
             <input
               type="password"
               value={loginPassword}
               onChange={(e) => setLoginPassword(e.target.value)}
-              placeholder="Informe a senha"
+              placeholder={passPlaceholder}
               style={{ padding: "12px 14px", borderRadius: "8px", border: "1px solid var(--line)", outline: "none", fontSize: "14px", background: "var(--canvas)" }}
             />
           </label>
@@ -89,7 +111,7 @@ export function LoginScreen({
             className="primary-button"
             style={{ width: "100%", padding: "13px", marginTop: "8px", fontSize: "14px", fontWeight: 700, borderRadius: "10px" }}
           >
-            Entrar no Preparador EUDR ➔
+            {buttonText}
           </button>
         </form>
       </div>

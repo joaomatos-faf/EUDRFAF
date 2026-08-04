@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { ContractRecord } from "@/app/lib/contractStore";
 import { PlotMasterRecord } from "@/app/lib/plotMasterData";
+import { ClientSelectAutocomplete } from "./ClientSelectAutocomplete";
 
 interface ContractManagerViewProps {
   onOpenLanding: () => void;
@@ -769,18 +770,16 @@ export function ContractManagerView({ onOpenLanding, loggedUserKey = "joao.matos
             )}
 
             <form onSubmit={handleSaveContract} style={{ display: "flex", flexDirection: "column", gap: "18px", marginTop: "16px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
-                <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 700 }}>
-                  Nome do Cliente / Importador *
-                  <input
-                    type="text"
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", alignItems: "flex-end" }}>
+                <div>
+                  <ClientSelectAutocomplete
                     value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    placeholder="Ex: Bremen Importers GmbH"
-                    required
-                    style={{ padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--line)", outline: "none", fontSize: "13px" }}
+                    onChange={(name) => setClientName(name)}
+                    label="Nome do Cliente / Importador *"
+                    placeholder="Selecione um cliente europeu ou cadastre..."
+                    required={true}
                   />
-                </label>
+                </div>
 
                 <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", fontWeight: 700 }}>
                   Código do Contrato *

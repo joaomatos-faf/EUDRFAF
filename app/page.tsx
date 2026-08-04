@@ -537,7 +537,6 @@ export default function Home() {
   };
 
   const [activeView, setActiveView] = useState<"landing" | "app" | "portal" | "contratos">("landing");
-  const [showClientPortal, setShowClientPortal] = useState(false);
   const [contractIdToPublish, setContractIdToPublish] = useState("2026-C001");
   const [isPublishingR2, setIsPublishingR2] = useState(false);
   const [lastPublishedR2Key, setLastPublishedR2Key] = useState<string | null>(null);
@@ -561,7 +560,6 @@ export default function Home() {
         hash.includes("portal")
       ) {
         setActiveView("portal");
-        setShowClientPortal(true);
       } else if (
         host.startsWith("app.") ||
         host.startsWith("faf.") ||
@@ -768,7 +766,6 @@ export default function Home() {
   useEffect(() => {
     if (userMgmt.loggedUserRole === "client" && activeView !== "portal") {
       setActiveView("portal");
-      setShowClientPortal(true);
     }
   }, [userMgmt.loggedUserRole, activeView]);
 
@@ -811,12 +808,20 @@ export default function Home() {
           loginPassword={userMgmt.loginPassword}
           setLoginPassword={userMgmt.setLoginPassword}
           loginError={userMgmt.loginError}
+          title="Client & Importer Portal"
+          eyebrow="FAF Coffees • EUDR R2 Storage"
+          subtitle="Enter your authorized credentials to access your lots and download verified EUDR GeoJSON files."
+          buttonText="Enter Client Portal ➔"
+          userLabel="Username"
+          passLabel="Password"
+          userPlaceholder="Enter your username"
+          passPlaceholder="Enter your password"
+          backText="← Back to Home"
           onLogin={async (e) => {
             if (e && typeof e.preventDefault === "function") e.preventDefault();
             const success = await userMgmt.handleLogin(e);
             if (success) {
               setActiveView("portal");
-              setShowClientPortal(true);
             }
           }}
           onBackToLanding={() => setActiveView("landing")}
@@ -824,45 +829,26 @@ export default function Home() {
       );
     }
 
+    const currentFullName = userMgmt.loggedUserName || (userMgmt.loggedUserKey ? userMgmt.usersMap[userMgmt.loggedUserKey]?.fullName : "") || userMgmt.loggedUserKey;
+
     return (
-      <div style={{ minHeight: "100vh", background: "var(--canvas)" }}>
-        <EudrHeader
-          isAuthenticated={Boolean(userMgmt.isAuthenticated)}
-          loggedUserRole={userMgmt.loggedUserRole}
-          loggedUserKey={userMgmt.loggedUserKey}
-          onOpenAdminModal={() => userMgmt.setShowAdminModal(true)}
-          onLogout={userMgmt.handleLogout}
-          onOpenLanding={() => setActiveView("landing")}
-        />
-        <ClientPortalModal
-          isOpen={true}
-          onClose={() => setActiveView("landing")}
-          userEmail={userMgmt.loggedUserKey ? `${userMgmt.loggedUserKey}@fafcoffees.com` : "cliente@fafcoffees.com"}
-          loggedUserRole={userMgmt.loggedUserRole}
-          loggedClientName={userMgmt.loggedClientName}
-        />
-      </div>
+      <ClientPortalModal
+        isOpen={true}
+        onClose={() => setActiveView("landing")}
+        userName={currentFullName}
+        loggedUserRole={userMgmt.loggedUserRole}
+        loggedClientName={userMgmt.loggedClientName}
+        onLogout={userMgmt.handleLogout}
+      />
     );
   }
 
   if (activeView === "landing") {
     return (
-      <>
-        <LandingPage
-          onOpenFafApp={() => setActiveView("app")}
-          onOpenClientPortal={() => {
-            setActiveView("portal");
-            setShowClientPortal(true);
-          }}
-        />
-        <ClientPortalModal
-          isOpen={showClientPortal}
-          onClose={() => setShowClientPortal(false)}
-          userEmail={userMgmt.loggedUserKey ? `${userMgmt.loggedUserKey}@fafcoffees.com` : "cliente@fafcoffees.com"}
-          loggedUserRole={userMgmt.loggedUserRole}
-          loggedClientName={userMgmt.loggedClientName}
-        />
-      </>
+      <LandingPage
+        onOpenFafApp={() => setActiveView("app")}
+        onOpenClientPortal={() => setActiveView("portal")}
+      />
     );
   }
 
@@ -889,7 +875,6 @@ export default function Home() {
             const role = sessionStorage.getItem("faf_eudr_user_role");
             if (role === "client") {
               setActiveView("portal");
-              setShowClientPortal(true);
             } else {
               setActiveView("app");
             }
@@ -910,7 +895,7 @@ export default function Home() {
         onLogout={userMgmt.handleLogout}
         onNewProcess={handleNewProcessClick}
         onOpenLogsModal={() => setShowLogsModal(true)}
-        onOpenClientPortal={() => setShowClientPortal(true)}
+        onOpenClientPortal={() => setActiveView("portal")}
         onOpenLanding={() => setActiveView("landing")}
       />
 
@@ -1276,14 +1261,6 @@ export default function Home() {
         currentPlotId={normalizedId || form.plotId}
         currentSupplier={form.supplier || form.producer}
         nextPlotIdPreview={nextPlotIdPreview}
-      />
-
-      <ClientPortalModal
-        isOpen={showClientPortal}
-        onClose={() => setShowClientPortal(false)}
-        userEmail={userMgmt.loggedUserKey ? `${userMgmt.loggedUserKey}@fafcoffees.com` : "cliente@fafcoffees.com"}
-        loggedUserRole={userMgmt.loggedUserRole}
-        loggedClientName={userMgmt.loggedClientName}
       />
     </main>
   );
