@@ -5,5 +5,11 @@
       "binding": "USERS_KV",
       "id": "a4db2f6b7a2b47d8adfb5c8a8ef8cd28"
     }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "R2_BUCKET",
+      "bucket_name": "faf-eudr-storage"
+    }
   ]
 }
