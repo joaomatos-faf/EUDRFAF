@@ -1499,10 +1499,11 @@ export default function CloudStoragePage() {
               >
                 <option value="TODAS">Categorias: Todas</option>
                 <option value="Contratos EUDR">Contratos EUDR</option>
-                <option value="Talhões Individuais">Talhões Individuais</option>
-                <option value="Geometrias & Mapas">Geometrias & Mapas</option>
-                <option value="Planilhas de Dados">Planilhas de Dados</option>
-                <option value="Metadados do Sistema">Metadados do Sistema</option>
+                <option value="Talhões EUDR">Talhões EUDR</option>
+                <option value="Polígonos">Polígonos</option>
+                <option value="Planilhas">Planilhas</option>
+                <option value="Metadados">Metadados</option>
+                <option value="Documentos">Documentos</option>
               </select>
 
               {/* Extension filter */}
@@ -1576,7 +1577,7 @@ export default function CloudStoragePage() {
               <table
                 style={{
                   width: "100%",
-                  minWidth: "850px",
+                  minWidth: "900px",
                   borderCollapse: "collapse",
                   textAlign: "left",
                   fontSize: "13px",
@@ -1589,11 +1590,11 @@ export default function CloudStoragePage() {
                       borderBottom: "1px solid rgba(52, 211, 153, 0.25)",
                     }}
                   >
-                    <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800 }}>ARQUIVO</th>
-                    <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800 }}>PASTA / CAMINHO</th>
-                    <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800 }}>CATEGORIA</th>
-                    <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800, textAlign: "right" }}>TAMANHO</th>
-                    <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800, textAlign: "right" }}>AÇÕES</th>
+                    <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800, minWidth: "220px", whiteSpace: "nowrap" }}>ARQUIVO</th>
+                    <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800, minWidth: "300px", whiteSpace: "nowrap" }}>PASTA / CAMINHO</th>
+                    <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800, minWidth: "150px", whiteSpace: "nowrap" }}>CATEGORIA</th>
+                    <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800, textAlign: "right", minWidth: "100px", whiteSpace: "nowrap" }}>TAMANHO</th>
+                    <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800, textAlign: "right", minWidth: "160px", whiteSpace: "nowrap" }}>AÇÕES</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1612,19 +1613,20 @@ export default function CloudStoragePage() {
                           borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
                         }}
                       >
-                        <td style={{ padding: "12px 16px" }}>
+                        <td style={{ padding: "12px 16px", minWidth: "220px" }}>
                           <p style={{ margin: 0, fontWeight: 700, color: "#ffffff" }}>{file.filename}</p>
                           <span style={{ fontSize: "11px", color: "#64748b", fontFamily: "monospace" }}>
                             {file.key}
                           </span>
                         </td>
 
-                        <td style={{ padding: "12px 16px" }}>
+                        <td style={{ padding: "12px 16px", maxWidth: "340px" }}>
                           <button
                             onClick={() => {
                               setCurrentPath(file.folder === "raiz" ? "" : file.folder);
                               setBrowseMode("tree");
                             }}
+                            title={file.folder}
                             style={{
                               background: "transparent",
                               border: "none",
@@ -1634,22 +1636,29 @@ export default function CloudStoragePage() {
                               padding: 0,
                               textDecoration: "underline",
                               textAlign: "left",
+                              maxWidth: "100%",
+                              display: "block",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
                             }}
                           >
                             📁 {file.folder}
                           </button>
                         </td>
 
-                        <td style={{ padding: "12px 16px" }}>
+                        <td style={{ padding: "12px 16px", whiteSpace: "nowrap", minWidth: "150px" }}>
                           <span
                             style={{
                               background: "rgba(52, 211, 153, 0.12)",
                               color: "#34d399",
                               border: "1px solid rgba(52, 211, 153, 0.25)",
                               borderRadius: "6px",
-                              padding: "2px 8px",
+                              padding: "3px 10px",
                               fontSize: "11px",
                               fontWeight: 700,
+                              whiteSpace: "nowrap",
+                              display: "inline-block",
                             }}
                           >
                             {file.category}
