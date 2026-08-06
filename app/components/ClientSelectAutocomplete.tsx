@@ -13,6 +13,7 @@ interface ClientSelectAutocompleteProps {
   label?: string;
   placeholder?: string;
   required?: boolean;
+  darkMode?: boolean;
 }
 
 const COUNTRY_FLAGS: Record<string, string> = {
@@ -61,6 +62,7 @@ export function ClientSelectAutocomplete({
   label = "Cliente / Importador Europeu *",
   placeholder = "Selecione ou pesquise uma empresa...",
   required = false,
+  darkMode = false,
 }: ClientSelectAutocompleteProps) {
   const [clients, setClients] = useState<EuropeanClientRecord[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -171,7 +173,7 @@ export function ClientSelectAutocomplete({
             style={{
               fontSize: "12px",
               fontWeight: 700,
-              color: "var(--forest-950, #0f261e)",
+              color: darkMode ? "#a7f3d0" : "var(--forest-950, #0f261e)",
               display: "flex",
               alignItems: "center",
               gap: "6px",
@@ -189,7 +191,7 @@ export function ClientSelectAutocomplete({
             style={{
               background: "transparent",
               border: "none",
-              color: "#059669",
+              color: darkMode ? "#34d399" : "#059669",
               fontSize: "11.5px",
               fontWeight: 700,
               cursor: "pointer",
@@ -218,9 +220,17 @@ export function ClientSelectAutocomplete({
             border: value
               ? "1.5px solid #10b981"
               : isOpen
-              ? "1.5px solid #059669"
+              ? "1.5px solid #34d399"
+              : darkMode
+              ? "1px solid rgba(52, 211, 153, 0.3)"
               : "1px solid var(--line-strong, #cbd5e1)",
-            background: value ? "#f0fdf4" : "#ffffff",
+            background: value
+              ? darkMode
+                ? "rgba(16, 185, 129, 0.18)"
+                : "#f0fdf4"
+              : darkMode
+              ? "#081611"
+              : "#ffffff",
             fontSize: "13.5px",
             textAlign: "left",
             display: "flex",
@@ -228,7 +238,7 @@ export function ClientSelectAutocomplete({
             alignItems: "center",
             cursor: "pointer",
             boxShadow: isOpen
-              ? "0 0 0 3px rgba(16, 185, 129, 0.15)"
+              ? "0 0 0 3px rgba(16, 185, 129, 0.25)"
               : "0 1px 2px rgba(0, 0, 0, 0.04)",
             transition: "all 0.15s ease",
             outline: "none",
@@ -253,7 +263,7 @@ export function ClientSelectAutocomplete({
                 <span
                   style={{
                     fontWeight: 700,
-                    color: "var(--forest-950, #0f261e)",
+                    color: darkMode ? "#ffffff" : "var(--forest-950, #0f261e)",
                     fontSize: "13.5px",
                   }}
                 >
@@ -263,8 +273,10 @@ export function ClientSelectAutocomplete({
                   <span
                     style={{
                       fontSize: "11px",
-                      background: "rgba(16, 185, 129, 0.14)",
-                      color: "#065f46",
+                      background: darkMode
+                        ? "rgba(52, 211, 153, 0.2)"
+                        : "rgba(16, 185, 129, 0.14)",
+                      color: darkMode ? "#6ee7b7" : "#065f46",
                       padding: "2px 8px",
                       borderRadius: "6px",
                       fontWeight: 700,
@@ -276,7 +288,12 @@ export function ClientSelectAutocomplete({
                 )}
               </>
             ) : (
-              <span style={{ color: "var(--muted, #64748b)", fontWeight: 500 }}>
+              <span
+                style={{
+                  color: darkMode ? "#64748b" : "var(--muted, #64748b)",
+                  fontWeight: 500,
+                }}
+              >
                 {placeholder}
               </span>
             )}
@@ -289,7 +306,7 @@ export function ClientSelectAutocomplete({
                 title="Limpar seleção"
                 style={{
                   fontSize: "12px",
-                  color: "#94a3b8",
+                  color: darkMode ? "#94a3b8" : "#94a3b8",
                   padding: "2px 6px",
                   borderRadius: "4px",
                   cursor: "pointer",
@@ -302,7 +319,11 @@ export function ClientSelectAutocomplete({
             <span
               style={{
                 fontSize: "11px",
-                color: value ? "#059669" : "var(--muted, #94a3b8)",
+                color: value
+                  ? "#34d399"
+                  : darkMode
+                  ? "#64748b"
+                  : "var(--muted, #94a3b8)",
                 transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
                 transition: "transform 0.15s ease",
               }}
@@ -340,11 +361,14 @@ export function ClientSelectAutocomplete({
             left: 0,
             right: 0,
             zIndex: 999,
-            background: "#ffffff",
-            border: "1px solid #e2e8f0",
+            background: darkMode ? "#0b1d17" : "#ffffff",
+            border: darkMode
+              ? "1px solid rgba(52, 211, 153, 0.3)"
+              : "1px solid #e2e8f0",
             borderRadius: "14px",
-            boxShadow:
-              "0 12px 36px -4px rgba(15, 38, 30, 0.15), 0 4px 12px -2px rgba(15, 38, 30, 0.08)",
+            boxShadow: darkMode
+              ? "0 16px 40px rgba(0, 0, 0, 0.8)"
+              : "0 12px 36px -4px rgba(15, 38, 30, 0.15), 0 4px 12px -2px rgba(15, 38, 30, 0.08)",
             overflow: "hidden",
             maxHeight: "360px",
             display: "flex",
@@ -355,8 +379,10 @@ export function ClientSelectAutocomplete({
           <div
             style={{
               padding: "10px 12px",
-              borderBottom: "1px solid #f1f5f9",
-              background: "#f8fafc",
+              borderBottom: darkMode
+                ? "1px solid rgba(52, 211, 153, 0.15)"
+                : "1px solid #f1f5f9",
+              background: darkMode ? "#06130e" : "#f8fafc",
             }}
           >
             <div style={{ position: "relative" }}>
@@ -383,9 +409,12 @@ export function ClientSelectAutocomplete({
                   padding: "8px 10px 8px 32px",
                   fontSize: "13px",
                   borderRadius: "8px",
-                  border: "1px solid #cbd5e1",
+                  border: darkMode
+                    ? "1px solid rgba(52, 211, 153, 0.3)"
+                    : "1px solid #cbd5e1",
                   outline: "none",
-                  background: "#ffffff",
+                  background: darkMode ? "#081611" : "#ffffff",
+                  color: darkMode ? "#ffffff" : "#1e293b",
                   fontWeight: 500,
                 }}
               />
@@ -452,8 +481,18 @@ export function ClientSelectAutocomplete({
                       width: "100%",
                       padding: "9px 14px",
                       border: "none",
-                      background: isSelected ? "#ecfdf5" : "transparent",
-                      color: isSelected ? "#065f46" : "#1e293b",
+                      background: isSelected
+                        ? darkMode
+                          ? "rgba(16, 185, 129, 0.25)"
+                          : "#ecfdf5"
+                        : "transparent",
+                      color: isSelected
+                        ? darkMode
+                          ? "#34d399"
+                          : "#065f46"
+                        : darkMode
+                        ? "#f1f5f9"
+                        : "#1e293b",
                       fontSize: "13px",
                       fontWeight: isSelected ? 800 : 500,
                       textAlign: "left",
@@ -466,7 +505,7 @@ export function ClientSelectAutocomplete({
                     onMouseEnter={(e) => {
                       if (!isSelected)
                         (e.currentTarget as HTMLButtonElement).style.background =
-                          "#f8fafc";
+                          darkMode ? "rgba(52, 211, 153, 0.12)" : "#f8fafc";
                     }}
                     onMouseLeave={(e) => {
                       if (!isSelected)
@@ -487,9 +526,19 @@ export function ClientSelectAutocomplete({
                     <span
                       style={{
                         fontSize: "11px",
-                        color: isSelected ? "#065f46" : "#64748b",
+                        color: isSelected
+                          ? darkMode
+                            ? "#34d399"
+                            : "#065f46"
+                          : darkMode
+                          ? "#94a3b8"
+                          : "#64748b",
                         background: isSelected
-                          ? "rgba(16, 185, 129, 0.18)"
+                          ? darkMode
+                            ? "rgba(16, 185, 129, 0.3)"
+                            : "rgba(16, 185, 129, 0.18)"
+                          : darkMode
+                          ? "rgba(255, 255, 255, 0.06)"
                           : "#f1f5f9",
                         padding: "2px 8px",
                         borderRadius: "6px",
@@ -508,8 +557,10 @@ export function ClientSelectAutocomplete({
           <div
             style={{
               padding: "10px 14px",
-              borderTop: "1px solid #f1f5f9",
-              background: "#f8fafc",
+              borderTop: darkMode
+                ? "1px solid rgba(52, 211, 153, 0.15)"
+                : "1px solid #f1f5f9",
+              background: darkMode ? "#06130e" : "#f8fafc",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -518,7 +569,7 @@ export function ClientSelectAutocomplete({
             <span
               style={{
                 fontSize: "11.5px",
-                color: "#64748b",
+                color: darkMode ? "#94a3b8" : "#64748b",
                 fontWeight: 600,
               }}
             >
@@ -533,7 +584,7 @@ export function ClientSelectAutocomplete({
               style={{
                 background: "transparent",
                 border: "none",
-                color: "#059669",
+                color: darkMode ? "#34d399" : "#059669",
                 fontSize: "12px",
                 fontWeight: 700,
                 cursor: "pointer",
@@ -556,8 +607,8 @@ export function ClientSelectAutocomplete({
             position: "fixed",
             inset: 0,
             zIndex: 9999,
-            background: "rgba(10, 30, 24, 0.65)",
-            backdropFilter: "blur(6px)",
+            background: "rgba(4, 12, 9, 0.75)",
+            backdropFilter: "blur(8px)",
             display: "grid",
             placeItems: "center",
             padding: "16px",
@@ -567,11 +618,13 @@ export function ClientSelectAutocomplete({
             style={{
               width: "100%",
               maxWidth: "440px",
-              background: "#ffffff",
+              background: darkMode ? "#0b1d17" : "#ffffff",
               borderRadius: "16px",
               padding: "26px",
-              boxShadow: "0 24px 48px rgba(0, 0, 0, 0.28)",
-              border: "1px solid rgba(255, 255, 255, 0.8)",
+              boxShadow: "0 24px 48px rgba(0, 0, 0, 0.6)",
+              border: darkMode
+                ? "1px solid rgba(52, 211, 153, 0.3)"
+                : "1px solid rgba(255, 255, 255, 0.8)",
             }}
           >
             <div
@@ -598,7 +651,7 @@ export function ClientSelectAutocomplete({
                   style={{
                     margin: "2px 0 0",
                     fontSize: "17px",
-                    color: "var(--forest-950, #0f261e)",
+                    color: darkMode ? "#ffffff" : "var(--forest-950, #0f261e)",
                     fontWeight: 800,
                   }}
                 >
@@ -612,14 +665,16 @@ export function ClientSelectAutocomplete({
                   setErrorMsg("");
                 }}
                 style={{
-                  background: "#f1f5f9",
+                  background: darkMode
+                    ? "rgba(255, 255, 255, 0.1)"
+                    : "#f1f5f9",
                   border: "none",
                   width: "32px",
                   height: "32px",
                   borderRadius: "50%",
                   fontSize: "14px",
                   cursor: "pointer",
-                  color: "#64748b",
+                  color: darkMode ? "#ffffff" : "#64748b",
                   display: "grid",
                   placeItems: "center",
                 }}
@@ -640,7 +695,7 @@ export function ClientSelectAutocomplete({
                 style={{
                   fontSize: "12px",
                   fontWeight: 700,
-                  color: "var(--forest-950, #0f261e)",
+                  color: darkMode ? "#a7f3d0" : "var(--forest-950, #0f261e)",
                 }}
               >
                 Nome da Empresa / Torrefação *
@@ -656,7 +711,11 @@ export function ClientSelectAutocomplete({
                     marginTop: "5px",
                     padding: "10px 12px",
                     borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
+                    border: darkMode
+                      ? "1px solid rgba(52, 211, 153, 0.3)"
+                      : "1px solid #cbd5e1",
+                    background: darkMode ? "#081611" : "#ffffff",
+                    color: darkMode ? "#ffffff" : "#1e293b",
                     fontSize: "13.5px",
                     outline: "none",
                   }}
@@ -667,7 +726,7 @@ export function ClientSelectAutocomplete({
                 style={{
                   fontSize: "12px",
                   fontWeight: 700,
-                  color: "var(--forest-950, #0f261e)",
+                  color: darkMode ? "#a7f3d0" : "var(--forest-950, #0f261e)",
                 }}
               >
                 País Europeu de Destino
@@ -681,7 +740,11 @@ export function ClientSelectAutocomplete({
                     marginTop: "5px",
                     padding: "10px 12px",
                     borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
+                    border: darkMode
+                      ? "1px solid rgba(52, 211, 153, 0.3)"
+                      : "1px solid #cbd5e1",
+                    background: darkMode ? "#081611" : "#ffffff",
+                    color: darkMode ? "#ffffff" : "#1e293b",
                     fontSize: "13.5px",
                     outline: "none",
                   }}
@@ -692,10 +755,10 @@ export function ClientSelectAutocomplete({
                 <div
                   style={{
                     padding: "8px 12px",
-                    background: "#fef2f2",
+                    background: "rgba(239, 68, 68, 0.15)",
                     borderRadius: "8px",
-                    border: "1px solid #fecaca",
-                    color: "#b91c1c",
+                    border: "1px solid rgba(239, 68, 68, 0.3)",
+                    color: "#fca5a5",
                     fontSize: "12px",
                     fontWeight: 600,
                   }}
@@ -721,9 +784,11 @@ export function ClientSelectAutocomplete({
                     flex: 1,
                     padding: "11px",
                     borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
-                    background: "#f8fafc",
-                    color: "#475569",
+                    border: darkMode
+                      ? "1px solid rgba(52, 211, 153, 0.2)"
+                      : "1px solid #cbd5e1",
+                    background: darkMode ? "#06130e" : "#f8fafc",
+                    color: darkMode ? "#94a3b8" : "#475569",
                     fontSize: "13px",
                     fontWeight: 700,
                     cursor: "pointer",
@@ -739,12 +804,12 @@ export function ClientSelectAutocomplete({
                     borderRadius: "8px",
                     border: "none",
                     background:
-                      "linear-gradient(135deg, #092e20 0%, #134e38 100%)",
+                      "linear-gradient(135deg, #059669 0%, #10b981 100%)",
                     color: "#ffffff",
                     fontSize: "13px",
                     fontWeight: 700,
                     cursor: "pointer",
-                    boxShadow: "0 4px 12px rgba(9, 46, 32, 0.25)",
+                    boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
                   }}
                 >
                   Salvar e Selecionar

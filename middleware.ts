@@ -8,16 +8,39 @@ export function middleware(request: NextRequest) {
     "";
   const pathname = request.nextUrl.pathname;
 
-  // Suporte a subdomínio cloud.fafeu.online
+  // Ignora chamadas de API, estáticos do Next.js e arquivos com extensão
   if (
-    hostname.startsWith("cloud.") &&
-    !pathname.startsWith("/api") &&
-    !pathname.startsWith("/_next") &&
-    !pathname.startsWith("/cloud") &&
-    !pathname.includes(".")
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/_next") ||
+    pathname.includes(".")
   ) {
+    return NextResponse.next();
+  }
+
+  // 1. Suporte a subdomínio cloud.fafeu.online
+  if (hostname.startsWith("cloud.")) {
     if (pathname === "/") {
       return NextResponse.rewrite(new URL("/cloud", request.url));
+    }
+  }
+
+  // 2. Suporte a subdomínio contratos.fafeu.online
+  if (hostname.startsWith("contratos.")) {
+    if (pathname === "/") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      url.searchParams.set("view", "contratos");
+      return NextResponse.rewrite(url);
+    }
+  }
+
+  // 3. Suporte a subdomínio portal.fafeu.online ou cliente.fafeu.online
+  if (hostname.startsWith("portal.") || hostname.startsWith("cliente.")) {
+    if (pathname === "/") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      url.searchParams.set("view", "portal");
+      return NextResponse.rewrite(url);
     }
   }
 
