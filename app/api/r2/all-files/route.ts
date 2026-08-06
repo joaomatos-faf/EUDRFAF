@@ -28,7 +28,7 @@ function categorizeFile(key: string, ext: string): string {
     lowerKey.includes("contrato") ||
     lowerKey.includes("contract")
   ) {
-    return "Contratos & Lotes EUDR";
+    return "Contratos EUDR";
   }
   if (
     lowerKey.startsWith("mapping_eudr_data/") ||
@@ -36,16 +36,16 @@ function categorizeFile(key: string, ext: string): string {
     lowerKey.includes("plot") ||
     lowerKey.includes("talhao")
   ) {
-    return "Dossiês de Talhões (Master EUDR)";
+    return "Talhões EUDR";
   }
   if (ext === "geojson" || ext === "kml" || ext === "shp") {
-    return "Geometrias & Polígonos";
+    return "Polígonos";
   }
   if (ext === "xlsx" || ext === "csv" || ext === "xls") {
-    return "Planilhas & Dados";
+    return "Planilhas";
   }
   if (ext === "zip" || ext === "rar" || ext === "7z" || ext === "tar" || ext === "gz") {
-    return "Arquivos Compactados (ZIP)";
+    return "Arquivos ZIP";
   }
   if (
     ext === "json" ||
@@ -54,9 +54,9 @@ function categorizeFile(key: string, ext: string): string {
     lowerKey.includes("index") ||
     lowerKey.includes("meta")
   ) {
-    return "Índices & Metadados do Sistema";
+    return "Metadados";
   }
-  return "Documentos & Uploads";
+  return "Documentos";
 }
 
 export async function GET(request: Request) {
