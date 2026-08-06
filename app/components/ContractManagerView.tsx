@@ -109,11 +109,15 @@ function PlotAutocompleteInput({
           width: "100%",
           padding: "8px 10px",
           borderRadius: "8px",
-          border: exactMatch ? "1.5px solid #10b981" : "1px solid #cbd5e1",
+          border: exactMatch
+            ? "1.5px solid #10b981"
+            : "1px solid rgba(52, 211, 153, 0.3)",
           fontSize: "13px",
           fontWeight: 700,
-          background: exactMatch ? "#f0fdf4" : "#ffffff",
-          color: "var(--forest-950, #0f261e)",
+          background: exactMatch
+            ? "rgba(16, 185, 129, 0.18)"
+            : "#081611",
+          color: "#ffffff",
           outline: "none",
           transition: "all 0.15s ease",
         }}
@@ -128,23 +132,23 @@ function PlotAutocompleteInput({
             minWidth: "340px",
             maxWidth: "380px",
             zIndex: 9999,
-            background: "#ffffff",
-            border: "1px solid #cbd5e1",
+            background: "#0b1d17",
+            border: "1px solid rgba(52, 211, 153, 0.3)",
             borderRadius: "12px",
             boxShadow:
-              "0 12px 30px rgba(15, 38, 30, 0.18), 0 4px 10px rgba(0,0,0,0.06)",
+              "0 16px 40px rgba(0, 0, 0, 0.8), 0 4px 12px rgba(0,0,0,0.5)",
             maxHeight: "260px",
             overflowY: "auto",
           }}
         >
           <div
             style={{
-              padding: "6px 12px",
-              background: "#f8fafc",
-              borderBottom: "1px solid #f1f5f9",
+              padding: "8px 12px",
+              background: "#06130e",
+              borderBottom: "1px solid rgba(52, 211, 153, 0.15)",
               fontSize: "11px",
               fontWeight: 700,
-              color: "#64748b",
+              color: "#94a3b8",
             }}
           >
             Sugestões da Base de Talhões ({filteredPlots.length})
@@ -158,22 +162,22 @@ function PlotAutocompleteInput({
               }}
               style={{
                 padding: "10px 14px",
-                borderBottom: "1px solid #f1f5f9",
+                borderBottom: "1px solid rgba(52, 211, 153, 0.1)",
                 cursor: "pointer",
                 transition: "background 0.12s ease",
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "#f0fdf4")
+                (e.currentTarget.style.background = "rgba(52, 211, 153, 0.12)")
               }
               onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "#ffffff")
+                (e.currentTarget.style.background = "transparent")
               }
             >
               <div
                 style={{
                   fontWeight: 800,
                   fontSize: "13px",
-                  color: "var(--forest-950, #0f261e)",
+                  color: "#ffffff",
                   display: "flex",
                   justifyContent: "space-between",
                 }}
@@ -182,9 +186,9 @@ function PlotAutocompleteInput({
                 <span
                   style={{
                     fontWeight: 700,
-                    color: "#059669",
+                    color: "#34d399",
                     fontSize: "11.5px",
-                    background: "rgba(16, 185, 129, 0.12)",
+                    background: "rgba(16, 185, 129, 0.2)",
                     padding: "1px 6px",
                     borderRadius: "4px",
                   }}
@@ -195,7 +199,7 @@ function PlotAutocompleteInput({
               <div
                 style={{
                   fontSize: "11.5px",
-                  color: "#334155",
+                  color: "#cbd5e1",
                   fontWeight: 600,
                   marginTop: "3px",
                 }}
@@ -205,7 +209,7 @@ function PlotAutocompleteInput({
               <div
                 style={{
                   fontSize: "11px",
-                  color: "#64748b",
+                  color: "#94a3b8",
                   marginTop: "1px",
                   display: "flex",
                   gap: "6px",
@@ -691,10 +695,11 @@ export function ContractManagerView({
     <div
       style={{
         minHeight: "100vh",
-        background: "var(--canvas, #f3f5f2)",
-        color: "var(--ink, #18211d)",
+        background:
+          "radial-gradient(ellipse at 50% 0%, #102a20 0%, #081611 60%, #040c09 100%)",
+        color: "#f1f5f9",
         fontFamily:
-          "'Segoe UI Variable', 'Segoe UI', -apple-system, sans-serif",
+          "'Segoe UI Variable', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
       }}
     >
       {/* Top Corporate Navbar */}
@@ -703,15 +708,17 @@ export function ContractManagerView({
           position: "sticky",
           top: 0,
           zIndex: 40,
-          background: "#0c2a21",
+          background: "rgba(11, 29, 23, 0.85)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
           color: "#ffffff",
           padding: "0 max(28px, calc((100vw - 1480px) / 2))",
-          height: "74px",
+          height: "76px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          boxShadow: "0 2px 12px rgba(0,0,0,0.18)",
-          borderBottom: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+          borderBottom: "1px solid rgba(52, 211, 153, 0.15)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
@@ -719,7 +726,7 @@ export function ContractManagerView({
             src="/faf-symbol.png"
             alt="FAF Coffees"
             style={{
-              height: "40px",
+              height: "42px",
               width: "auto",
               objectFit: "contain",
               display: "block",
@@ -729,14 +736,14 @@ export function ContractManagerView({
             <p
               style={{
                 margin: "0 0 2px",
-                color: "var(--orange-500, #d77442)",
+                color: "#34d399",
                 fontSize: "11px",
                 fontWeight: 800,
                 letterSpacing: ".12em",
                 textTransform: "uppercase",
               }}
             >
-              FAF COFFEES • CONTRACT MANAGEMENT & CLOUDFLARE R2
+              FAF COFFEES • GESTÃO DE CONTRATOS & CLOUDFLARE R2
             </p>
             <h1
               style={{
@@ -755,13 +762,13 @@ export function ContractManagerView({
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <span
             style={{
-              color: "#d1fae5",
+              color: "#a7f3d0",
               fontSize: "12.5px",
               fontWeight: 600,
-              background: "rgba(255,255,255,0.08)",
-              padding: "6px 12px",
+              background: "rgba(16, 185, 129, 0.12)",
+              padding: "6px 14px",
               borderRadius: "8px",
-              border: "1px solid rgba(255,255,255,0.12)",
+              border: "1px solid rgba(52, 211, 153, 0.25)",
             }}
           >
             👤 {loggedUserKey}
@@ -769,8 +776,8 @@ export function ContractManagerView({
           <button
             onClick={onOpenLanding}
             style={{
-              background: "rgba(255, 255, 255, 0.12)",
-              border: "1px solid rgba(255, 255, 255, 0.25)",
+              background: "rgba(255, 255, 255, 0.08)",
+              border: "1px solid rgba(255, 255, 255, 0.18)",
               color: "#ffffff",
               padding: "8px 16px",
               borderRadius: "8px",
@@ -779,6 +786,12 @@ export function ContractManagerView({
               cursor: "pointer",
               transition: "all 0.15s ease",
             }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)")
+            }
           >
             🏠 Voltar ao Início
           </button>
@@ -804,11 +817,12 @@ export function ContractManagerView({
         >
           <div
             style={{
-              background: "#ffffff",
+              background: "rgba(11, 29, 23, 0.65)",
+              border: "1px solid rgba(52, 211, 153, 0.18)",
+              backdropFilter: "blur(12px)",
               padding: "18px 22px",
-              borderRadius: "14px",
-              border: "1px solid #dce3de",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+              borderRadius: "16px",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.36)",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -819,7 +833,7 @@ export function ContractManagerView({
                 style={{
                   fontSize: "11px",
                   fontWeight: 800,
-                  color: "#64748b",
+                  color: "#94a3b8",
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
                 }}
@@ -828,9 +842,9 @@ export function ContractManagerView({
               </span>
               <div
                 style={{
-                  fontSize: "24px",
+                  fontSize: "26px",
                   fontWeight: 800,
-                  color: "#1e293b",
+                  color: "#ffffff",
                   marginTop: "2px",
                 }}
               >
@@ -838,7 +852,7 @@ export function ContractManagerView({
                 <span
                   style={{
                     fontSize: "13px",
-                    color: "#64748b",
+                    color: "#94a3b8",
                     fontWeight: 500,
                   }}
                 >
@@ -848,14 +862,15 @@ export function ContractManagerView({
             </div>
             <div
               style={{
-                width: "44px",
-                height: "44px",
+                width: "46px",
+                height: "46px",
                 borderRadius: "12px",
-                background: "#e0f2fe",
-                color: "#0369a1",
+                background: "rgba(56, 189, 248, 0.15)",
+                color: "#38bdf8",
                 display: "grid",
                 placeItems: "center",
                 fontSize: "20px",
+                border: "1px solid rgba(56, 189, 248, 0.25)",
               }}
             >
               📋
@@ -864,11 +879,12 @@ export function ContractManagerView({
 
           <div
             style={{
-              background: "#ffffff",
+              background: "rgba(11, 29, 23, 0.65)",
+              border: "1px solid rgba(52, 211, 153, 0.18)",
+              backdropFilter: "blur(12px)",
               padding: "18px 22px",
-              borderRadius: "14px",
-              border: "1px solid #dce3de",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+              borderRadius: "16px",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.36)",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -879,7 +895,7 @@ export function ContractManagerView({
                 style={{
                   fontSize: "11px",
                   fontWeight: 800,
-                  color: "#64748b",
+                  color: "#94a3b8",
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
                 }}
@@ -888,9 +904,9 @@ export function ContractManagerView({
               </span>
               <div
                 style={{
-                  fontSize: "24px",
+                  fontSize: "26px",
                   fontWeight: 800,
-                  color: "#059669",
+                  color: "#34d399",
                   marginTop: "2px",
                 }}
               >
@@ -898,7 +914,7 @@ export function ContractManagerView({
                 <span
                   style={{
                     fontSize: "13px",
-                    color: "#059669",
+                    color: "#a7f3d0",
                     fontWeight: 600,
                   }}
                 >
@@ -908,14 +924,15 @@ export function ContractManagerView({
             </div>
             <div
               style={{
-                width: "44px",
-                height: "44px",
+                width: "46px",
+                height: "46px",
                 borderRadius: "12px",
-                background: "#ecfdf5",
-                color: "#059669",
+                background: "rgba(16, 185, 129, 0.18)",
+                color: "#34d399",
                 display: "grid",
                 placeItems: "center",
                 fontSize: "20px",
+                border: "1px solid rgba(52, 211, 153, 0.3)",
               }}
             >
               📐
@@ -924,11 +941,12 @@ export function ContractManagerView({
 
           <div
             style={{
-              background: "#ffffff",
+              background: "rgba(11, 29, 23, 0.65)",
+              border: "1px solid rgba(52, 211, 153, 0.18)",
+              backdropFilter: "blur(12px)",
               padding: "18px 22px",
-              borderRadius: "14px",
-              border: "1px solid #dce3de",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+              borderRadius: "16px",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.36)",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -939,7 +957,7 @@ export function ContractManagerView({
                 style={{
                   fontSize: "11px",
                   fontWeight: 800,
-                  color: "#64748b",
+                  color: "#94a3b8",
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
                 }}
@@ -950,7 +968,7 @@ export function ContractManagerView({
                 style={{
                   fontSize: "20px",
                   fontWeight: 800,
-                  color: "#0f261e",
+                  color: "#ffffff",
                   marginTop: "4px",
                 }}
               >
@@ -960,14 +978,15 @@ export function ContractManagerView({
             </div>
             <div
               style={{
-                width: "44px",
-                height: "44px",
+                width: "46px",
+                height: "46px",
                 borderRadius: "12px",
-                background: "#f1f5f9",
-                color: "#475569",
+                background: "rgba(167, 243, 208, 0.12)",
+                color: "#a7f3d0",
                 display: "grid",
                 placeItems: "center",
                 fontSize: "20px",
+                border: "1px solid rgba(167, 243, 208, 0.2)",
               }}
             >
               🌱
@@ -987,11 +1006,12 @@ export function ContractManagerView({
           {/* Coluna Esquerda: Formulário de Contrato */}
           <div
             style={{
-              background: "#ffffff",
-              border: "1px solid #dce3de",
-              borderRadius: "16px",
+              background: "rgba(11, 29, 23, 0.65)",
+              border: "1px solid rgba(52, 211, 153, 0.18)",
+              backdropFilter: "blur(12px)",
+              borderRadius: "18px",
               padding: "26px",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.36)",
             }}
           >
             <div
@@ -1001,7 +1021,7 @@ export function ContractManagerView({
                 alignItems: "center",
                 marginBottom: "18px",
                 paddingBottom: "14px",
-                borderBottom: "1px solid #f1f5f9",
+                borderBottom: "1px solid rgba(52, 211, 153, 0.15)",
               }}
             >
               <div>
@@ -1009,7 +1029,7 @@ export function ContractManagerView({
                   style={{
                     fontSize: "18px",
                     margin: 0,
-                    color: "var(--forest-950, #0f261e)",
+                    color: "#ffffff",
                     fontWeight: 800,
                   }}
                 >
@@ -1020,7 +1040,7 @@ export function ContractManagerView({
                 <p
                   style={{
                     fontSize: "13px",
-                    color: "#64748b",
+                    color: "#94a3b8",
                     margin: "3px 0 0",
                   }}
                 >
@@ -1034,9 +1054,9 @@ export function ContractManagerView({
                   type="button"
                   onClick={handleCancelEdit}
                   style={{
-                    background: "#fef2f2",
-                    color: "#b91c1c",
-                    border: "1px solid #fecaca",
+                    background: "rgba(239, 68, 68, 0.15)",
+                    color: "#fca5a5",
+                    border: "1px solid rgba(239, 68, 68, 0.35)",
                     padding: "6px 12px",
                     borderRadius: "8px",
                     fontSize: "12px",
@@ -1072,6 +1092,7 @@ export function ContractManagerView({
                   label="Cliente / Importador Europeu *"
                   placeholder="Selecione um cliente europeu ou cadastre..."
                   required={true}
+                  darkMode={true}
                 />
 
                 <div>
@@ -1080,7 +1101,7 @@ export function ContractManagerView({
                       display: "block",
                       fontSize: "12px",
                       fontWeight: 700,
-                      color: "var(--forest-950, #0f261e)",
+                      color: "#a7f3d0",
                       marginBottom: "6px",
                     }}
                   >
@@ -1100,13 +1121,13 @@ export function ContractManagerView({
                       borderRadius: "10px",
                       border: isContractCodeDuplicate
                         ? "1.5px solid #ef4444"
-                        : "1px solid #cbd5e1",
+                        : "1px solid rgba(52, 211, 153, 0.3)",
                       background: isContractCodeDuplicate
-                        ? "#fef2f2"
-                        : "#ffffff",
+                        ? "rgba(239, 68, 68, 0.15)"
+                        : "#081611",
                       fontSize: "13.5px",
                       fontWeight: 700,
-                      color: "var(--forest-950, #0f261e)",
+                      color: "#ffffff",
                       outline: "none",
                     }}
                   />
@@ -1114,7 +1135,7 @@ export function ContractManagerView({
                     <span
                       style={{
                         fontSize: "11.5px",
-                        color: "#dc2626",
+                        color: "#fca5a5",
                         fontWeight: 700,
                         marginTop: "4px",
                         display: "block",
@@ -1141,7 +1162,7 @@ export function ContractManagerView({
                       fontSize: "15px",
                       margin: 0,
                       fontWeight: 800,
-                      color: "var(--forest-950, #0f261e)",
+                      color: "#ffffff",
                     }}
                   >
                     📦 Lotes & Talhões ({lots.length})
@@ -1170,15 +1191,15 @@ export function ContractManagerView({
                       <div
                         key={lotIdx}
                         style={{
-                          background: "#fbfcfb",
+                          background: "rgba(16, 42, 32, 0.6)",
                           border: isCollapsed
-                            ? "1px solid #e2e8f0"
-                            : "1.5px solid #10b981",
+                            ? "1px solid rgba(52, 211, 153, 0.15)"
+                            : "1.5px solid rgba(52, 211, 153, 0.45)",
                           borderRadius: "14px",
                           padding: "18px",
                           boxShadow: isCollapsed
                             ? "none"
-                            : "0 4px 12px rgba(16, 185, 129, 0.08)",
+                            : "0 4px 16px rgba(0, 0, 0, 0.3)",
                           transition: "all 0.15s ease",
                         }}
                       >
@@ -1201,7 +1222,7 @@ export function ContractManagerView({
                               style={{
                                 fontSize: "14px",
                                 fontWeight: 800,
-                                color: "var(--forest-950, #0f261e)",
+                                color: "#ffffff",
                               }}
                             >
                               {lot.lotNumber || `LOTE ${lotIdx + 1}`}{" "}
@@ -1210,12 +1231,12 @@ export function ContractManagerView({
                             <span
                               style={{
                                 fontSize: "12px",
-                                background: "#ecfdf5",
-                                color: "#065f46",
-                                padding: "3px 9px",
+                                background: "rgba(16, 185, 129, 0.18)",
+                                color: "#34d399",
+                                padding: "3px 10px",
                                 borderRadius: "20px",
                                 fontWeight: 800,
-                                border: "1px solid #a7f3d0",
+                                border: "1px solid rgba(52, 211, 153, 0.3)",
                               }}
                             >
                               📐 {lotTotalHectares.toFixed(2)} ha
@@ -1233,9 +1254,11 @@ export function ContractManagerView({
                               type="button"
                               onClick={() => handleToggleCollapseLot(lotIdx)}
                               style={{
-                                background: isCollapsed ? "#f1f5f9" : "#ffffff",
-                                color: "#334155",
-                                border: "1px solid #cbd5e1",
+                                background: isCollapsed
+                                  ? "rgba(255, 255, 255, 0.08)"
+                                  : "rgba(52, 211, 153, 0.15)",
+                                color: isCollapsed ? "#cbd5e1" : "#34d399",
+                                border: "1px solid rgba(52, 211, 153, 0.25)",
                                 padding: "5px 12px",
                                 borderRadius: "8px",
                                 fontSize: "12px",
@@ -1253,9 +1276,11 @@ export function ContractManagerView({
                                 type="button"
                                 onClick={() => handleRemoveLot(lotIdx)}
                                 style={{
-                                  background: "transparent",
-                                  border: "none",
-                                  color: "#dc2626",
+                                  background: "rgba(239, 68, 68, 0.15)",
+                                  border: "1px solid rgba(239, 68, 68, 0.3)",
+                                  color: "#fca5a5",
+                                  padding: "5px 9px",
+                                  borderRadius: "8px",
                                   fontSize: "12px",
                                   fontWeight: 700,
                                   cursor: "pointer",
@@ -1271,13 +1296,13 @@ export function ContractManagerView({
                         {isCollapsed ? (
                           <div
                             style={{
-                              background: "#ffffff",
+                              background: "#081611",
                               padding: "10px 14px",
                               borderRadius: "8px",
-                              border: "1px solid #e2e8f0",
+                              border: "1px solid rgba(52, 211, 153, 0.15)",
                               marginTop: "12px",
                               fontSize: "12.5px",
-                              color: "#475569",
+                              color: "#94a3b8",
                               display: "flex",
                               justifyContent: "space-between",
                               alignItems: "center",
@@ -1285,7 +1310,7 @@ export function ContractManagerView({
                           >
                             <span>
                               {lot.plots.length} talhão(ões):{" "}
-                              <strong style={{ color: "#0f261e" }}>
+                              <strong style={{ color: "#ffffff" }}>
                                 {lot.plots
                                   .map((p) => p.plotId || "Sem ID")
                                   .join(", ")}
@@ -1295,7 +1320,8 @@ export function ContractManagerView({
                               type="button"
                               onClick={() => handleToggleCollapseLot(lotIdx)}
                               style={{
-                                background: "#059669",
+                                background:
+                                  "linear-gradient(135deg, #059669 0%, #10b981 100%)",
                                 color: "#ffffff",
                                 border: "none",
                                 padding: "4px 10px",
@@ -1325,7 +1351,7 @@ export function ContractManagerView({
                                   style={{
                                     fontSize: "11.5px",
                                     fontWeight: 700,
-                                    color: "#475569",
+                                    color: "#a7f3d0",
                                     display: "block",
                                     marginBottom: "4px",
                                   }}
@@ -1347,9 +1373,11 @@ export function ContractManagerView({
                                     width: "100%",
                                     padding: "8px 10px",
                                     borderRadius: "8px",
-                                    border: "1px solid #cbd5e1",
+                                    border: "1px solid rgba(52, 211, 153, 0.3)",
                                     fontSize: "13px",
-                                    background: "#ffffff",
+                                    background: "#081611",
+                                    color: "#ffffff",
+                                    outline: "none",
                                   }}
                                 />
                               </div>
@@ -1359,7 +1387,7 @@ export function ContractManagerView({
                                   style={{
                                     fontSize: "11.5px",
                                     fontWeight: 700,
-                                    color: "#475569",
+                                    color: "#a7f3d0",
                                     display: "block",
                                     marginBottom: "4px",
                                   }}
@@ -1381,9 +1409,11 @@ export function ContractManagerView({
                                     width: "100%",
                                     padding: "8px 10px",
                                     borderRadius: "8px",
-                                    border: "1px solid #cbd5e1",
+                                    border: "1px solid rgba(52, 211, 153, 0.3)",
                                     fontSize: "13px",
-                                    background: "#ffffff",
+                                    background: "#081611",
+                                    color: "#ffffff",
+                                    outline: "none",
                                   }}
                                 />
                               </div>
@@ -1392,8 +1422,8 @@ export function ContractManagerView({
                             {/* Batch Add helper from Master Data */}
                             <div
                               style={{
-                                background: "#f0fdf4",
-                                border: "1px solid #bbf7d0",
+                                background: "rgba(16, 185, 129, 0.08)",
+                                border: "1px solid rgba(52, 211, 153, 0.25)",
                                 borderRadius: "10px",
                                 padding: "12px",
                                 marginBottom: "16px",
@@ -1403,7 +1433,7 @@ export function ContractManagerView({
                                 style={{
                                   fontSize: "12px",
                                   fontWeight: 800,
-                                  color: "#166534",
+                                  color: "#34d399",
                                   marginBottom: "6px",
                                   display: "flex",
                                   alignItems: "center",
@@ -1430,9 +1460,10 @@ export function ContractManagerView({
                                   width: "100%",
                                   padding: "8px 10px",
                                   borderRadius: "6px",
-                                  border: "1px solid #86efac",
+                                  border: "1px solid rgba(52, 211, 153, 0.3)",
                                   fontSize: "12.5px",
-                                  background: "#ffffff",
+                                  background: "#081611",
+                                  color: "#ffffff",
                                   outline: "none",
                                 }}
                               />
@@ -1461,7 +1492,7 @@ export function ContractManagerView({
                                         <div
                                           style={{
                                             fontSize: "12px",
-                                            color: "#64748b",
+                                            color: "#94a3b8",
                                             padding: "4px",
                                           }}
                                         >
@@ -1485,7 +1516,7 @@ export function ContractManagerView({
                                             style={{
                                               fontSize: "11.5px",
                                               fontWeight: 700,
-                                              color: "#166534",
+                                              color: "#34d399",
                                             }}
                                           >
                                             {matches.length} talhão(ões)
@@ -1500,7 +1531,8 @@ export function ContractManagerView({
                                               )
                                             }
                                             style={{
-                                              background: "#16a34a",
+                                              background:
+                                                "linear-gradient(135deg, #059669 0%, #10b981 100%)",
                                               color: "#ffffff",
                                               border: "none",
                                               padding: "4px 10px",
@@ -1533,8 +1565,10 @@ export function ContractManagerView({
                                                 )
                                               }
                                               style={{
-                                                background: "#ffffff",
-                                                border: "1px solid #86efac",
+                                                background: "#081611",
+                                                border:
+                                                  "1px solid rgba(52, 211, 153, 0.3)",
+                                                color: "#f1f5f9",
                                                 padding: "4px 8px",
                                                 borderRadius: "6px",
                                                 fontSize: "11.5px",
@@ -1542,7 +1576,10 @@ export function ContractManagerView({
                                                 textAlign: "left",
                                               }}
                                             >
-                                              <strong>{m.plotId}</strong> ({m.hectares} ha) · {m.farm}
+                                              <strong style={{ color: "#34d399" }}>
+                                                {m.plotId}
+                                              </strong>{" "}
+                                              ({m.hectares} ha) · {m.farm}
                                             </button>
                                           ))}
                                         </div>
@@ -1565,10 +1602,10 @@ export function ContractManagerView({
                                 <div
                                   key={plotIdx}
                                   style={{
-                                    background: "#ffffff",
+                                    background: "rgba(8, 22, 17, 0.85)",
                                     padding: "12px 14px",
                                     borderRadius: "10px",
-                                    border: "1px solid #e2e8f0",
+                                    border: "1px solid rgba(52, 211, 153, 0.2)",
                                   }}
                                 >
                                   <div
@@ -1583,7 +1620,7 @@ export function ContractManagerView({
                                       style={{
                                         fontSize: "12px",
                                         fontWeight: 800,
-                                        color: "#059669",
+                                        color: "#34d399",
                                       }}
                                     >
                                       Talhão #{plotIdx + 1}
@@ -1598,9 +1635,11 @@ export function ContractManagerView({
                                           )
                                         }
                                         style={{
-                                          background: "transparent",
-                                          border: "none",
-                                          color: "#dc2626",
+                                          background: "rgba(239, 68, 68, 0.15)",
+                                          border: "1px solid rgba(239, 68, 68, 0.3)",
+                                          color: "#fca5a5",
+                                          padding: "3px 8px",
+                                          borderRadius: "6px",
                                           fontSize: "11px",
                                           fontWeight: 700,
                                           cursor: "pointer",
@@ -1624,7 +1663,7 @@ export function ContractManagerView({
                                         style={{
                                           fontSize: "11px",
                                           fontWeight: 700,
-                                          color: "#475569",
+                                          color: "#a7f3d0",
                                           display: "block",
                                           marginBottom: "3px",
                                         }}
@@ -1657,7 +1696,7 @@ export function ContractManagerView({
                                         style={{
                                           fontSize: "11px",
                                           fontWeight: 700,
-                                          color: "#475569",
+                                          color: "#a7f3d0",
                                           display: "block",
                                           marginBottom: "3px",
                                         }}
@@ -1680,8 +1719,11 @@ export function ContractManagerView({
                                           width: "100%",
                                           padding: "8px 10px",
                                           borderRadius: "8px",
-                                          border: "1px solid #cbd5e1",
+                                          border: "1px solid rgba(52, 211, 153, 0.3)",
                                           fontSize: "12px",
+                                          background: "#081611",
+                                          color: "#ffffff",
+                                          outline: "none",
                                         }}
                                       />
                                     </div>
@@ -1691,7 +1733,7 @@ export function ContractManagerView({
                                         style={{
                                           fontSize: "11px",
                                           fontWeight: 700,
-                                          color: "#475569",
+                                          color: "#a7f3d0",
                                           display: "block",
                                           marginBottom: "3px",
                                         }}
@@ -1714,8 +1756,11 @@ export function ContractManagerView({
                                           width: "100%",
                                           padding: "8px 10px",
                                           borderRadius: "8px",
-                                          border: "1px solid #cbd5e1",
+                                          border: "1px solid rgba(52, 211, 153, 0.3)",
                                           fontSize: "12px",
+                                          background: "#081611",
+                                          color: "#ffffff",
+                                          outline: "none",
                                         }}
                                       />
                                     </div>
@@ -1725,7 +1770,7 @@ export function ContractManagerView({
                                         style={{
                                           fontSize: "11px",
                                           fontWeight: 700,
-                                          color: "#475569",
+                                          color: "#a7f3d0",
                                           display: "block",
                                           marginBottom: "3px",
                                         }}
@@ -1748,8 +1793,11 @@ export function ContractManagerView({
                                           width: "100%",
                                           padding: "8px 10px",
                                           borderRadius: "8px",
-                                          border: "1px solid #cbd5e1",
+                                          border: "1px solid rgba(52, 211, 153, 0.3)",
                                           fontSize: "12px",
+                                          background: "#081611",
+                                          color: "#ffffff",
+                                          outline: "none",
                                         }}
                                       />
                                     </div>
@@ -1759,7 +1807,7 @@ export function ContractManagerView({
                                         style={{
                                           fontSize: "11px",
                                           fontWeight: 700,
-                                          color: "#475569",
+                                          color: "#a7f3d0",
                                           display: "block",
                                           marginBottom: "3px",
                                         }}
@@ -1783,10 +1831,12 @@ export function ContractManagerView({
                                           width: "100%",
                                           padding: "8px 10px",
                                           borderRadius: "8px",
-                                          border: "1px solid #cbd5e1",
+                                          border: "1px solid rgba(52, 211, 153, 0.3)",
                                           fontSize: "12px",
                                           fontWeight: 700,
-                                          color: "#059669",
+                                          color: "#34d399",
+                                          background: "#081611",
+                                          outline: "none",
                                         }}
                                       />
                                     </div>
@@ -1802,9 +1852,9 @@ export function ContractManagerView({
                               style={{
                                 width: "100%",
                                 marginTop: "10px",
-                                background: "#ffffff",
-                                color: "#059669",
-                                border: "1px dashed #10b981",
+                                background: "rgba(16, 185, 129, 0.08)",
+                                color: "#34d399",
+                                border: "1px dashed rgba(52, 211, 153, 0.4)",
                                 padding: "9px",
                                 borderRadius: "8px",
                                 fontSize: "12px",
@@ -1828,10 +1878,10 @@ export function ContractManagerView({
                     onClick={handleAddLot}
                     style={{
                       width: "100%",
-                      padding: "12px",
-                      background: "#f0fdf4",
-                      color: "#166534",
-                      border: "1.5px dashed #86efac",
+                      padding: "13px",
+                      background: "rgba(16, 185, 129, 0.12)",
+                      color: "#34d399",
+                      border: "1.5px dashed rgba(52, 211, 153, 0.45)",
                       borderRadius: "12px",
                       fontSize: "13px",
                       fontWeight: 800,
@@ -1861,10 +1911,10 @@ export function ContractManagerView({
                   border: "none",
                   background: editingContractId
                     ? "linear-gradient(135deg, #d97706 0%, #b45309 100%)"
-                    : "linear-gradient(135deg, #092e20 0%, #134e38 100%)",
+                    : "linear-gradient(135deg, #059669 0%, #10b981 100%)",
                   color: "#ffffff",
                   cursor: "pointer",
-                  boxShadow: "0 4px 14px rgba(9, 46, 32, 0.25)",
+                  boxShadow: "0 4px 18px rgba(16, 185, 129, 0.3)",
                   transition: "all 0.15s ease",
                 }}
               >
@@ -1884,11 +1934,12 @@ export function ContractManagerView({
           {/* Coluna Direita: Contratos Salvos no R2 */}
           <div
             style={{
-              background: "#ffffff",
-              border: "1px solid #dce3de",
-              borderRadius: "16px",
+              background: "rgba(11, 29, 23, 0.65)",
+              border: "1px solid rgba(52, 211, 153, 0.18)",
+              backdropFilter: "blur(12px)",
+              borderRadius: "18px",
               padding: "24px",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.36)",
             }}
           >
             <div
@@ -1904,7 +1955,7 @@ export function ContractManagerView({
                   fontSize: "16px",
                   margin: 0,
                   fontWeight: 800,
-                  color: "var(--forest-950, #0f261e)",
+                  color: "#ffffff",
                 }}
               >
                 📁 Contratos no R2 ({contracts.length})
@@ -1916,7 +1967,7 @@ export function ContractManagerView({
               <span
                 style={{
                   position: "absolute",
-                  left: "10px",
+                  left: "12px",
                   top: "50%",
                   transform: "translateY(-50%)",
                   fontSize: "13px",
@@ -1932,12 +1983,13 @@ export function ContractManagerView({
                 placeholder="Buscar contrato ou cliente..."
                 style={{
                   width: "100%",
-                  padding: "9px 12px 9px 32px",
+                  padding: "10px 12px 10px 34px",
                   fontSize: "13px",
-                  borderRadius: "8px",
-                  border: "1px solid #cbd5e1",
+                  borderRadius: "10px",
+                  border: "1px solid rgba(52, 211, 153, 0.3)",
                   outline: "none",
-                  background: "#f8fafc",
+                  background: "#081611",
+                  color: "#ffffff",
                 }}
               />
             </div>
@@ -1957,7 +2009,7 @@ export function ContractManagerView({
                   style={{
                     padding: "36px 16px",
                     textAlign: "center",
-                    color: "#64748b",
+                    color: "#94a3b8",
                     fontSize: "13px",
                   }}
                 >
@@ -1989,8 +2041,8 @@ export function ContractManagerView({
                     <div
                       key={c.id}
                       style={{
-                        background: "#fbfcfb",
-                        border: "1px solid #e2e8f0",
+                        background: "rgba(16, 42, 32, 0.6)",
+                        border: "1px solid rgba(52, 211, 153, 0.2)",
                         borderRadius: "12px",
                         padding: "14px",
                         transition: "all 0.15s ease",
@@ -2008,16 +2060,16 @@ export function ContractManagerView({
                             style={{
                               fontSize: "14px",
                               fontWeight: 800,
-                              color: "var(--forest-950, #0f261e)",
+                              color: "#34d399",
                             }}
                           >
                             📋 {c.contractCode}
                           </div>
                           <div
                             style={{
-                              fontSize: "12px",
+                              fontSize: "12.5px",
                               fontWeight: 700,
-                              color: "#059669",
+                              color: "#f1f5f9",
                               marginTop: "2px",
                             }}
                           >
@@ -2028,12 +2080,12 @@ export function ContractManagerView({
                         <span
                           style={{
                             fontSize: "12px",
-                            background: "#ecfdf5",
-                            color: "#065f46",
+                            background: "rgba(16, 185, 129, 0.18)",
+                            color: "#34d399",
                             padding: "3px 8px",
                             borderRadius: "6px",
                             fontWeight: 800,
-                            border: "1px solid #a7f3d0",
+                            border: "1px solid rgba(52, 211, 153, 0.3)",
                           }}
                         >
                           {contractTotalHectares.toFixed(2)} ha
@@ -2043,7 +2095,7 @@ export function ContractManagerView({
                       <div
                         style={{
                           fontSize: "11.5px",
-                          color: "#64748b",
+                          color: "#94a3b8",
                           marginTop: "8px",
                         }}
                       >
@@ -2057,7 +2109,7 @@ export function ContractManagerView({
                           gap: "8px",
                           marginTop: "10px",
                           paddingTop: "10px",
-                          borderTop: "1px solid #f1f5f9",
+                          borderTop: "1px solid rgba(52, 211, 153, 0.12)",
                         }}
                       >
                         <button
@@ -2067,9 +2119,9 @@ export function ContractManagerView({
                             flex: 1,
                             padding: "6px 10px",
                             borderRadius: "6px",
-                            border: "1px solid #cbd5e1",
-                            background: "#ffffff",
-                            color: "#334155",
+                            border: "1px solid rgba(52, 211, 153, 0.3)",
+                            background: "rgba(255, 255, 255, 0.08)",
+                            color: "#ffffff",
                             fontSize: "11.5px",
                             fontWeight: 700,
                             cursor: "pointer",
@@ -2094,7 +2146,7 @@ export function ContractManagerView({
                               borderRadius: "6px",
                               border: "none",
                               background:
-                                "linear-gradient(135deg, #092e20 0%, #134e38 100%)",
+                                "linear-gradient(135deg, #059669 0%, #10b981 100%)",
                               color: "#ffffff",
                               fontSize: "11.5px",
                               fontWeight: 700,
@@ -2113,11 +2165,11 @@ export function ContractManagerView({
                             handleDeleteContract(c.id, c.contractCode)
                           }
                           style={{
-                            padding: "6px 8px",
+                            padding: "6px 10px",
                             borderRadius: "6px",
-                            border: "1px solid #fee2e2",
-                            background: "#fef2f2",
-                            color: "#dc2626",
+                            border: "1px solid rgba(239, 68, 68, 0.3)",
+                            background: "rgba(239, 68, 68, 0.15)",
+                            color: "#fca5a5",
                             fontSize: "11.5px",
                             fontWeight: 700,
                             cursor: "pointer",
