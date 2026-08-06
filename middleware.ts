@@ -19,8 +19,20 @@ export function middleware(request: NextRequest) {
 
   // 1. Suporte a subdomínio cloud.fafeu.online
   if (hostname.startsWith("cloud.")) {
+    if (pathname === "/cloud") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
     if (pathname === "/") {
       return NextResponse.rewrite(new URL("/cloud", request.url));
+    }
+  }
+
+  // Se acessar /cloud no domínio principal fafeu.online, redireciona para o subdomínio cloud.fafeu.online
+  if (!hostname.startsWith("cloud.") && pathname === "/cloud") {
+    if (!hostname.includes("localhost") && !hostname.includes("127.0.0.1")) {
+      return NextResponse.redirect(new URL("https://cloud.fafeu.online", request.url), 301);
     }
   }
 

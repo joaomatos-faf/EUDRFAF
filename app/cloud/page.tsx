@@ -88,10 +88,10 @@ function GeoJsonMap({ geojsonData }: { geojsonData: any }) {
       ref={mapContainerRef}
       style={{
         width: "100%",
-        height: "380px",
+        height: "360px",
         borderRadius: "10px",
         overflow: "hidden",
-        border: "1px solid rgba(255,255,255,0.15)",
+        border: "1px solid rgba(52, 211, 153, 0.3)",
         background: "#06130e",
       }}
     />
@@ -111,19 +111,37 @@ interface CloudFileItem {
   rawUrl: string;
 }
 
+interface SubfolderItem {
+  name: string;
+  fullPath: string;
+  fileCount: number;
+  totalSize: number;
+  totalSizeFormatted: string;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / 1024 / 1024).toFixed(2) + " MB";
+}
+
 export default function CloudStoragePage() {
   const [mounted, setMounted] = useState(false);
   const userMgmt = useUserManagement();
 
   const [files, setFiles] = useState<CloudFileItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Navigation mode: "tree" (Folder Explorer) vs "search" (Flat All Files)
+  const [browseMode, setBrowseMode] = useState<"tree" | "search">("tree");
+  const [currentPath, setCurrentPath] = useState<string>(""); // "" = root
+
+  // Search & Global filters
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("TODAS");
   const [selectedExt, setSelectedExt] = useState("ALL");
-  const [currentFolder, setCurrentFolder] = useState<string>("ALL");
-  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
-  const [sortBy, setSortBy] = useState<"name" | "date" | "size">("date");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [sortBy, setSortBy] = useState<"name" | "date" | "size">("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   // Selection state
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
@@ -138,8 +156,7 @@ export default function CloudStoragePage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadFolder, setUploadFolder] = useState("contratos_clientes");
-  const [customFolder, setCustomFolder] = useState("");
+  const [uploadFolder, setUploadFolder] = useState("");
   const [selectedUploadFiles, setSelectedUploadFiles] = useState<FileList | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string>("");
@@ -160,7 +177,7 @@ export default function CloudStoragePage() {
       }
     } catch (err) {
       console.error("Erro ao carregar arquivos da nuvem:", err);
-      setFeedback({ type: "error", text: "Erro ao conectar com o Cloudflare R2." });
+      setFeedback({ type: "error", text: "Erro ao conectar com o catálogo de arquivos R2." });
     } finally {
       setLoading(false);
     }
@@ -177,44 +194,68 @@ export default function CloudStoragePage() {
     }
   }, [userMgmt.isAuthenticated, userMgmt.loggedUserRole]);
 
-  // Summary Metrics
-  const metrics = useMemo(() => {
-    const totalCount = files.length;
-    const totalBytes = files.reduce((acc, f) => acc + f.size, 0);
-    const totalFormatted = (totalBytes / 1024 / 1024).toFixed(2) + " MB";
+  // Hierarchical Folder Structure calculation based on currentPath
+  const { currentSubfolders, currentPathFiles } = useMemo(() => {
+    const subfolderMap = new Map<string, { count: number; size: number }>();
+    const directFiles: CloudFileItem[] = [];
 
-    const categories: Record<string, number> = {};
-    const extensions: Record<string, number> = {};
-    const foldersSet = new Set<string>();
+    files.forEach((file) => {
+      const folder = file.folder === "raiz" ? "" : file.folder;
 
-    files.forEach((f) => {
-      categories[f.category] = (categories[f.category] || 0) + 1;
-      extensions[f.extension] = (extensions[f.extension] || 0) + 1;
-      if (f.folder && f.folder !== "raiz") {
-        foldersSet.add(f.folder);
+      // Check if file is directly in currentPath
+      if (folder === currentPath) {
+        directFiles.push(file);
+      } else if (currentPath === "" || folder.startsWith(currentPath + "/")) {
+        // File is in a deeper subfolder relative to currentPath
+        const relative = currentPath === "" ? folder : folder.slice(currentPath.length + 1);
+        const immediateSegment = relative.split("/")[0];
+        if (immediateSegment) {
+          const prev = subfolderMap.get(immediateSegment) || { count: 0, size: 0 };
+          subfolderMap.set(immediateSegment, {
+            count: prev.count + 1,
+            size: prev.size + file.size,
+          });
+        }
       }
     });
 
-    return {
-      totalCount,
-      totalBytes,
-      totalFormatted,
-      categories,
-      extensions,
-      folders: Array.from(foldersSet).sort(),
-    };
-  }, [files]);
+    const subfolders: SubfolderItem[] = Array.from(subfolderMap.entries())
+      .map(([name, data]) => ({
+        name,
+        fullPath: currentPath === "" ? name : `${currentPath}/${name}`,
+        fileCount: data.count,
+        totalSize: data.size,
+        totalSizeFormatted: formatBytes(data.size),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
 
-  // Filtered & Sorted Files
-  const filteredFiles = useMemo(() => {
+    directFiles.sort((a, b) => {
+      let valA: any = a.filename;
+      let valB: any = b.filename;
+      if (sortBy === "date") {
+        valA = new Date(a.lastModified).getTime();
+        valB = new Date(b.lastModified).getTime();
+      } else if (sortBy === "size") {
+        valA = a.size;
+        valB = b.size;
+      }
+      if (valA < valB) return sortOrder === "asc" ? -1 : 1;
+      if (valA > valB) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return {
+      currentSubfolders: subfolders,
+      currentPathFiles: directFiles,
+    };
+  }, [files, currentPath, sortBy, sortOrder]);
+
+  // Global Filtered Files (for Search Mode)
+  const globalFilteredFiles = useMemo(() => {
     return files
       .filter((file) => {
         if (selectedCategory !== "TODAS" && file.category !== selectedCategory) return false;
         if (selectedExt !== "ALL" && file.extension !== selectedExt) return false;
-        if (currentFolder !== "ALL") {
-          if (currentFolder === "raiz" && file.folder !== "raiz") return false;
-          if (currentFolder !== "raiz" && !file.folder.startsWith(currentFolder)) return false;
-        }
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
           const matchName = file.filename.toLowerCase().includes(q);
@@ -239,7 +280,25 @@ export default function CloudStoragePage() {
         if (valA > valB) return sortOrder === "asc" ? 1 : -1;
         return 0;
       });
-  }, [files, selectedCategory, selectedExt, currentFolder, searchQuery, sortBy, sortOrder]);
+  }, [files, selectedCategory, selectedExt, searchQuery, sortBy, sortOrder]);
+
+  // Metrics
+  const metrics = useMemo(() => {
+    const totalCount = files.length;
+    const totalBytes = files.reduce((acc, f) => acc + f.size, 0);
+    const totalFormatted = formatBytes(totalBytes);
+    return { totalCount, totalBytes, totalFormatted };
+  }, [files]);
+
+  // Breadcrumbs parts
+  const breadcrumbs = useMemo(() => {
+    if (!currentPath) return [];
+    const parts = currentPath.split("/");
+    return parts.map((part, index) => ({
+      name: part,
+      path: parts.slice(0, index + 1).join("/"),
+    }));
+  }, [currentPath]);
 
   // Open Preview
   const handleOpenPreview = async (file: CloudFileItem) => {
@@ -258,16 +317,16 @@ export default function CloudStoragePage() {
         }
       } else {
         const text = await res.text();
-        setPreviewContent(text.slice(0, 100000));
+        setPreviewContent(text.slice(0, 50000));
       }
     } catch (err) {
-      setPreviewContent(`Não foi possível carregar pré-visualização direta: ${err}`);
+      setPreviewContent(`Erro ao carregar pré-visualização: ${err}`);
     } finally {
       setPreviewLoading(false);
     }
   };
 
-  // Single / Batch Delete
+  // Delete handler
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
     setIsDeleting(true);
@@ -287,7 +346,7 @@ export default function CloudStoragePage() {
       if (data.success) {
         setFeedback({
           type: "success",
-          text: `Sucesso: ${keysToDelete.length} arquivo(s) deletado(s) da nuvem R2.`,
+          text: `Sucesso: ${keysToDelete.length} arquivo(s) excluído(s) da nuvem R2.`,
         });
         setSelectedKeys(new Set());
         setDeleteTarget(null);
@@ -296,27 +355,27 @@ export default function CloudStoragePage() {
         }
         await fetchFiles();
       } else {
-        setFeedback({ type: "error", text: data.error || "Erro ao deletar arquivo." });
+        setFeedback({ type: "error", text: data.error || "Erro ao excluir arquivo." });
       }
     } catch {
-      setFeedback({ type: "error", text: "Erro ao comunicar com a API de deleção." });
+      setFeedback({ type: "error", text: "Erro de comunicação ao excluir arquivo." });
     } finally {
       setIsDeleting(false);
     }
   };
 
-  // Upload Submission
+  // Upload handler
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUploadFiles || selectedUploadFiles.length === 0) {
-      setFeedback({ type: "error", text: "Selecione pelo menos um arquivo para envio." });
+      setFeedback({ type: "error", text: "Selecione pelo menos um arquivo para enviar." });
       return;
     }
 
     setIsUploading(true);
     setUploadProgress("Iniciando envio...");
 
-    const finalFolder = uploadFolder === "custom" ? customFolder.trim() : uploadFolder;
+    const targetFolder = uploadFolder.trim() || currentPath || "uploads";
     let successCount = 0;
     let failCount = 0;
 
@@ -326,7 +385,7 @@ export default function CloudStoragePage() {
 
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("folder", finalFolder || "uploads");
+      formData.append("folder", targetFolder);
 
       try {
         const res = await fetch("/api/r2/upload", {
@@ -352,11 +411,11 @@ export default function CloudStoragePage() {
     if (successCount > 0) {
       setFeedback({
         type: "success",
-        text: `Upload concluído: ${successCount} arquivo(s) salvo(s) no R2 com sucesso!`,
+        text: `Upload concluído: ${successCount} arquivo(s) enviado(s) para a pasta "${targetFolder}" com sucesso!`,
       });
       await fetchFiles();
     } else {
-      setFeedback({ type: "error", text: "Falha ao enviar arquivo(s) para o R2." });
+      setFeedback({ type: "error", text: "Falha ao enviar arquivo(s) para o Cloudflare R2." });
     }
   };
 
@@ -367,55 +426,54 @@ export default function CloudStoragePage() {
     setSelectedKeys(next);
   };
 
-  const toggleSelectAll = () => {
-    if (selectedKeys.size === filteredFiles.length) {
+  const toggleSelectAll = (filesToSelect: CloudFileItem[]) => {
+    if (selectedKeys.size === filesToSelect.length && filesToSelect.length > 0) {
       setSelectedKeys(new Set());
     } else {
-      setSelectedKeys(new Set(filteredFiles.map((f) => f.key)));
+      setSelectedKeys(new Set(filesToSelect.map((f) => f.key)));
     }
   };
 
   if (!mounted || userMgmt.isAuthenticated === null) {
     return (
-      <div style={{ minHeight: "100vh", background: "#081611", display: "grid", placeItems: "center", color: "#6ee7b7" }}>
+      <div style={{ minHeight: "100vh", background: "#060f0b", display: "grid", placeItems: "center", color: "#6ee7b7", fontFamily: "sans-serif" }}>
         Carregando FAF Cloud Storage...
       </div>
     );
   }
 
-  // 1. Não Autenticado -> Exibir Tela de Login Corporativa da FAF
+  // 1. Tela de Login Corporativo FAF
   if (!userMgmt.isAuthenticated) {
     return (
       <div
         style={{
           minHeight: "100vh",
-          background: "radial-gradient(circle at top, #102a20 0%, #06130e 100%)",
+          background: "radial-gradient(circle at top, #0f2b20 0%, #060f0b 100%)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           padding: "24px",
-          fontFamily: "'Segoe UI Variable', 'Segoe UI', -apple-system, sans-serif",
+          fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif",
           color: "#f1f5f9",
         }}
       >
         <div
           style={{
             background: "rgba(11, 29, 23, 0.95)",
-            border: "1px solid rgba(52, 211, 153, 0.3)",
+            border: "1px solid rgba(52, 211, 153, 0.35)",
             borderRadius: "20px",
             padding: "40px 36px",
-            maxWidth: "440px",
+            maxWidth: "430px",
             width: "100%",
-            boxShadow: "0 25px 60px rgba(0, 0, 0, 0.6)",
+            boxShadow: "0 25px 60px rgba(0, 0, 0, 0.7)",
             textAlign: "center",
           }}
         >
-          {/* Logo */}
           <img
             src="/faf-symbol.png"
             alt="FAF Coffees"
             style={{
-              height: "64px",
+              height: "60px",
               width: "auto",
               objectFit: "contain",
               margin: "0 auto 16px",
@@ -430,7 +488,7 @@ export default function CloudStoragePage() {
               color: "#34d399",
               border: "1px solid rgba(52, 211, 153, 0.3)",
               borderRadius: "999px",
-              padding: "4px 12px",
+              padding: "4px 14px",
               fontSize: "11px",
               fontWeight: 800,
               textTransform: "uppercase",
@@ -444,8 +502,8 @@ export default function CloudStoragePage() {
           <h2 style={{ fontSize: "22px", fontWeight: 800, color: "#ffffff", margin: "0 0 8px" }}>
             FAF Cloud Storage
           </h2>
-          <p style={{ fontSize: "13px", color: "#94a3b8", margin: "0 0 28px", lineHeight: 1.5 }}>
-            Autentique-se com sua conta de operador ou administrador da FAF Coffees para acessar o Cloudflare R2.
+          <p style={{ fontSize: "13px", color: "#94a3b8", margin: "0 0 26px", lineHeight: 1.5 }}>
+            Faça login com seu usuário corporativo FAF para gerenciar os arquivos e talhões no Cloudflare R2.
           </p>
 
           {userMgmt.loginError && (
@@ -518,7 +576,7 @@ export default function CloudStoragePage() {
             <button
               type="submit"
               style={{
-                marginTop: "10px",
+                marginTop: "8px",
                 background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
                 color: "#ffffff",
                 border: "none",
@@ -533,37 +591,23 @@ export default function CloudStoragePage() {
               🔓 Acessar Nuvem R2
             </button>
           </form>
-
-          <div style={{ marginTop: "24px", paddingTop: "18px", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-            <a
-              href="/"
-              style={{
-                color: "#6ee7b7",
-                fontSize: "12px",
-                fontWeight: 700,
-                textDecoration: "none",
-              }}
-            >
-              ← Voltar para a Página Principal
-            </a>
-          </div>
         </div>
       </div>
     );
   }
 
-  // 2. Autenticado como CLIENTE -> Bloquear acesso e direcionar ao Portal do Cliente
+  // 2. Perfil Cliente -> Redirecionamento amigável
   if (userMgmt.loggedUserRole === "client") {
     return (
       <div
         style={{
           minHeight: "100vh",
-          background: "radial-gradient(circle at top, #102a20 0%, #06130e 100%)",
+          background: "radial-gradient(circle at top, #0f2b20 0%, #060f0b 100%)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           padding: "24px",
-          fontFamily: "'Segoe UI Variable', 'Segoe UI', -apple-system, sans-serif",
+          fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
           color: "#f1f5f9",
         }}
       >
@@ -573,58 +617,34 @@ export default function CloudStoragePage() {
             border: "1px solid rgba(239, 68, 68, 0.3)",
             borderRadius: "20px",
             padding: "40px 36px",
-            maxWidth: "480px",
+            maxWidth: "460px",
             width: "100%",
-            boxShadow: "0 25px 60px rgba(0, 0, 0, 0.6)",
+            boxShadow: "0 25px 60px rgba(0, 0, 0, 0.7)",
             textAlign: "center",
           }}
         >
-          <span style={{ fontSize: "44px", display: "block", marginBottom: "14px" }}>🚫</span>
-          <div
-            style={{
-              display: "inline-block",
-              background: "rgba(239, 68, 68, 0.15)",
-              color: "#fca5a5",
-              border: "1px solid rgba(239, 68, 68, 0.3)",
-              borderRadius: "999px",
-              padding: "4px 12px",
-              fontSize: "11px",
-              fontWeight: 800,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              marginBottom: "12px",
-            }}
-          >
-            ACESSO NÃO AUTORIZADO
-          </div>
-
+          <span style={{ fontSize: "40px", display: "block", marginBottom: "12px" }}>🔒</span>
           <h2 style={{ fontSize: "20px", fontWeight: 800, color: "#ffffff", margin: "0 0 10px" }}>
             Acesso Restrito à Equipe FAF
           </h2>
-
           <p style={{ fontSize: "13.5px", color: "#cbd5e1", margin: "0 0 24px", lineHeight: 1.6 }}>
-            Olá, <strong>{userMgmt.loggedUserName || "Cliente"}</strong>. Sua conta possui permissão de <strong>Cliente / Importador</strong>.
-            <br /><br />
-            O gerenciamento bruto do Cloudflare R2 é de uso restrito dos operadores e administradores da FAF Coffees. Você pode consultar e baixar os lotes de seus contratos no <strong>Portal do Cliente</strong>.
+            Olá, <strong>{userMgmt.loggedUserName}</strong>. A gestão bruta do Cloudflare R2 é restrita a operadores internos. Acesse seus lotes pelo Portal do Cliente.
           </p>
-
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <a
               href="https://portal.fafeu.online"
               style={{
-                background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                background: "#2563eb",
                 color: "#ffffff",
                 padding: "12px 18px",
                 borderRadius: "10px",
                 fontSize: "13px",
                 fontWeight: 800,
                 textDecoration: "none",
-                boxShadow: "0 4px 14px rgba(37, 99, 235, 0.3)",
               }}
             >
               🌐 Ir para o Portal do Cliente
             </a>
-
             <button
               onClick={userMgmt.handleLogout}
               style={{
@@ -638,7 +658,7 @@ export default function CloudStoragePage() {
                 cursor: "pointer",
               }}
             >
-              🔄 Entrar com Outro Usuário (Logout)
+              🔄 Trocar de Usuário (Logout)
             </button>
           </div>
         </div>
@@ -646,40 +666,40 @@ export default function CloudStoragePage() {
     );
   }
 
-  // 3. Autenticado como FAF (Admin ou Usuário Padrão) -> Acesso Total Liberado
+  // 3. Aplicação Principal FAF Cloud Storage
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: "#081611",
+        background: "#060f0b",
         color: "#f1f5f9",
-        fontFamily: "'Segoe UI Variable', 'Segoe UI', -apple-system, sans-serif",
+        fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif",
         display: "flex",
         flexDirection: "column",
       }}
     >
-      {/* Top Corporate Navigation Header */}
+      {/* Top Header */}
       <header
         style={{
           position: "sticky",
           top: 0,
           zIndex: 40,
-          background: "rgba(11, 29, 23, 0.95)",
+          background: "rgba(9, 24, 19, 0.96)",
           backdropFilter: "blur(12px)",
-          borderBottom: "1px solid rgba(52, 211, 153, 0.15)",
-          padding: "0 32px",
-          height: "76px",
+          borderBottom: "1px solid rgba(52, 211, 153, 0.18)",
+          padding: "0 28px",
+          height: "72px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <img
             src="/faf-symbol.png"
             alt="FAF Coffees"
-            style={{ height: "42px", width: "auto", objectFit: "contain" }}
+            style={{ height: "38px", width: "auto", objectFit: "contain" }}
           />
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -688,7 +708,7 @@ export default function CloudStoragePage() {
                   color: "#d77442",
                   fontSize: "11px",
                   fontWeight: 800,
-                  letterSpacing: "0.1em",
+                  letterSpacing: "0.08em",
                   textTransform: "uppercase",
                 }}
               >
@@ -705,31 +725,31 @@ export default function CloudStoragePage() {
                   border: "1px solid rgba(52, 211, 153, 0.3)",
                 }}
               >
-                ● CLOUDFLARE R2 LIVE
+                ● CLOUDFLARE R2
               </span>
             </div>
             <h1
               style={{
                 margin: 0,
-                fontSize: "19px",
+                fontSize: "17px",
                 fontWeight: 700,
                 color: "#ffffff",
                 letterSpacing: "-0.01em",
               }}
             >
-              FAF Cloud Storage & Dossier Explorer
+              FAF Cloud Storage & Arquivos EUDR
             </h1>
           </div>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          {/* Tag do Usuário Logado */}
+          {/* User Profile Badge */}
           <div
             style={{
               background: "rgba(16, 44, 36, 0.8)",
               border: "1px solid rgba(52, 211, 153, 0.3)",
               borderRadius: "8px",
-              padding: "6px 12px",
+              padding: "5px 12px",
               display: "flex",
               alignItems: "center",
               gap: "8px",
@@ -747,19 +767,22 @@ export default function CloudStoragePage() {
           </div>
 
           <button
-            onClick={() => setShowUploadModal(true)}
+            onClick={() => {
+              setUploadFolder(currentPath);
+              setShowUploadModal(true);
+            }}
             style={{
               background: "#10b981",
               color: "#042f2e",
               border: "none",
               borderRadius: "8px",
-              padding: "9px 16px",
+              padding: "8px 16px",
               fontSize: "13px",
               fontWeight: 800,
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
-              gap: "7px",
+              gap: "6px",
               boxShadow: "0 2px 10px rgba(16, 185, 129, 0.3)",
             }}
           >
@@ -774,7 +797,7 @@ export default function CloudStoragePage() {
               border: "1px solid rgba(255, 255, 255, 0.15)",
               color: "#e2e8f0",
               borderRadius: "8px",
-              padding: "9px 14px",
+              padding: "8px 14px",
               fontSize: "13px",
               fontWeight: 700,
               cursor: "pointer",
@@ -786,34 +809,15 @@ export default function CloudStoragePage() {
             🔄 {loading ? "Atualizando..." : "Recarregar"}
           </button>
 
-          <a
-            href="/"
-            style={{
-              background: "rgba(255, 255, 255, 0.08)",
-              border: "1px solid rgba(255, 255, 255, 0.15)",
-              color: "#e2e8f0",
-              borderRadius: "8px",
-              padding: "9px 14px",
-              fontSize: "13px",
-              fontWeight: 700,
-              textDecoration: "none",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
-          >
-            🏠 Início
-          </a>
-
           <button
             onClick={userMgmt.handleLogout}
-            title="Encerrar Sessão"
+            title="Sair"
             style={{
               background: "rgba(239, 68, 68, 0.15)",
               border: "1px solid rgba(239, 68, 68, 0.3)",
               color: "#fca5a5",
               borderRadius: "8px",
-              padding: "9px 14px",
+              padding: "8px 14px",
               fontSize: "13px",
               fontWeight: 700,
               cursor: "pointer",
@@ -827,17 +831,18 @@ export default function CloudStoragePage() {
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Container */}
       <main
         style={{
           flex: 1,
-          maxWidth: "1540px",
+          maxWidth: "1600px",
           width: "100%",
           margin: "0 auto",
-          padding: "28px 32px 60px",
+          padding: "24px 28px 60px",
           display: "flex",
           flexDirection: "column",
-          gap: "24px",
+          gap: "20px",
+          boxSizing: "border-box",
         }}
       >
         {/* Feedback Alert */}
@@ -880,224 +885,649 @@ export default function CloudStoragePage() {
           </div>
         )}
 
-        {/* Metrics Grid */}
+        {/* Top Control Bar: Mode Switcher & Search Bar */}
         <section
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
-            gap: "16px",
-          }}
-        >
-          <div
-            style={{
-              background: "rgba(16, 44, 36, 0.7)",
-              border: "1px solid rgba(52, 211, 153, 0.2)",
-              borderRadius: "12px",
-              padding: "18px 20px",
-            }}
-          >
-            <p style={{ margin: "0 0 6px", fontSize: "11px", fontWeight: 800, color: "#a7f3d0", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              📦 Total de Arquivos
-            </p>
-            <h3 style={{ margin: 0, fontSize: "28px", fontWeight: 800, color: "#ffffff" }}>
-              {metrics.totalCount}
-            </h3>
-            <span style={{ fontSize: "12px", color: "#6ee7b7" }}>no bucket R2</span>
-          </div>
-
-          <div
-            style={{
-              background: "rgba(16, 44, 36, 0.7)",
-              border: "1px solid rgba(52, 211, 153, 0.2)",
-              borderRadius: "12px",
-              padding: "18px 20px",
-            }}
-          >
-            <p style={{ margin: "0 0 6px", fontSize: "11px", fontWeight: 800, color: "#a7f3d0", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              💾 Espaço Armazenado
-            </p>
-            <h3 style={{ margin: 0, fontSize: "28px", fontWeight: 800, color: "#ffffff" }}>
-              {metrics.totalFormatted}
-            </h3>
-            <span style={{ fontSize: "12px", color: "#6ee7b7" }}>consumo real</span>
-          </div>
-
-          <div
-            style={{
-              background: "rgba(16, 44, 36, 0.7)",
-              border: "1px solid rgba(52, 211, 153, 0.2)",
-              borderRadius: "12px",
-              padding: "18px 20px",
-            }}
-          >
-            <p style={{ margin: "0 0 6px", fontSize: "11px", fontWeight: 800, color: "#a7f3d0", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              📑 Contratos EUDR
-            </p>
-            <h3 style={{ margin: 0, fontSize: "28px", fontWeight: 800, color: "#ffffff" }}>
-              {metrics.categories["Contratos EUDR"] || 0}
-            </h3>
-            <span style={{ fontSize: "12px", color: "#6ee7b7" }}>dossiês prontos</span>
-          </div>
-
-          <div
-            style={{
-              background: "rgba(16, 44, 36, 0.7)",
-              border: "1px solid rgba(52, 211, 153, 0.2)",
-              borderRadius: "12px",
-              padding: "18px 20px",
-            }}
-          >
-            <p style={{ margin: "0 0 6px", fontSize: "11px", fontWeight: 800, color: "#a7f3d0", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              🗺️ Talhões & Geometrias
-            </p>
-            <h3 style={{ margin: 0, fontSize: "28px", fontWeight: 800, color: "#ffffff" }}>
-              {(metrics.categories["Talhões Individuais"] || 0) + (metrics.categories["Geometrias & Mapas"] || 0)}
-            </h3>
-            <span style={{ fontSize: "12px", color: "#6ee7b7" }}>GeoJSON / KML</span>
-          </div>
-
-          <div
-            style={{
-              background: "rgba(16, 44, 36, 0.7)",
-              border: "1px solid rgba(52, 211, 153, 0.2)",
-              borderRadius: "12px",
-              padding: "18px 20px",
-            }}
-          >
-            <p style={{ margin: "0 0 6px", fontSize: "11px", fontWeight: 800, color: "#a7f3d0", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              📁 Pastas Catalogadas
-            </p>
-            <h3 style={{ margin: 0, fontSize: "28px", fontWeight: 800, color: "#ffffff" }}>
-              {metrics.folders.length}
-            </h3>
-            <span style={{ fontSize: "12px", color: "#6ee7b7" }}>diretórios no servidor</span>
-          </div>
-        </section>
-
-        {/* Toolbar: Search, Filters, Folder Breadcrumb */}
-        <section
-          style={{
-            background: "rgba(11, 29, 23, 0.8)",
-            border: "1px solid rgba(52, 211, 153, 0.15)",
+            background: "rgba(11, 29, 23, 0.85)",
+            border: "1px solid rgba(52, 211, 153, 0.2)",
             borderRadius: "14px",
-            padding: "20px",
+            padding: "16px 20px",
             display: "flex",
-            flexDirection: "column",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "space-between",
             gap: "16px",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
           }}
         >
-          {/* Top Row: Search & View Controls */}
+          {/* Mode Tabs */}
           <div
             style={{
               display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "14px",
+              background: "#081611",
+              border: "1px solid rgba(52, 211, 153, 0.3)",
+              borderRadius: "10px",
+              padding: "4px",
+              gap: "4px",
             }}
           >
-            {/* Search Input */}
-            <div style={{ flex: 1, minWidth: "280px", position: "relative" }}>
-              <span
+            <button
+              onClick={() => setBrowseMode("tree")}
+              style={{
+                background: browseMode === "tree" ? "#10b981" : "transparent",
+                color: browseMode === "tree" ? "#042f2e" : "#94a3b8",
+                border: "none",
+                borderRadius: "6px",
+                padding: "8px 16px",
+                fontSize: "13px",
+                fontWeight: 800,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                transition: "all 0.15s ease",
+              }}
+            >
+              🗂️ Navegador por Pastas (R2)
+            </button>
+
+            <button
+              onClick={() => setBrowseMode("search")}
+              style={{
+                background: browseMode === "search" ? "#10b981" : "transparent",
+                color: browseMode === "search" ? "#042f2e" : "#94a3b8",
+                border: "none",
+                borderRadius: "6px",
+                padding: "8px 16px",
+                fontSize: "13px",
+                fontWeight: 800,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                transition: "all 0.15s ease",
+              }}
+            >
+              🔍 Pesquisa & Todos os Arquivos
+            </button>
+          </div>
+
+          {/* Quick Stats Summary */}
+          <div style={{ display: "flex", alignItems: "center", gap: "16px", fontSize: "12px", color: "#94a3b8" }}>
+            <span>
+              📦 <strong>{metrics.totalCount}</strong> arquivos catalogados
+            </span>
+            <span>•</span>
+            <span>
+              💾 <strong>{metrics.totalFormatted}</strong> tamanho total
+            </span>
+          </div>
+        </section>
+
+        {/* VIEW MODE 1: HIERARCHICAL FOLDER TREE (R2 EXPLORER) */}
+        {browseMode === "tree" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {/* Breadcrumbs Navigation Bar */}
+            <div
+              style={{
+                background: "rgba(11, 29, 23, 0.7)",
+                border: "1px solid rgba(52, 211, 153, 0.2)",
+                borderRadius: "12px",
+                padding: "12px 18px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: "10px",
+              }}
+            >
+              {/* Breadcrumb Path Links */}
+              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "6px", fontSize: "13px" }}>
+                <button
+                  onClick={() => setCurrentPath("")}
+                  style={{
+                    background: currentPath === "" ? "rgba(52, 211, 153, 0.2)" : "transparent",
+                    border: "none",
+                    color: currentPath === "" ? "#34d399" : "#cbd5e1",
+                    padding: "4px 8px",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontWeight: 700,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                  }}
+                >
+                  🏠 Nuvem R2 (Raiz)
+                </button>
+
+                {breadcrumbs.map((crumb, idx) => (
+                  <React.Fragment key={crumb.path}>
+                    <span style={{ color: "#64748b" }}>/</span>
+                    <button
+                      onClick={() => setCurrentPath(crumb.path)}
+                      style={{
+                        background:
+                          idx === breadcrumbs.length - 1
+                            ? "rgba(52, 211, 153, 0.2)"
+                            : "transparent",
+                        border: "none",
+                        color:
+                          idx === breadcrumbs.length - 1
+                            ? "#34d399"
+                            : "#cbd5e1",
+                        padding: "4px 8px",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontWeight: 700,
+                      }}
+                    >
+                      📁 {crumb.name}
+                    </button>
+                  </React.Fragment>
+                ))}
+              </div>
+
+              {/* Action buttons on current directory */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                {currentPath !== "" && (
+                  <button
+                    onClick={() => {
+                      const parent = currentPath.split("/").slice(0, -1).join("/");
+                      setCurrentPath(parent);
+                    }}
+                    style={{
+                      background: "rgba(255, 255, 255, 0.08)",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      color: "#e2e8f0",
+                      borderRadius: "6px",
+                      padding: "6px 12px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                    }}
+                  >
+                    ⬆️ Subir Pasta
+                  </button>
+                )}
+
+                <button
+                  onClick={() => {
+                    setUploadFolder(currentPath);
+                    setShowUploadModal(true);
+                  }}
+                  style={{
+                    background: "rgba(52, 211, 153, 0.18)",
+                    border: "1px solid rgba(52, 211, 153, 0.4)",
+                    color: "#34d399",
+                    borderRadius: "6px",
+                    padding: "6px 12px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                >
+                  ➕ Upload nesta Pasta
+                </button>
+              </div>
+            </div>
+
+            {/* Subfolders Grid */}
+            {currentSubfolders.length > 0 && (
+              <div>
+                <h3
+                  style={{
+                    margin: "0 0 12px",
+                    fontSize: "13px",
+                    fontWeight: 800,
+                    color: "#a7f3d0",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  📁 Pastas ({currentSubfolders.length})
+                </h3>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                    gap: "14px",
+                  }}
+                >
+                  {currentSubfolders.map((subfolder) => (
+                    <div
+                      key={subfolder.fullPath}
+                      onClick={() => setCurrentPath(subfolder.fullPath)}
+                      style={{
+                        background: "rgba(11, 29, 23, 0.8)",
+                        border: "1px solid rgba(52, 211, 153, 0.2)",
+                        borderRadius: "12px",
+                        padding: "16px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        transition: "all 0.15s ease",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = "#10b981";
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                        e.currentTarget.style.background = "rgba(16, 44, 36, 0.9)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = "rgba(52, 211, 153, 0.2)";
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.background = "rgba(11, 29, 23, 0.8)";
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+                        <span style={{ fontSize: "28px" }}>📁</span>
+                        <div style={{ minWidth: 0 }}>
+                          <h4
+                            style={{
+                              margin: 0,
+                              fontSize: "14px",
+                              fontWeight: 700,
+                              color: "#ffffff",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {subfolder.name}
+                          </h4>
+                          <span style={{ fontSize: "11px", color: "#6ee7b7" }}>
+                            {subfolder.fileCount} arquivo(s) • {subfolder.totalSizeFormatted}
+                          </span>
+                        </div>
+                      </div>
+
+                      <span style={{ color: "#34d399", fontSize: "16px", fontWeight: 700 }}>→</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Direct Files in Current Folder */}
+            <div>
+              <div
                 style={{
-                  position: "absolute",
-                  left: "14px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  color: "#64748b",
-                  fontSize: "15px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "12px",
                 }}
               >
-                🔍
-              </span>
-              <input
-                type="text"
-                placeholder="Buscar por nome de arquivo, chave R2, contrato ou pasta..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                <h3
+                  style={{
+                    margin: 0,
+                    fontSize: "13px",
+                    fontWeight: 800,
+                    color: "#a7f3d0",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  📄 Arquivos nesta Pasta ({currentPathFiles.length})
+                </h3>
+
+                {currentPathFiles.length > 0 && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <button
+                      onClick={() => toggleSelectAll(currentPathFiles)}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        color: "#34d399",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        textDecoration: "underline",
+                      }}
+                    >
+                      {selectedKeys.size === currentPathFiles.length && currentPathFiles.length > 0
+                        ? "Desmarcar todos"
+                        : "Selecionar todos da pasta"}
+                    </button>
+
+                    {selectedKeys.size > 0 && (
+                      <button
+                        onClick={() => {
+                          const targets = files.filter((f) => selectedKeys.has(f.key));
+                          setDeleteTarget(targets);
+                        }}
+                        style={{
+                          background: "#ef4444",
+                          color: "#ffffff",
+                          border: "none",
+                          borderRadius: "6px",
+                          padding: "5px 12px",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        🗑️ Excluir Selecionados ({selectedKeys.size})
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {currentPathFiles.length === 0 ? (
+                <div
+                  style={{
+                    background: "rgba(11, 29, 23, 0.4)",
+                    border: "1px dashed rgba(52, 211, 153, 0.2)",
+                    borderRadius: "12px",
+                    padding: "36px 20px",
+                    textAlign: "center",
+                    color: "#94a3b8",
+                  }}
+                >
+                  <span style={{ fontSize: "32px", display: "block", marginBottom: "8px" }}>📂</span>
+                  <p style={{ margin: 0, fontSize: "13px" }}>
+                    Esta pasta não contém arquivos diretamente na raiz dela. Clique nas subpastas acima para navegar.
+                  </p>
+                </div>
+              ) : (
+                /* Files Table */
+                <div
+                  style={{
+                    background: "rgba(11, 29, 23, 0.8)",
+                    border: "1px solid rgba(52, 211, 153, 0.2)",
+                    borderRadius: "14px",
+                    overflowX: "auto",
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+                  }}
+                >
+                  <table
+                    style={{
+                      width: "100%",
+                      minWidth: "750px",
+                      borderCollapse: "collapse",
+                      textAlign: "left",
+                      fontSize: "13px",
+                    }}
+                  >
+                    <thead>
+                      <tr
+                        style={{
+                          background: "rgba(6, 18, 14, 0.95)",
+                          borderBottom: "1px solid rgba(52, 211, 153, 0.25)",
+                        }}
+                      >
+                        <th style={{ padding: "12px 16px", width: "40px" }}>
+                          <input
+                            type="checkbox"
+                            checked={
+                              selectedKeys.size === currentPathFiles.length &&
+                              currentPathFiles.length > 0
+                            }
+                            onChange={() => toggleSelectAll(currentPathFiles)}
+                            style={{ cursor: "pointer", accentColor: "#10b981" }}
+                          />
+                        </th>
+                        <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800 }}>NOME DO ARQUIVO</th>
+                        <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800 }}>FORMATO</th>
+                        <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800, textAlign: "right" }}>TAMANHO</th>
+                        <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800 }}>MODIFICADO</th>
+                        <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800, textAlign: "right" }}>AÇÕES</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentPathFiles.map((file, idx) => {
+                        const isSelected = selectedKeys.has(file.key);
+                        const isGeo = file.extension === "geojson" || file.extension === "kml";
+                        const isJson = file.extension === "json";
+                        return (
+                          <tr
+                            key={file.key}
+                            style={{
+                              background: isSelected
+                                ? "rgba(16, 185, 129, 0.15)"
+                                : idx % 2 === 0
+                                ? "transparent"
+                                : "rgba(255, 255, 255, 0.02)",
+                              borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
+                            }}
+                          >
+                            <td style={{ padding: "12px 16px" }}>
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleSelectKey(file.key)}
+                                style={{ cursor: "pointer", accentColor: "#10b981" }}
+                              />
+                            </td>
+
+                            <td style={{ padding: "12px 16px" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                <span style={{ fontSize: "18px" }}>
+                                  {isGeo
+                                    ? "🗺️"
+                                    : isJson
+                                    ? "⚙️"
+                                    : file.extension === "zip"
+                                    ? "📦"
+                                    : file.extension === "xlsx"
+                                    ? "📊"
+                                    : "📄"}
+                                </span>
+                                <div>
+                                  <p style={{ margin: 0, fontWeight: 700, color: "#ffffff" }}>{file.filename}</p>
+                                  <span style={{ fontSize: "11px", color: "#64748b", fontFamily: "monospace" }}>
+                                    {file.key}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td style={{ padding: "12px 16px" }}>
+                              <span
+                                style={{
+                                  background: "rgba(52, 211, 153, 0.12)",
+                                  color: "#34d399",
+                                  border: "1px solid rgba(52, 211, 153, 0.25)",
+                                  borderRadius: "6px",
+                                  padding: "2px 8px",
+                                  fontSize: "11px",
+                                  fontWeight: 800,
+                                  textTransform: "uppercase",
+                                }}
+                              >
+                                {file.extension}
+                              </span>
+                            </td>
+
+                            <td style={{ padding: "12px 16px", textAlign: "right", color: "#cbd5e1", fontWeight: 600 }}>
+                              {file.sizeFormatted}
+                            </td>
+
+                            <td style={{ padding: "12px 16px", color: "#94a3b8", fontSize: "12px" }}>
+                              {new Date(file.lastModified).toLocaleString("pt-BR")}
+                            </td>
+
+                            <td style={{ padding: "12px 16px", textAlign: "right" }}>
+                              <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                                <button
+                                  onClick={() => handleOpenPreview(file)}
+                                  title="Ver Arquivo / Mapa"
+                                  style={{
+                                    background: "rgba(52, 211, 153, 0.15)",
+                                    border: "1px solid rgba(52, 211, 153, 0.3)",
+                                    color: "#34d399",
+                                    borderRadius: "6px",
+                                    padding: "5px 10px",
+                                    fontSize: "12px",
+                                    fontWeight: 700,
+                                    cursor: "pointer",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                  }}
+                                >
+                                  👁️ Ver
+                                </button>
+
+                                <a
+                                  href={file.downloadUrl}
+                                  download={file.filename}
+                                  title="Baixar Arquivo"
+                                  style={{
+                                    background: "rgba(59, 130, 246, 0.15)",
+                                    border: "1px solid rgba(59, 130, 246, 0.3)",
+                                    color: "#60a5fa",
+                                    borderRadius: "6px",
+                                    padding: "5px 10px",
+                                    fontSize: "12px",
+                                    fontWeight: 700,
+                                    textDecoration: "none",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                  }}
+                                >
+                                  ⬇️ Baixar
+                                </a>
+
+                                <button
+                                  onClick={() => setDeleteTarget(file)}
+                                  title="Excluir"
+                                  style={{
+                                    background: "rgba(239, 68, 68, 0.15)",
+                                    border: "1px solid rgba(239, 68, 68, 0.3)",
+                                    color: "#f87171",
+                                    borderRadius: "6px",
+                                    padding: "5px 8px",
+                                    fontSize: "12px",
+                                    fontWeight: 700,
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  🗑️
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* VIEW MODE 2: GLOBAL SEARCH & FLAT LIST */}
+        {browseMode === "search" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {/* Global Search Filters */}
+            <div
+              style={{
+                background: "rgba(11, 29, 23, 0.7)",
+                border: "1px solid rgba(52, 211, 153, 0.2)",
+                borderRadius: "12px",
+                padding: "16px 20px",
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                gap: "14px",
+              }}
+            >
+              {/* Search input */}
+              <div style={{ flex: 1, minWidth: "260px", position: "relative" }}>
+                <span
+                  style={{
+                    position: "absolute",
+                    left: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#64748b",
+                  }}
+                >
+                  🔍
+                </span>
+                <input
+                  type="text"
+                  placeholder="Pesquisar por nome de talhão, fazenda, contrato, região ou arquivo..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "10px 36px",
+                    background: "#081611",
+                    border: "1px solid rgba(52, 211, 153, 0.3)",
+                    borderRadius: "8px",
+                    color: "#ffffff",
+                    fontSize: "13px",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              {/* Category filter */}
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
                 style={{
-                  width: "100%",
-                  padding: "11px 40px 11px 40px",
                   background: "#081611",
                   border: "1px solid rgba(52, 211, 153, 0.3)",
                   borderRadius: "8px",
                   color: "#ffffff",
+                  padding: "9px 12px",
                   fontSize: "13px",
                   outline: "none",
                 }}
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  style={{
-                    position: "absolute",
-                    right: "12px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    background: "transparent",
-                    border: "none",
-                    color: "#94a3b8",
-                    cursor: "pointer",
-                    fontWeight: 700,
-                  }}
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+              >
+                <option value="TODAS">Categorias: Todas</option>
+                <option value="Contratos EUDR">Contratos EUDR</option>
+                <option value="Talhões Individuais">Talhões Individuais</option>
+                <option value="Geometrias & Mapas">Geometrias & Mapas</option>
+                <option value="Planilhas de Dados">Planilhas de Dados</option>
+                <option value="Metadados do Sistema">Metadados do Sistema</option>
+              </select>
 
-            {/* Folder Filter Dropdown */}
-            <select
-              value={currentFolder}
-              onChange={(e) => setCurrentFolder(e.target.value)}
-              style={{
-                background: "#081611",
-                border: "1px solid rgba(52, 211, 153, 0.3)",
-                borderRadius: "8px",
-                color: "#e2e8f0",
-                padding: "10px 14px",
-                fontSize: "13px",
-                fontWeight: 600,
-                outline: "none",
-                cursor: "pointer",
-              }}
-            >
-              <option value="ALL">📁 Todas as Pastas</option>
-              <option value="raiz">📂 Raiz (/)</option>
-              {metrics.folders.map((f) => (
-                <option key={f} value={f}>
-                  📁 {f}
-                </option>
-              ))}
-            </select>
+              {/* Extension filter */}
+              <select
+                value={selectedExt}
+                onChange={(e) => setSelectedExt(e.target.value)}
+                style={{
+                  background: "#081611",
+                  border: "1px solid rgba(52, 211, 153, 0.3)",
+                  borderRadius: "8px",
+                  color: "#ffffff",
+                  padding: "9px 12px",
+                  fontSize: "13px",
+                  outline: "none",
+                }}
+              >
+                <option value="ALL">Formatos: Todos</option>
+                <option value="geojson">.geojson</option>
+                <option value="json">.json</option>
+                <option value="xlsx">.xlsx</option>
+                <option value="zip">.zip</option>
+                <option value="kml">.kml</option>
+              </select>
 
-            {/* Extension Filter */}
-            <select
-              value={selectedExt}
-              onChange={(e) => setSelectedExt(e.target.value)}
-              style={{
-                background: "#081611",
-                border: "1px solid rgba(52, 211, 153, 0.3)",
-                borderRadius: "8px",
-                color: "#e2e8f0",
-                padding: "10px 14px",
-                fontSize: "13px",
-                fontWeight: 600,
-                outline: "none",
-                cursor: "pointer",
-              }}
-            >
-              <option value="ALL">Formatos: Todos</option>
-              <option value="geojson">.geojson (Geometrias)</option>
-              <option value="json">.json (Metadados)</option>
-              <option value="kml">.kml (Google Earth)</option>
-              <option value="zip">.zip (Pacotes)</option>
-              <option value="xlsx">.xlsx (Planilhas)</option>
-              <option value="pdf">.pdf (Dossiês)</option>
-            </select>
-
-            {/* Sort Controls */}
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              {/* Sort Order */}
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
@@ -1105,29 +1535,26 @@ export default function CloudStoragePage() {
                   background: "#081611",
                   border: "1px solid rgba(52, 211, 153, 0.3)",
                   borderRadius: "8px",
-                  color: "#e2e8f0",
-                  padding: "10px 12px",
+                  color: "#ffffff",
+                  padding: "9px 12px",
                   fontSize: "13px",
-                  fontWeight: 600,
                   outline: "none",
-                  cursor: "pointer",
                 }}
               >
-                <option value="date">Ordenar por Data</option>
                 <option value="name">Ordenar por Nome</option>
+                <option value="date">Ordenar por Data</option>
                 <option value="size">Ordenar por Tamanho</option>
               </select>
 
               <button
                 onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                title="Inverter Ordem"
                 style={{
                   background: "#081611",
                   border: "1px solid rgba(52, 211, 153, 0.3)",
                   borderRadius: "8px",
                   color: "#34d399",
-                  padding: "10px 14px",
-                  fontSize: "13px",
+                  padding: "9px 12px",
+                  fontSize: "12px",
                   fontWeight: 700,
                   cursor: "pointer",
                 }}
@@ -1136,521 +1563,145 @@ export default function CloudStoragePage() {
               </button>
             </div>
 
-            {/* View Mode Switcher */}
+            {/* Results Table */}
             <div
               style={{
-                display: "flex",
-                background: "#081611",
-                border: "1px solid rgba(52, 211, 153, 0.3)",
-                borderRadius: "8px",
-                overflow: "hidden",
+                background: "rgba(11, 29, 23, 0.8)",
+                border: "1px solid rgba(52, 211, 153, 0.2)",
+                borderRadius: "14px",
+                overflowX: "auto",
+                boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
               }}
             >
-              <button
-                onClick={() => setViewMode("table")}
+              <table
                 style={{
-                  background: viewMode === "table" ? "#10b981" : "transparent",
-                  color: viewMode === "table" ? "#042f2e" : "#94a3b8",
-                  border: "none",
-                  padding: "9px 14px",
-                  fontSize: "12px",
-                  fontWeight: 800,
-                  cursor: "pointer",
+                  width: "100%",
+                  minWidth: "850px",
+                  borderCollapse: "collapse",
+                  textAlign: "left",
+                  fontSize: "13px",
                 }}
               >
-                📑 Tabela
-              </button>
-              <button
-                onClick={() => setViewMode("grid")}
-                style={{
-                  background: viewMode === "grid" ? "#10b981" : "transparent",
-                  color: viewMode === "grid" ? "#042f2e" : "#94a3b8",
-                  border: "none",
-                  padding: "9px 14px",
-                  fontSize: "12px",
-                  fontWeight: 800,
-                  cursor: "pointer",
-                }}
-              >
-                ⊞ Grade
-              </button>
-            </div>
-          </div>
-
-          {/* Category Filter Pills */}
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "8px",
-              paddingTop: "6px",
-              borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-            }}
-          >
-            {["TODAS", "Contratos EUDR", "Talhões Individuais", "Geometrias & Mapas", "Planilhas de Dados", "Arquivos Compactados (ZIP)", "Metadados do Sistema"].map((cat) => {
-              const isSelected = selectedCategory === cat;
-              const count = cat === "TODAS" ? files.length : metrics.categories[cat] || 0;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  style={{
-                    background: isSelected ? "#34d399" : "rgba(255, 255, 255, 0.05)",
-                    border: `1px solid ${isSelected ? "#34d399" : "rgba(255, 255, 255, 0.12)"}`,
-                    color: isSelected ? "#042f2e" : "#cbd5e1",
-                    padding: "6px 14px",
-                    borderRadius: "999px",
-                    fontSize: "12px",
-                    fontWeight: isSelected ? 800 : 600,
-                    cursor: "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                >
-                  <span>{cat}</span>
-                  <span
+                <thead>
+                  <tr
                     style={{
-                      background: isSelected ? "rgba(4, 47, 46, 0.25)" : "rgba(255, 255, 255, 0.12)",
-                      padding: "1px 6px",
-                      borderRadius: "999px",
-                      fontSize: "11px",
-                      fontWeight: 800,
+                      background: "rgba(6, 18, 14, 0.95)",
+                      borderBottom: "1px solid rgba(52, 211, 153, 0.25)",
                     }}
                   >
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Batch Selection Action Bar */}
-          {selectedKeys.size > 0 && (
-            <div
-              style={{
-                background: "rgba(245, 158, 11, 0.15)",
-                border: "1px solid rgba(245, 158, 11, 0.4)",
-                borderRadius: "10px",
-                padding: "12px 18px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                gap: "12px",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <span style={{ fontSize: "13px", fontWeight: 800, color: "#fbbf24" }}>
-                  ✓ {selectedKeys.size} arquivo(s) selecionado(s)
-                </span>
-                <button
-                  onClick={() => setSelectedKeys(new Set())}
-                  style={{
-                    background: "transparent",
-                    border: "none",
-                    color: "#fde68a",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                    textDecoration: "underline",
-                  }}
-                >
-                  Desmarcar todos
-                </button>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <button
-                  onClick={() => {
-                    const targets = files.filter((f) => selectedKeys.has(f.key));
-                    setDeleteTarget(targets);
-                  }}
-                  style={{
-                    background: "#ef4444",
-                    color: "#ffffff",
-                    border: "none",
-                    borderRadius: "6px",
-                    padding: "7px 14px",
-                    fontSize: "12px",
-                    fontWeight: 800,
-                    cursor: "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                >
-                  🗑️ Excluir Selecionados ({selectedKeys.size})
-                </button>
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* Files Content: Table or Grid */}
-        {loading ? (
-          <div
-            style={{
-              background: "rgba(11, 29, 23, 0.5)",
-              borderRadius: "14px",
-              padding: "60px 20px",
-              textAlign: "center",
-              color: "#6ee7b7",
-            }}
-          >
-            <p style={{ fontSize: "16px", fontWeight: 700 }}>Carregando catálogo de arquivos da nuvem...</p>
-          </div>
-        ) : filteredFiles.length === 0 ? (
-          <div
-            style={{
-              background: "rgba(11, 29, 23, 0.5)",
-              border: "1px dashed rgba(255, 255, 255, 0.15)",
-              borderRadius: "14px",
-              padding: "60px 20px",
-              textAlign: "center",
-            }}
-          >
-            <p style={{ fontSize: "18px", fontWeight: 700, color: "#ffffff", margin: "0 0 8px" }}>
-              Nenhum arquivo encontrado
-            </p>
-            <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 18px" }}>
-              Tente alterar os filtros de busca ou faça upload de um novo arquivo.
-            </p>
-            <button
-              onClick={() => setShowUploadModal(true)}
-              style={{
-                background: "#10b981",
-                color: "#042f2e",
-                border: "none",
-                borderRadius: "8px",
-                padding: "8px 18px",
-                fontSize: "13px",
-                fontWeight: 800,
-                cursor: "pointer",
-              }}
-            >
-              ⬆️ Fazer Upload Agora
-            </button>
-          </div>
-        ) : viewMode === "table" ? (
-          /* Table View */
-          <div
-            style={{
-              background: "rgba(11, 29, 23, 0.8)",
-              border: "1px solid rgba(52, 211, 153, 0.15)",
-              borderRadius: "14px",
-              overflow: "hidden",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
-            }}
-          >
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "13px" }}>
-              <thead>
-                <tr style={{ background: "rgba(6, 18, 14, 0.95)", borderBottom: "1px solid rgba(52, 211, 153, 0.2)" }}>
-                  <th style={{ padding: "14px 16px", width: "40px" }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedKeys.size === filteredFiles.length && filteredFiles.length > 0}
-                      onChange={toggleSelectAll}
-                      style={{ cursor: "pointer", accentColor: "#10b981" }}
-                    />
-                  </th>
-                  <th style={{ padding: "14px 16px", color: "#a7f3d0", fontWeight: 800, letterSpacing: "0.05em" }}>ARQUIVO / CHAVE R2</th>
-                  <th style={{ padding: "14px 16px", color: "#a7f3d0", fontWeight: 800, letterSpacing: "0.05em" }}>PASTA</th>
-                  <th style={{ padding: "14px 16px", color: "#a7f3d0", fontWeight: 800, letterSpacing: "0.05em" }}>CATEGORIA</th>
-                  <th style={{ padding: "14px 16px", color: "#a7f3d0", fontWeight: 800, letterSpacing: "0.05em" }}>TAMANHO</th>
-                  <th style={{ padding: "14px 16px", color: "#a7f3d0", fontWeight: 800, letterSpacing: "0.05em" }}>MODIFICADO</th>
-                  <th style={{ padding: "14px 16px", color: "#a7f3d0", fontWeight: 800, letterSpacing: "0.05em", textAlign: "right" }}>AÇÕES</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredFiles.map((file, idx) => {
-                  const isSelected = selectedKeys.has(file.key);
-                  const isGeo = file.extension === "geojson" || file.extension === "kml";
-                  const isJson = file.extension === "json";
-                  return (
-                    <tr
-                      key={file.key}
-                      style={{
-                        background: isSelected
-                          ? "rgba(16, 185, 129, 0.12)"
-                          : idx % 2 === 0
-                          ? "rgba(255, 255, 255, 0.01)"
-                          : "rgba(255, 255, 255, 0.03)",
-                        borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
-                      }}
-                    >
-                      <td style={{ padding: "14px 16px" }}>
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleSelectKey(file.key)}
-                          style={{ cursor: "pointer", accentColor: "#10b981" }}
-                        />
-                      </td>
-
-                      <td style={{ padding: "14px 16px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <span style={{ fontSize: "18px" }}>
-                            {isGeo ? "🗺️" : isJson ? "⚙️" : file.extension === "zip" ? "📦" : file.extension === "xlsx" ? "📊" : "📄"}
-                          </span>
-                          <div>
-                            <p style={{ margin: 0, fontWeight: 700, color: "#ffffff" }}>{file.filename}</p>
-                            <span style={{ fontSize: "11px", color: "#64748b", fontFamily: "monospace" }}>{file.key}</span>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td style={{ padding: "14px 16px", color: "#94a3b8", fontFamily: "monospace", fontSize: "12px" }}>
-                        📁 {file.folder}
-                      </td>
-
-                      <td style={{ padding: "14px 16px" }}>
-                        <span
-                          style={{
-                            background: "rgba(52, 211, 153, 0.12)",
-                            color: "#34d399",
-                            border: "1px solid rgba(52, 211, 153, 0.25)",
-                            borderRadius: "999px",
-                            padding: "3px 10px",
-                            fontSize: "11px",
-                            fontWeight: 700,
-                          }}
-                        >
-                          {file.category}
-                        </span>
-                      </td>
-
-                      <td style={{ padding: "14px 16px", color: "#cbd5e1", fontWeight: 600 }}>
-                        {file.sizeFormatted}
-                      </td>
-
-                      <td style={{ padding: "14px 16px", color: "#94a3b8", fontSize: "12px" }}>
-                        {new Date(file.lastModified).toLocaleString("pt-BR")}
-                      </td>
-
-                      <td style={{ padding: "14px 16px", textAlign: "right" }}>
-                        <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
-                          {/* Visualizar */}
-                          <button
-                            onClick={() => handleOpenPreview(file)}
-                            title="Visualizar Arquivo"
-                            style={{
-                              background: "rgba(52, 211, 153, 0.15)",
-                              border: "1px solid rgba(52, 211, 153, 0.3)",
-                              color: "#34d399",
-                              borderRadius: "6px",
-                              padding: "6px 10px",
-                              fontSize: "12px",
-                              fontWeight: 700,
-                              cursor: "pointer",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "4px",
-                            }}
-                          >
-                            👁️ Ver
-                          </button>
-
-                          {/* Baixar */}
-                          <a
-                            href={file.downloadUrl}
-                            download={file.filename}
-                            title="Baixar Arquivo"
-                            style={{
-                              background: "rgba(59, 130, 246, 0.15)",
-                              border: "1px solid rgba(59, 130, 246, 0.3)",
-                              color: "#60a5fa",
-                              borderRadius: "6px",
-                              padding: "6px 10px",
-                              fontSize: "12px",
-                              fontWeight: 700,
-                              textDecoration: "none",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "4px",
-                            }}
-                          >
-                            ⬇️ Baixar
-                          </a>
-
-                          {/* Deletar */}
-                          <button
-                            onClick={() => setDeleteTarget(file)}
-                            title="Excluir Arquivo do R2"
-                            style={{
-                              background: "rgba(239, 68, 68, 0.15)",
-                              border: "1px solid rgba(239, 68, 68, 0.3)",
-                              color: "#f87171",
-                              borderRadius: "6px",
-                              padding: "6px 10px",
-                              fontSize: "12px",
-                              fontWeight: 700,
-                              cursor: "pointer",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "4px",
-                            }}
-                          >
-                            🗑️
-                          </button>
-                        </div>
+                    <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800 }}>ARQUIVO</th>
+                    <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800 }}>PASTA / CAMINHO</th>
+                    <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800 }}>CATEGORIA</th>
+                    <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800, textAlign: "right" }}>TAMANHO</th>
+                    <th style={{ padding: "12px 16px", color: "#a7f3d0", fontWeight: 800, textAlign: "right" }}>AÇÕES</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {globalFilteredFiles.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} style={{ padding: "40px", textAlign: "center", color: "#94a3b8" }}>
+                        Nenhum arquivo encontrado com os filtros selecionados.
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          /* Grid View */
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(310px, 1fr))",
-              gap: "18px",
-            }}
-          >
-            {filteredFiles.map((file) => {
-              const isSelected = selectedKeys.has(file.key);
-              const isGeo = file.extension === "geojson" || file.extension === "kml";
-              const isJson = file.extension === "json";
-              return (
-                <div
-                  key={file.key}
-                  style={{
-                    background: isSelected ? "rgba(16, 185, 129, 0.12)" : "rgba(11, 29, 23, 0.8)",
-                    border: `1px solid ${isSelected ? "#10b981" : "rgba(52, 211, 153, 0.18)"}`,
-                    borderRadius: "12px",
-                    padding: "18px",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                    gap: "14px",
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleSelectKey(file.key)}
-                      style={{ marginTop: "4px", cursor: "pointer", accentColor: "#10b981" }}
-                    />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
-                        <span style={{ fontSize: "16px" }}>
-                          {isGeo ? "🗺️" : isJson ? "⚙️" : file.extension === "zip" ? "📦" : file.extension === "xlsx" ? "📊" : "📄"}
-                        </span>
-                        <span
-                          style={{
-                            background: "rgba(52, 211, 153, 0.12)",
-                            color: "#34d399",
-                            fontSize: "10px",
-                            fontWeight: 800,
-                            padding: "2px 8px",
-                            borderRadius: "999px",
-                          }}
-                        >
-                          {file.extension.toUpperCase()}
-                        </span>
-                      </div>
-                      <h4
+                  ) : (
+                    globalFilteredFiles.map((file, idx) => (
+                      <tr
+                        key={file.key}
                         style={{
-                          margin: 0,
-                          fontSize: "14px",
-                          fontWeight: 700,
-                          color: "#ffffff",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
+                          background: idx % 2 === 0 ? "transparent" : "rgba(255, 255, 255, 0.02)",
+                          borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
                         }}
                       >
-                        {file.filename}
-                      </h4>
-                      <p
-                        style={{
-                          margin: "4px 0 0",
-                          fontSize: "11px",
-                          color: "#64748b",
-                          fontFamily: "monospace",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        📁 {file.folder}
-                      </p>
-                    </div>
-                  </div>
+                        <td style={{ padding: "12px 16px" }}>
+                          <p style={{ margin: 0, fontWeight: 700, color: "#ffffff" }}>{file.filename}</p>
+                          <span style={{ fontSize: "11px", color: "#64748b", fontFamily: "monospace" }}>
+                            {file.key}
+                          </span>
+                        </td>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      fontSize: "12px",
-                      color: "#94a3b8",
-                      borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-                      paddingTop: "10px",
-                    }}
-                  >
-                    <span>{file.sizeFormatted}</span>
-                    <span>{new Date(file.lastModified).toLocaleDateString("pt-BR")}</span>
-                  </div>
+                        <td style={{ padding: "12px 16px" }}>
+                          <button
+                            onClick={() => {
+                              setCurrentPath(file.folder === "raiz" ? "" : file.folder);
+                              setBrowseMode("tree");
+                            }}
+                            style={{
+                              background: "transparent",
+                              border: "none",
+                              color: "#6ee7b7",
+                              fontSize: "12px",
+                              cursor: "pointer",
+                              padding: 0,
+                              textDecoration: "underline",
+                              textAlign: "left",
+                            }}
+                          >
+                            📁 {file.folder}
+                          </button>
+                        </td>
 
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <button
-                      onClick={() => handleOpenPreview(file)}
-                      style={{
-                        flex: 1,
-                        background: "rgba(52, 211, 153, 0.15)",
-                        border: "1px solid rgba(52, 211, 153, 0.3)",
-                        color: "#34d399",
-                        borderRadius: "6px",
-                        padding: "7px 0",
-                        fontSize: "12px",
-                        fontWeight: 700,
-                        cursor: "pointer",
-                      }}
-                    >
-                      👁️ Visualizar
-                    </button>
-                    <a
-                      href={file.downloadUrl}
-                      download={file.filename}
-                      style={{
-                        flex: 1,
-                        background: "rgba(59, 130, 246, 0.15)",
-                        border: "1px solid rgba(59, 130, 246, 0.3)",
-                        color: "#60a5fa",
-                        borderRadius: "6px",
-                        padding: "7px 0",
-                        fontSize: "12px",
-                        fontWeight: 700,
-                        textAlign: "center",
-                        textDecoration: "none",
-                      }}
-                    >
-                      ⬇️ Baixar
-                    </a>
-                    <button
-                      onClick={() => setDeleteTarget(file)}
-                      style={{
-                        background: "rgba(239, 68, 68, 0.15)",
-                        border: "1px solid rgba(239, 68, 68, 0.3)",
-                        color: "#f87171",
-                        borderRadius: "6px",
-                        padding: "7px 12px",
-                        fontSize: "12px",
-                        fontWeight: 700,
-                        cursor: "pointer",
-                      }}
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                        <td style={{ padding: "12px 16px" }}>
+                          <span
+                            style={{
+                              background: "rgba(52, 211, 153, 0.12)",
+                              color: "#34d399",
+                              border: "1px solid rgba(52, 211, 153, 0.25)",
+                              borderRadius: "6px",
+                              padding: "2px 8px",
+                              fontSize: "11px",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {file.category}
+                          </span>
+                        </td>
+
+                        <td style={{ padding: "12px 16px", textAlign: "right", color: "#cbd5e1", fontWeight: 600 }}>
+                          {file.sizeFormatted}
+                        </td>
+
+                        <td style={{ padding: "12px 16px", textAlign: "right" }}>
+                          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                            <button
+                              onClick={() => handleOpenPreview(file)}
+                              style={{
+                                background: "rgba(52, 211, 153, 0.15)",
+                                border: "1px solid rgba(52, 211, 153, 0.3)",
+                                color: "#34d399",
+                                borderRadius: "6px",
+                                padding: "5px 10px",
+                                fontSize: "12px",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                              }}
+                            >
+                              👁️ Ver
+                            </button>
+
+                            <a
+                              href={file.downloadUrl}
+                              download={file.filename}
+                              style={{
+                                background: "rgba(59, 130, 246, 0.15)",
+                                border: "1px solid rgba(59, 130, 246, 0.3)",
+                                color: "#60a5fa",
+                                borderRadius: "6px",
+                                padding: "5px 10px",
+                                fontSize: "12px",
+                                fontWeight: 700,
+                                textDecoration: "none",
+                              }}
+                            >
+                              ⬇️ Baixar
+                            </a>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </main>
@@ -1662,12 +1713,12 @@ export default function CloudStoragePage() {
             position: "fixed",
             inset: 0,
             zIndex: 9999,
-            background: "rgba(0,0,0,0.8)",
+            background: "rgba(0,0,0,0.85)",
             backdropFilter: "blur(8px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: "24px",
+            padding: "20px",
           }}
         >
           <div
@@ -1676,18 +1727,18 @@ export default function CloudStoragePage() {
               border: "1px solid rgba(52, 211, 153, 0.3)",
               borderRadius: "16px",
               width: "100%",
-              maxWidth: "1080px",
+              maxWidth: "1000px",
               maxHeight: "90vh",
               display: "flex",
               flexDirection: "column",
-              boxShadow: "0 25px 60px rgba(0,0,0,0.6)",
+              boxShadow: "0 25px 60px rgba(0,0,0,0.7)",
               overflow: "hidden",
             }}
           >
             {/* Modal Header */}
             <div
               style={{
-                padding: "18px 24px",
+                padding: "16px 20px",
                 borderBottom: "1px solid rgba(52, 211, 153, 0.2)",
                 background: "#081611",
                 display: "flex",
@@ -1707,12 +1758,12 @@ export default function CloudStoragePage() {
                 >
                   PREVIEW · {previewFile.category}
                 </span>
-                <h3 style={{ margin: "2px 0 0", color: "#ffffff", fontSize: "17px", fontWeight: 700 }}>
+                <h3 style={{ margin: "2px 0 0", color: "#ffffff", fontSize: "16px", fontWeight: 700 }}>
                   {previewFile.filename}
                 </h3>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <a
                   href={previewFile.downloadUrl}
                   download={previewFile.filename}
@@ -1728,24 +1779,6 @@ export default function CloudStoragePage() {
                 >
                   ⬇️ Baixar Arquivo
                 </a>
-
-                <button
-                  onClick={() => {
-                    setDeleteTarget(previewFile);
-                  }}
-                  style={{
-                    background: "rgba(239, 68, 68, 0.2)",
-                    border: "1px solid rgba(239, 68, 68, 0.4)",
-                    color: "#fca5a5",
-                    padding: "7px 12px",
-                    borderRadius: "6px",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                  }}
-                >
-                  🗑️ Excluir
-                </button>
 
                 <button
                   onClick={() => setPreviewFile(null)}
@@ -1772,10 +1805,10 @@ export default function CloudStoragePage() {
               style={{
                 flex: 1,
                 overflowY: "auto",
-                padding: "24px",
+                padding: "20px",
                 display: "flex",
                 flexDirection: "column",
-                gap: "18px",
+                gap: "16px",
               }}
             >
               {previewLoading ? (
@@ -1784,40 +1817,38 @@ export default function CloudStoragePage() {
                 </div>
               ) : (
                 <>
-                  {/* If GeoJSON has coordinates, show map */}
                   {previewGeoJson && (
                     <div>
-                      <h4 style={{ margin: "0 0 10px", fontSize: "14px", color: "#34d399", fontWeight: 700 }}>
+                      <h4 style={{ margin: "0 0 8px", fontSize: "13px", color: "#34d399", fontWeight: 700 }}>
                         🗺️ Visualização Geográfica (Satélite ESRI)
                       </h4>
                       <GeoJsonMap geojsonData={previewGeoJson} />
                     </div>
                   )}
 
-                  {/* Raw Code / Content Viewer */}
                   <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                      <h4 style={{ margin: 0, fontSize: "14px", color: "#e2e8f0", fontWeight: 700 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                      <h4 style={{ margin: 0, fontSize: "13px", color: "#e2e8f0", fontWeight: 700 }}>
                         📑 Conteúdo Estruturado
                       </h4>
                       {previewContent && (
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(previewContent);
-                            setFeedback({ type: "success", text: "Conteúdo copiado para a área de transferência!" });
+                            setFeedback({ type: "success", text: "Conteúdo copiado com sucesso!" });
                           }}
                           style={{
                             background: "rgba(255, 255, 255, 0.08)",
                             border: "1px solid rgba(255, 255, 255, 0.2)",
                             color: "#e2e8f0",
-                            padding: "4px 10px",
+                            padding: "3px 8px",
                             borderRadius: "6px",
                             fontSize: "11px",
                             fontWeight: 700,
                             cursor: "pointer",
                           }}
                         >
-                          📋 Copiar Código
+                          📋 Copiar
                         </button>
                       )}
                     </div>
@@ -1826,18 +1857,18 @@ export default function CloudStoragePage() {
                         background: "#06130e",
                         border: "1px solid rgba(255, 255, 255, 0.1)",
                         borderRadius: "8px",
-                        padding: "16px",
+                        padding: "14px",
                         color: "#a7f3d0",
                         fontSize: "12px",
                         fontFamily: "Consolas, Monaco, monospace",
-                        maxHeight: "360px",
+                        maxHeight: "280px",
                         overflowY: "auto",
                         whiteSpace: "pre-wrap",
                         wordBreak: "break-all",
                         margin: 0,
                       }}
                     >
-                      {previewContent || "Nenhum conteúdo textual disponível para este arquivo."}
+                      {previewContent || "Nenhum conteúdo textual disponível para este formato."}
                     </pre>
                   </div>
                 </>
@@ -1867,16 +1898,16 @@ export default function CloudStoragePage() {
               background: "#1c0a0a",
               border: "1px solid #ef4444",
               borderRadius: "14px",
-              padding: "26px",
-              maxWidth: "500px",
+              padding: "24px",
+              maxWidth: "480px",
               width: "100%",
-              boxShadow: "0 20px 50px rgba(239, 68, 68, 0.2)",
+              boxShadow: "0 20px 50px rgba(239, 68, 68, 0.3)",
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
               <span style={{ fontSize: "28px" }}>⚠️</span>
               <div>
-                <h3 style={{ margin: 0, color: "#fca5a5", fontSize: "18px", fontWeight: 800 }}>
+                <h3 style={{ margin: 0, color: "#fca5a5", fontSize: "17px", fontWeight: 800 }}>
                   Confirmar Exclusão no R2
                 </h3>
                 <span style={{ fontSize: "12px", color: "#f87171" }}>
@@ -1888,20 +1919,11 @@ export default function CloudStoragePage() {
             <p style={{ color: "#e2e8f0", fontSize: "13px", lineHeight: "1.5", margin: "0 0 16px" }}>
               {Array.isArray(deleteTarget) ? (
                 <>
-                  Você está prestes a excluir <strong>{deleteTarget.length} arquivos</strong> do bucket Cloudflare R2:
-                  <ul style={{ margin: "8px 0 0", paddingLeft: "20px", maxHeight: "120px", overflowY: "auto", fontSize: "12px", color: "#fca5a5" }}>
-                    {deleteTarget.map((t) => (
-                      <li key={t.key}>{t.filename}</li>
-                    ))}
-                  </ul>
+                  Você está prestes a excluir <strong>{deleteTarget.length} arquivos</strong> da nuvem R2.
                 </>
               ) : (
                 <>
-                  Você tem certeza que deseja excluir o arquivo <strong>{deleteTarget.filename}</strong>?
-                  <br />
-                  <span style={{ fontSize: "11px", color: "#94a3b8", fontFamily: "monospace" }}>
-                    Chave: {deleteTarget.key} ({deleteTarget.sizeFormatted})
-                  </span>
+                  Tem certeza que deseja excluir o arquivo <strong>{deleteTarget.filename}</strong>?
                 </>
               )}
             </p>
@@ -1914,7 +1936,7 @@ export default function CloudStoragePage() {
                   background: "rgba(255, 255, 255, 0.1)",
                   border: "1px solid rgba(255, 255, 255, 0.2)",
                   color: "#ffffff",
-                  padding: "9px 16px",
+                  padding: "8px 16px",
                   borderRadius: "8px",
                   fontSize: "13px",
                   fontWeight: 700,
@@ -1931,17 +1953,14 @@ export default function CloudStoragePage() {
                   background: "#ef4444",
                   border: "none",
                   color: "#ffffff",
-                  padding: "9px 20px",
+                  padding: "8px 18px",
                   borderRadius: "8px",
                   fontSize: "13px",
                   fontWeight: 800,
                   cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
                 }}
               >
-                {isDeleting ? "Excluindo..." : "Sim, Excluir Definitivamente"}
+                {isDeleting ? "Excluindo..." : "Sim, Excluir"}
               </button>
             </div>
           </div>
@@ -1955,7 +1974,7 @@ export default function CloudStoragePage() {
             position: "fixed",
             inset: 0,
             zIndex: 10000,
-            background: "rgba(0,0,0,0.8)",
+            background: "rgba(0,0,0,0.85)",
             backdropFilter: "blur(6px)",
             display: "flex",
             alignItems: "center",
@@ -1968,15 +1987,15 @@ export default function CloudStoragePage() {
               background: "#0d221b",
               border: "1px solid rgba(52, 211, 153, 0.3)",
               borderRadius: "16px",
-              padding: "26px",
-              maxWidth: "540px",
+              padding: "24px",
+              maxWidth: "520px",
               width: "100%",
-              boxShadow: "0 25px 60px rgba(0,0,0,0.5)",
+              boxShadow: "0 25px 60px rgba(0,0,0,0.6)",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
-              <h3 style={{ margin: 0, color: "#ffffff", fontSize: "18px", fontWeight: 800 }}>
-                ⬆️ Enviar Arquivo para a Nuvem R2
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h3 style={{ margin: 0, color: "#ffffff", fontSize: "17px", fontWeight: 800 }}>
+                ⬆️ Upload de Arquivos para o R2
               </h3>
               <button
                 onClick={() => setShowUploadModal(false)}
@@ -1992,13 +2011,14 @@ export default function CloudStoragePage() {
               </button>
             </div>
 
-            <form onSubmit={handleUploadSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {/* Destination Folder Selector */}
+            <form onSubmit={handleUploadSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
               <div>
                 <label style={{ display: "block", fontSize: "12px", fontWeight: 800, color: "#a7f3d0", marginBottom: "6px" }}>
-                  PASTA DE DESTINO NO R2:
+                  PASTA DE DESTINO:
                 </label>
-                <select
+                <input
+                  type="text"
+                  placeholder="ex: mapping_eudr_data/MOGIANA ou contratos_clientes"
                   value={uploadFolder}
                   onChange={(e) => setUploadFolder(e.target.value)}
                   style={{
@@ -2007,68 +2027,37 @@ export default function CloudStoragePage() {
                     border: "1px solid rgba(52, 211, 153, 0.3)",
                     borderRadius: "8px",
                     color: "#ffffff",
-                    padding: "10px 14px",
+                    padding: "10px 12px",
                     fontSize: "13px",
                     outline: "none",
+                    boxSizing: "border-box",
                   }}
-                >
-                  <option value="contratos_clientes">contratos_clientes (Dossiês de Contratos)</option>
-                  <option value="mapping_eudr_data">mapping_eudr_data (Talhões e Geometrias)</option>
-                  <option value="uploads">uploads (Arquivos Gerais)</option>
-                  <option value="documentos">documentos (PDFs e Planilhas)</option>
-                  <option value="custom">Outra pasta personalizada...</option>
-                </select>
+                />
               </div>
 
-              {uploadFolder === "custom" && (
-                <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 800, color: "#a7f3d0", marginBottom: "6px" }}>
-                    NOME DA PASTA PERSONALIZADA:
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="ex: clientes/lote_especial"
-                    value={customFolder}
-                    onChange={(e) => setCustomFolder(e.target.value)}
-                    style={{
-                      width: "100%",
-                      background: "#081611",
-                      border: "1px solid rgba(52, 211, 153, 0.3)",
-                      borderRadius: "8px",
-                      color: "#ffffff",
-                      padding: "10px 14px",
-                      fontSize: "13px",
-                      outline: "none",
-                    }}
-                  />
-                </div>
-              )}
-
-              {/* File Dropzone / Selector */}
               <div>
                 <label style={{ display: "block", fontSize: "12px", fontWeight: 800, color: "#a7f3d0", marginBottom: "6px" }}>
-                  SELECIONE OS ARQUIVOS:
+                  SELECIONAR ARQUIVOS:
                 </label>
                 <div
                   onClick={() => fileInputRef.current?.click()}
                   style={{
                     border: "2px dashed rgba(52, 211, 153, 0.4)",
                     borderRadius: "10px",
-                    padding: "28px 20px",
+                    padding: "24px 16px",
                     textAlign: "center",
                     cursor: "pointer",
                     background: "rgba(16, 44, 36, 0.4)",
-                    transition: "border 0.2s ease",
                   }}
                 >
-                  <span style={{ fontSize: "32px", display: "block", marginBottom: "8px" }}>📁</span>
+                  <span style={{ fontSize: "28px", display: "block", marginBottom: "6px" }}>📁</span>
                   <p style={{ margin: 0, fontSize: "13px", fontWeight: 700, color: "#ffffff" }}>
                     {selectedUploadFiles && selectedUploadFiles.length > 0
                       ? `${selectedUploadFiles.length} arquivo(s) selecionado(s)`
-                      : "Clique para selecionar ou arraste arquivos aqui"}
+                      : "Clique para escolher arquivos"}
                   </p>
                   <span style={{ fontSize: "11px", color: "#6ee7b7" }}>
-                    Suporta .geojson, .kml, .shp, .zip, .xlsx, .json, .pdf
+                    .geojson, .xlsx, .kml, .zip, .json, .pdf
                   </span>
                 </div>
                 <input
@@ -2086,7 +2075,7 @@ export default function CloudStoragePage() {
                 </p>
               )}
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "8px" }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "6px" }}>
                 <button
                   type="button"
                   onClick={() => setShowUploadModal(false)}
@@ -2095,7 +2084,7 @@ export default function CloudStoragePage() {
                     background: "rgba(255, 255, 255, 0.1)",
                     border: "none",
                     color: "#ffffff",
-                    padding: "9px 16px",
+                    padding: "8px 16px",
                     borderRadius: "8px",
                     fontSize: "13px",
                     fontWeight: 700,
@@ -2112,7 +2101,7 @@ export default function CloudStoragePage() {
                     background: "#10b981",
                     border: "none",
                     color: "#042f2e",
-                    padding: "9px 22px",
+                    padding: "8px 20px",
                     borderRadius: "8px",
                     fontSize: "13px",
                     fontWeight: 800,
