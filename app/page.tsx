@@ -776,11 +776,13 @@ export default function Home() {
     }
   }, [userMgmt.loggedUserRole, activeView]);
 
-  if (userMgmt.isAuthenticated === null) {
+  if (activeView === "landing") {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--canvas)", display: "grid", placeItems: "center" }}>
-        <p style={{ color: "var(--muted)", fontWeight: 600 }}>Carregando sistema...</p>
-      </div>
+      <LandingPage
+        onOpenFafApp={() => setActiveView("app")}
+        onOpenClientPortal={() => setActiveView("portal")}
+        onOpenDashboard={() => setActiveView("dashboard")}
+      />
     );
   }
 
@@ -882,20 +884,10 @@ export default function Home() {
     );
   }
 
-  if (activeView === "landing") {
-    return (
-      <LandingPage
-        onOpenFafApp={() => setActiveView("app")}
-        onOpenClientPortal={() => setActiveView("portal")}
-        onOpenDashboard={() => setActiveView("dashboard")}
-      />
-    );
-  }
-
   if (userMgmt.isAuthenticated === null) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--canvas)", display: "grid", placeItems: "center" }}>
-        <p style={{ color: "var(--muted)", fontWeight: 600 }}>Carregando sistema...</p>
+      <div style={{ minHeight: "100vh", background: "radial-gradient(ellipse at 50% 0%, #102a20 0%, #081611 60%, #040c09 100%)", display: "grid", placeItems: "center" }}>
+        <p style={{ color: "#34d399", fontWeight: 700, fontSize: "14px" }}>Carregando sistema FAF EUDR...</p>
       </div>
     );
   }

@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { getMasterList, PlotMasterRecord } from "@/app/lib/plotMasterData";
-import { getContracts } from "@/app/lib/contractStore";
-import { getPublishedPlots } from "@/app/lib/clientPortalStore";
+import React, { useState, useEffect, useMemo } from "react";
+import type { PlotMasterRecord } from "@/app/lib/plotMasterData";
+import { getContracts, ContractRecord } from "@/app/lib/contractStore";
 
 interface ExecutiveDashboardProps {
   onNavigateToContracts?: () => void;
@@ -22,23 +21,63 @@ export default function ExecutiveDashboardView({
 }: ExecutiveDashboardProps) {
   const [selectedRegionFilter, setSelectedRegionFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [masterPlots, setMasterPlots] = useState<PlotMasterRecord[]>([]);
+  const [contracts, setContracts] = useState<ContractRecord[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Carregar dados dos talhões master
-  const masterPlots = useMemo(() => getMasterList(), []);
-  const contracts = useMemo(() => getContracts(), []);
-  const publishedPlots = useMemo(() => getPublishedPlots(), []);
+  // Carregar dados de forma assíncrona e segura para o cliente (sem crypto no browser)
+  useEffect(() => {
+    let isMounted = true;
+    const loadData = async () => {
+      try {
+        const [resPlots, resContracts] = await Promise.allSettled([
+          fetch("/api/plot-lookup"),
+          fetch("/api/r2/copy-contract"),
+        ]);
+
+        if (isMounted) {
+          if (resPlots.status === "fulfilled" && resPlots.value.ok) {
+            const dataPlots = await resPlots.value.json();
+            if (dataPlots.plots && Array.isArray(dataPlots.plots)) {
+              setMasterPlots(dataPlots.plots);
+            }
+          }
+
+          if (resContracts.status === "fulfilled" && resContracts.value.ok) {
+            const dataContracts = await resContracts.value.json();
+            if (dataContracts.contracts && Array.isArray(dataContracts.contracts)) {
+              setContracts(dataContracts.contracts);
+            } else {
+              setContracts(getContracts());
+            }
+          } else {
+            setContracts(getContracts());
+          }
+        }
+      } catch (err) {
+        console.warn("Erro ao carregar dados do dashboard:", err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Filtragem dos talhões
   const filteredPlots = useMemo(() => {
     return masterPlots.filter((plot) => {
       const matchRegion =
         selectedRegionFilter === "ALL" ||
-        plot.region.toUpperCase().replace(/[\s_-]+/g, "") ===
+        (plot.region || "").toUpperCase().replace(/[\s_-]+/g, "") ===
           selectedRegionFilter.toUpperCase().replace(/[\s_-]+/g, "");
       
       const matchSearch =
         !searchQuery.trim() ||
-        `${plot.plotId} ${plot.producer} ${plot.farm} ${plot.region} ${plot.supplier}`
+        `${plot.plotId || ""} ${plot.producer || ""} ${plot.farm || ""} ${plot.region || ""} ${plot.supplier || ""}`
           .toLowerCase()
           .includes(searchQuery.toLowerCase());
 
@@ -48,10 +87,10 @@ export default function ExecutiveDashboardView({
 
   // Cálculos Agregados de KPI
   const stats = useMemo(() => {
-    const totalHectares = masterPlots.reduce((sum, p) => sum + (p.hectares || 0), 0);
-    const uniqueProducers = new Set(masterPlots.map((p) => p.producer.trim())).size;
-    const uniqueFarms = new Set(masterPlots.map((p) => `${p.producer}-${p.farm}`.trim())).size;
-    const uniqueRegions = Array.from(new Set(masterPlots.map((p) => p.region.trim()))).sort();
+    const totalHectares = masterPlots.reduce((sum, p) => sum + (Number(p.hectares) || 0), 0);
+    const uniqueProducers = new Set(masterPlots.map((p) => (p.producer || "").trim()).filter(Boolean)).size;
+    const uniqueFarms = new Set(masterPlots.map((p) => `${p.producer || ""}-${p.farm || ""}`.trim()).filter(Boolean)).size;
+    const uniqueRegions = Array.from(new Set(masterPlots.map((p) => (p.region || "").trim()).filter(Boolean))).sort();
     
     // Contratos e lotes
     const totalContracts = contracts.length;
@@ -62,9 +101,9 @@ export default function ExecutiveDashboardView({
 
     // Agrupamento por região
     const regionBreakdown = uniqueRegions.map((regionName) => {
-      const plotsInRegion = masterPlots.filter((p) => p.region.trim() === regionName);
-      const hectaresInRegion = plotsInRegion.reduce((sum, p) => sum + (p.hectares || 0), 0);
-      const producersInRegion = new Set(plotsInRegion.map((p) => p.producer.trim())).size;
+      const plotsInRegion = masterPlots.filter((p) => (p.region || "").trim() === regionName);
+      const hectaresInRegion = plotsInRegion.reduce((sum, p) => sum + (Number(p.hectares) || 0), 0);
+      const producersInRegion = new Set(plotsInRegion.map((p) => (p.producer || "").trim()).filter(Boolean)).size;
       const percentage = totalHectares > 0 ? (hectaresInRegion / totalHectares) * 100 : 0;
 
       return {
@@ -79,17 +118,17 @@ export default function ExecutiveDashboardView({
     // Top 10 Produtores por área
     const producerAreaMap = new Map<string, { producer: string; farm: string; region: string; hectares: number; plotsCount: number }>();
     masterPlots.forEach((p) => {
-      const key = `${p.producer} - ${p.farm}`;
+      const key = `${p.producer || "N/A"} - ${p.farm || "N/A"}`;
       const prev = producerAreaMap.get(key) || {
-        producer: p.producer,
-        farm: p.farm,
-        region: p.region,
+        producer: p.producer || "N/A",
+        farm: p.farm || "N/A",
+        region: p.region || "Geral",
         hectares: 0,
         plotsCount: 0,
       };
       producerAreaMap.set(key, {
         ...prev,
-        hectares: prev.hectares + (p.hectares || 0),
+        hectares: prev.hectares + (Number(p.hectares) || 0),
         plotsCount: prev.plotsCount + 1,
       });
     });
@@ -117,12 +156,12 @@ export default function ExecutiveDashboardView({
   const handleExportCSV = () => {
     const headers = ["IDPLOT", "PRODUTOR", "FAZENDA", "REGIAO", "FORNECEDOR", "HECTARES", "STATUS_EUDR"];
     const rows = filteredPlots.map((p) => [
-      `"${p.plotId}"`,
-      `"${p.producer}"`,
-      `"${p.farm}"`,
-      `"${p.region}"`,
-      `"${p.supplier}"`,
-      p.hectares.toFixed(2),
+      `"${p.plotId || ""}"`,
+      `"${p.producer || ""}"`,
+      `"${p.farm || ""}"`,
+      `"${p.region || ""}"`,
+      `"${p.supplier || ""}"`,
+      (Number(p.hectares) || 0).toFixed(2),
       `"CONFORME (ZERO DESMATAMENTO)"`,
     ]);
 
