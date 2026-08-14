@@ -8,40 +8,40 @@ interface ThemeToggleProps {
   showText?: boolean;
 }
 
-export function ThemeToggle({ style, showText = true }: ThemeToggleProps) {
+export function ThemeToggle({ style }: ThemeToggleProps) {
   const { isDark, toggleTheme } = useTheme();
 
   return (
     <button
       onClick={toggleTheme}
       type="button"
-      title={isDark ? "Alternar para Modo Claro" : "Alternar para Modo Escuro"}
-      aria-label={isDark ? "Alternar para Modo Claro" : "Alternar para Modo Escuro"}
+      title={isDark ? "Mudar para modo claro" : "Mudar para modo escuro"}
+      aria-label={isDark ? "Mudar para modo claro" : "Mudar para modo escuro"}
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: "6px",
-        padding: showText ? "6px 12px" : "6px 8px",
-        borderRadius: "6px",
-        fontSize: "12px",
-        fontWeight: 650,
+        justifyContent: "center",
+        width: "36px",
+        height: "36px",
+        borderRadius: "50%",
         cursor: "pointer",
-        transition: "all 0.15s ease",
-        border: "1px solid var(--border-strong)",
-        background: "var(--bg-surface)",
-        color: "var(--text-primary)",
-        boxShadow: "var(--shadow-subtle)",
+        transition: "all 0.2s ease",
+        border: "none",
+        background: "transparent",
+        color: "var(--text-secondary)",
+        fontSize: "15px",
         ...style,
       }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "var(--bg-subtle)";
+        e.currentTarget.style.color = "var(--text-primary)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "transparent";
+        e.currentTarget.style.color = "var(--text-secondary)";
+      }}
     >
-      <span style={{ fontSize: "13px", lineHeight: 1 }}>
-        {isDark ? "☀️" : "🌙"}
-      </span>
-      {showText && (
-        <span style={{ letterSpacing: "0.01em" }}>
-          {isDark ? "Modo Claro" : "Modo Escuro"}
-        </span>
-      )}
+      {isDark ? "☀️" : "🌙"}
     </button>
   );
 }

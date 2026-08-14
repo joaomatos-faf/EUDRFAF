@@ -254,160 +254,89 @@ export function ClientPortalModal({
         transition: "background 0.25s ease, color 0.25s ease",
       }}
     >
-      {/* Top Navbar */}
+      {/* Apple-style Global Nav Header */}
       <header
         style={{
           position: "sticky",
           top: 0,
-          zIndex: 40,
+          zIndex: 100,
           background: "var(--bg-header)",
-          backdropFilter: "blur(12px)",
-          color: "var(--text-primary)",
-          padding: "0 max(28px, calc((100vw - 1480px) / 2))",
-          height: "72px",
+          backdropFilter: "saturate(180%) blur(20px)",
+          WebkitBackdropFilter: "saturate(180%) blur(20px)",
+          borderBottom: "0.5px solid var(--border-hairline)",
+          height: "50px",
           display: "flex",
           alignItems: "center",
+          padding: "0 32px",
           justifyContent: "space-between",
-          borderBottom: "1px solid var(--border-hairline)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <img
             src="/faf-logo-transparent.png"
             alt="FAF Coffees"
             style={{
-              height: "40px",
+              height: "26px",
               width: "auto",
               objectFit: "contain",
               display: "block",
             }}
           />
-          <div>
-            <p
-              style={{
-                margin: "0 0 2px",
-                color: "var(--brand-ochre)",
-                fontSize: "10.5px",
-                fontWeight: 800,
-                letterSpacing: ".12em",
-                textTransform: "uppercase",
-              }}
-            >
-              PORTAL.FAFEU.ONLINE • CLOUDFLARE R2 STORAGE
-            </p>
-            <h1
-              style={{
-                margin: 0,
-                color: "var(--text-primary)",
-                fontSize: "17px",
-                fontWeight: 750,
-                letterSpacing: "-.01em",
-              }}
-            >
-              Client Portal & EUDR Dossiers
-            </h1>
-          </div>
+          <span
+            style={{
+              fontSize: "13px",
+              fontWeight: 700,
+              color: "var(--text-primary)",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Portal do Cliente
+          </span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <ThemeToggle />
-
-          {loggedClientName ? (
-            <span
-              style={{
-                background: "var(--bg-surface)",
-                border: "1px solid var(--border-strong)",
-                color: "var(--brand-ochre)",
-                padding: "5px 12px",
-                borderRadius: "6px",
-                fontSize: "12px",
-                fontWeight: 800,
-                letterSpacing: "0.5px",
-              }}
-            >
-              🏢 {loggedClientName.toUpperCase()}
-            </span>
-          ) : (
-            <span
-              style={{
-                background: "var(--bg-surface)",
-                border: "1px solid var(--border-hairline)",
-                color: "var(--text-secondary)",
-                padding: "5px 12px",
-                borderRadius: "6px",
-                fontSize: "12px",
-                fontWeight: 700,
-              }}
-            >
-              {loggedUserRole === "admin" ? "🛡️ ADMIN" : "👤 OPERATOR"}
-            </span>
-          )}
 
           <span
             style={{
+              fontSize: "12px",
+              fontWeight: 600,
               color: "var(--text-secondary)",
-              fontSize: "12px",
-              fontWeight: 650,
-              background: "var(--bg-surface)",
-              padding: "5px 12px",
-              borderRadius: "6px",
-              border: "1px solid var(--border-hairline)",
             }}
           >
-            👤 {displayName}
+            {displayName}
           </span>
-
-          <button
-            onClick={() => setCurrentPortalTab("server-files")}
-            style={{
-              color: isDark ? "#dfa84a" : "#b37e33",
-              padding: "8px 16px",
-              borderRadius: "8px",
-              fontSize: "12px",
-              fontWeight: 800,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              transition: "all 0.15s ease",
-            }}
-          >
-            ☁️ Acessar Nuvem / Servidor
-          </button>
 
           <button
             onClick={handleHomeClick}
             style={{
-              background: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(189, 40, 32, 0.1)",
-              border: isDark ? "1px solid rgba(209, 160, 104, 0.25)" : "1px solid rgba(189, 40, 32, 0.3)",
-              color: isDark ? "#ffffff" : "#bd2820",
-              padding: "8px 16px",
-              borderRadius: "8px",
+              background: "var(--brand-crimson)",
+              border: "none",
+              color: "#ffffff",
+              padding: "6px 14px",
+              borderRadius: "999px",
               fontSize: "12px",
-              fontWeight: 750,
+              fontWeight: 600,
               cursor: "pointer",
+              boxShadow: "var(--shadow-button)",
               transition: "all 0.15s ease",
             }}
           >
-            🏠 Voltar ao Início
+            Início
           </button>
-
           {onLogout && (
             <button
               onClick={onLogout}
               style={{
-                background: "rgba(239, 68, 68, 0.2)",
-                border: "1px solid rgba(239, 68, 68, 0.4)",
-                color: isDark ? "#fca5a5" : "#dc2626",
-                padding: "8px 16px",
-                borderRadius: "8px",
+                background: "transparent",
+                border: "none",
+                color: "var(--text-muted)",
                 fontSize: "12px",
-                fontWeight: 700,
+                fontWeight: 600,
                 cursor: "pointer",
-                transition: "all 0.15s ease",
               }}
             >
-              🚪 Log Out
+              Sair
             </button>
           )}
         </div>

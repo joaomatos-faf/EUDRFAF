@@ -40,46 +40,39 @@ export function EudrHeader({
           src="/faf-logo-transparent.png"
           alt="FAF Coffees"
           style={{
-            height: "40px",
+            height: "28px",
             width: "auto",
             objectFit: "contain",
             display: "block",
           }}
         />
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <span className="eyebrow">
-            FAF Coffees · Agronomia & Operações
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)" }}>
+            Preparador EUDR
           </span>
-          <h1>
-            Preparador de Dossiê EUDR
-          </h1>
+          <span className="privacy-pill">
+            <span />
+            WGS84
+          </span>
         </div>
       </div>
 
       <div className="topbar-actions">
         <ThemeToggle />
 
-        <span className="privacy-pill">
-          <span />
-          WGS84 Submétrico
-        </span>
-
         {onOpenLanding && (
           <button
             onClick={onOpenLanding}
             style={{
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border-strong)",
-              color: "var(--text-primary)",
-              borderRadius: "6px",
+              color: "var(--text-secondary)",
+              fontSize: "12.5px",
+              fontWeight: 550,
               padding: "6px 12px",
-              fontSize: "12px",
-              fontWeight: 650,
-              boxShadow: "var(--shadow-subtle)",
+              borderRadius: "999px",
               transition: "all 0.15s ease",
             }}
           >
-            🏠 Início
+            Início
           </button>
         )}
 
@@ -87,18 +80,15 @@ export function EudrHeader({
           <button
             onClick={onOpenDashboard}
             style={{
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border-strong)",
-              color: "var(--text-primary)",
-              borderRadius: "6px",
+              color: "var(--text-secondary)",
+              fontSize: "12.5px",
+              fontWeight: 550,
               padding: "6px 12px",
-              fontSize: "12px",
-              fontWeight: 650,
-              boxShadow: "var(--shadow-subtle)",
+              borderRadius: "999px",
               transition: "all 0.15s ease",
             }}
           >
-            📊 Dashboard
+            Dashboard
           </button>
         )}
 
@@ -109,13 +99,12 @@ export function EudrHeader({
                 onClick={onNewProcess}
                 style={{
                   background: "var(--brand-crimson)",
-                  border: "1px solid var(--brand-crimson-dark)",
                   color: "#ffffff",
-                  borderRadius: "6px",
-                  padding: "6px 12px",
-                  fontSize: "12px",
-                  fontWeight: 750,
-                  boxShadow: "0 2px 6px rgba(166, 38, 29, 0.2)",
+                  borderRadius: "999px",
+                  padding: "6px 14px",
+                  fontSize: "12.5px",
+                  fontWeight: 600,
+                  boxShadow: "var(--shadow-button)",
                   transition: "all 0.15s ease",
                 }}
               >
@@ -127,17 +116,15 @@ export function EudrHeader({
               <button
                 onClick={onOpenLogsModal}
                 style={{
-                  background: "var(--bg-surface)",
-                  border: "1px solid var(--border-hairline)",
                   color: "var(--text-secondary)",
-                  borderRadius: "6px",
-                  padding: "6px 12px",
-                  fontSize: "12px",
-                  fontWeight: 600,
+                  fontSize: "12.5px",
+                  fontWeight: 550,
+                  padding: "6px 10px",
+                  borderRadius: "999px",
                   transition: "all 0.15s ease",
                 }}
               >
-                📋 Auditoria
+                Auditoria
               </button>
             )}
 
@@ -145,17 +132,15 @@ export function EudrHeader({
               <button
                 onClick={onOpenAdminModal}
                 style={{
-                  background: "var(--bg-surface)",
-                  border: "1px solid var(--border-strong)",
-                  color: "var(--brand-ochre)",
-                  borderRadius: "6px",
-                  padding: "6px 12px",
-                  fontSize: "12px",
-                  fontWeight: 700,
+                  color: "var(--text-secondary)",
+                  fontSize: "12.5px",
+                  fontWeight: 550,
+                  padding: "6px 10px",
+                  borderRadius: "999px",
                   transition: "all 0.15s ease",
                 }}
               >
-                ⚙️ Usuários
+                Usuários
               </button>
             )}
 
@@ -165,25 +150,23 @@ export function EudrHeader({
                 alignItems: "center",
                 gap: "8px",
                 padding: "4px 10px",
-                borderRadius: "6px",
-                border: "1px solid var(--border-hairline)",
+                borderRadius: "999px",
                 background: "var(--bg-subtle)",
                 fontSize: "12px",
-                fontWeight: 650,
+                fontWeight: 600,
                 color: "var(--text-secondary)",
+                marginLeft: "4px",
               }}
             >
-              <span>👤 {loggedUserKey}</span>
+              <span>{loggedUserKey}</span>
               <button
                 onClick={onLogout}
                 title="Encerrar sessão"
                 style={{
                   color: "var(--brand-crimson)",
-                  fontWeight: 800,
+                  fontWeight: 700,
                   fontSize: "11px",
-                  padding: "2px 6px",
-                  borderRadius: "4px",
-                  background: "var(--status-danger-bg)",
+                  padding: "0 2px",
                 }}
               >
                 Sair

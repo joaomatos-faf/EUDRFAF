@@ -972,18 +972,18 @@ export default function Home() {
                 type="button"
                 onClick={handleNewProcessClick}
                 style={{
-                  border: "1px solid var(--line-strong)",
-                  borderRadius: "8px",
-                  background: "#fff",
-                  color: "var(--forest-900)",
-                  padding: "6px 12px",
-                  fontSize: "11.5px",
-                  fontWeight: 700,
+                  border: "1px solid var(--border-strong)",
+                  borderRadius: "999px",
+                  background: "var(--bg-subtle)",
+                  color: "var(--text-primary)",
+                  padding: "6px 14px",
+                  fontSize: "12px",
+                  fontWeight: 650,
                   cursor: "pointer",
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "5px",
-                  boxShadow: "var(--shadow-sm)",
+                  gap: "6px",
+                  boxShadow: "var(--shadow-subtle)",
                   transition: "all 0.16s ease",
                 }}
                 title="Limpar todos os campos e iniciar novo talhão"
@@ -1012,13 +1012,13 @@ export default function Home() {
                     }}
                     title="Gerar código automaticamente (FAF + Fornecedor + Município + N°)"
                     style={{
-                      padding: "8px 10px",
-                      borderRadius: "6px",
-                      border: "1px solid var(--line)",
-                      background: "var(--canvas)",
-                      color: "var(--forest-950)",
+                      padding: "8px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid var(--border-strong)",
+                      background: "var(--bg-subtle)",
+                      color: "var(--text-primary)",
                       fontWeight: 700,
-                      fontSize: "11px",
+                      fontSize: "11.5px",
                       cursor: "pointer",
                       whiteSpace: "nowrap",
                     }}
@@ -1040,9 +1040,9 @@ export default function Home() {
                   value={form.mappedBy}
                   readOnly
                   disabled
-                  style={{ background: "var(--canvas)", color: "var(--forest-950)", fontWeight: 650, cursor: "not-allowed" }}
+                  style={{ background: "var(--bg-subtle)", color: "var(--text-muted)", fontWeight: 650, cursor: "not-allowed" }}
                 />
-                <small style={{ color: "var(--subtle)" }}>Definido pelo seu perfil de login.</small>
+                <small style={{ color: "var(--text-muted)" }}>Definido pelo seu perfil de login.</small>
               </label>
             </div>
           </article>
