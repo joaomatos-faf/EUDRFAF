@@ -811,156 +811,82 @@ export default function CloudStoragePage() {
         transition: "background 0.25s ease, color 0.25s ease",
       }}
     >
-      {/* Top Header */}
+      {/* Apple-style Global Nav Header */}
       <header
         style={{
           position: "sticky",
           top: 0,
-          zIndex: 40,
+          zIndex: 100,
           background: "var(--bg-header)",
-          backdropFilter: "blur(12px)",
-          borderBottom: "1px solid var(--border-hairline)",
-          padding: "0 28px",
-          height: "72px",
+          backdropFilter: "saturate(180%) blur(20px)",
+          WebkitBackdropFilter: "saturate(180%) blur(20px)",
+          borderBottom: "0.5px solid var(--border-hairline)",
+          height: "50px",
           display: "flex",
           alignItems: "center",
+          padding: "0 32px",
           justifyContent: "space-between",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <img
             src="/faf-logo-transparent.png"
             alt="FAF Coffees"
-            style={{ height: "40px", width: "auto", objectFit: "contain", display: "block" }}
+            style={{ height: "26px", width: "auto", objectFit: "contain", display: "block" }}
           />
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span
-                style={{
-                  color: "var(--brand-ochre)",
-                  fontSize: "11px",
-                  fontWeight: 800,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                }}
-              >
-                CLOUD.FAFEU.ONLINE
-              </span>
-              <span
-                style={{
-                  background: "var(--status-danger-bg)",
-                  color: "var(--brand-crimson)",
-                  fontSize: "10px",
-                  fontWeight: 800,
-                  padding: "2px 8px",
-                  borderRadius: "4px",
-                  border: "1px solid rgba(166, 38, 29, 0.2)",
-                }}
-              >
-                R2 BUCKET
-              </span>
-            </div>
-            <h1
-              style={{
-                margin: 0,
-                fontSize: "17px",
-                fontWeight: 750,
-                color: "var(--text-primary)",
-                letterSpacing: "-0.01em",
-              }}
-            >
-              FAF Cloud Storage · Repositório Regional
-            </h1>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <ThemeToggle />
-
-          {/* User Profile Badge */}
-          <div
+          <span
             style={{
-              background: isDark ? "rgba(38, 18, 14, 0.9)" : "rgba(250, 238, 231, 0.9)",
-              border: "1px solid rgba(209, 160, 104, 0.3)",
-              borderRadius: "8px",
-              padding: "5px 12px",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-          >
-            <span style={{ fontSize: "14px" }}>👤</span>
-            <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: "12px", fontWeight: 700, color: "#ffffff", lineHeight: 1.2 }}>
-                {userMgmt.loggedUserName || userMgmt.loggedUserKey}
-              </div>
-              <div style={{ fontSize: "10px", fontWeight: 800, color: "#dfa84a", textTransform: "uppercase" }}>
-                {userMgmt.loggedUserRole === "admin" ? "ADMINISTRADOR FAF" : "OPERADOR FAF"}
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={() => {
-              setUploadFolder(currentPath);
-              setShowUploadModal(true);
-            }}
-            style={{
-              background: "#10b981",
-              color: "#042f2e",
-              border: "none",
-              borderRadius: "8px",
-              padding: "8px 16px",
-              fontSize: "13px",
-              fontWeight: 800,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              boxShadow: "0 2px 10px rgba(16, 185, 129, 0.3)",
-            }}
-          >
-            ⬆️ Novo Upload
-          </button>
-
-          <button
-            onClick={fetchFiles}
-            disabled={loading}
-            style={{
-              background: "rgba(255, 255, 255, 0.08)",
-              border: "1px solid rgba(255, 255, 255, 0.15)",
-              color: "#e2e8f0",
-              borderRadius: "8px",
-              padding: "8px 14px",
               fontSize: "13px",
               fontWeight: 700,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
+              color: "var(--text-primary)",
+              letterSpacing: "-0.01em",
             }}
           >
-            🔄 {loading ? "Atualizando..." : "Recarregar"}
-          </button>
+            Cloud Storage R2
+          </span>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <ThemeToggle />
+
+          <span
+            style={{
+              fontSize: "12px",
+              fontWeight: 600,
+              color: "var(--text-secondary)",
+            }}
+          >
+            {userMgmt.loggedUserKey}
+          </span>
+
+          <a
+            href="https://fafeu.online"
+            style={{
+              background: "var(--brand-crimson)",
+              color: "#ffffff",
+              padding: "6px 14px",
+              borderRadius: "999px",
+              fontSize: "12px",
+              fontWeight: 600,
+              boxShadow: "var(--shadow-button)",
+              transition: "all 0.15s ease",
+            }}
+          >
+            Início
+          </a>
 
           <button
             onClick={userMgmt.handleLogout}
-            title="Sair"
             style={{
-              background: "rgba(239, 68, 68, 0.15)",
-              border: "1px solid rgba(239, 68, 68, 0.3)",
-              color: "#fca5a5",
-              borderRadius: "8px",
-              padding: "8px 14px",
-              fontSize: "13px",
-              fontWeight: 700,
+              background: "transparent",
+              border: "none",
+              color: "var(--text-muted)",
+              fontSize: "12px",
+              fontWeight: 600,
               cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
             }}
           >
-            🚪 Sair
+            Sair
           </button>
         </div>
       </header>

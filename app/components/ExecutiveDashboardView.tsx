@@ -181,13 +181,13 @@ export default function ExecutiveDashboardView({
   return (
     <div
       style={{
-        maxWidth: "1600px",
+        maxWidth: "1400px",
         margin: "0 auto",
-        padding: "20px 24px 60px",
+        padding: "32px 32px 80px",
         color: "var(--text-primary)",
       }}
     >
-      {/* Header Executivo com Identidade FAF */}
+      {/* Header Executivo Minimalista */}
       <div
         style={{
           display: "flex",
@@ -195,46 +195,37 @@ export default function ExecutiveDashboardView({
           alignItems: "center",
           flexWrap: "wrap",
           gap: "16px",
-          marginBottom: "24px",
-          background: "var(--bg-surface)",
-          padding: "20px 24px",
-          borderRadius: "12px",
-          border: "1px solid var(--border-hairline)",
-          boxShadow: "var(--shadow-subtle)",
+          marginBottom: "36px",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
-          <img
-            src="/faf-symbol.png"
-            alt="FAF Coffees"
-            style={{ height: "44px", width: "auto", objectFit: "contain", display: "block" }}
-          />
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
-              <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
-                Dashboard Executivo · Conformidade EUDR & Métricas
-              </h2>
-              <span
-                style={{
-                  background: "var(--status-success-bg)",
-                  color: "var(--status-success)",
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  padding: "3px 8px",
-                  borderRadius: "4px",
-                  border: "1px solid rgba(27, 122, 67, 0.2)",
-                }}
-              >
-                ● DADOS EM TEMPO REAL
-              </span>
-            </div>
-            <p style={{ margin: 0, fontSize: "13px", color: "var(--text-secondary)" }}>
-              Monitoramento geoespacial de cafezais certificados, regulamento (UE 2023/1115) e auditoria de talhões FAF Coffees.
-            </p>
-          </div>
+        <div>
+          <span
+            style={{
+              fontSize: "12px",
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "var(--brand-crimson)",
+              display: "block",
+              marginBottom: "4px",
+            }}
+          >
+            Analytics & Conformidade EUDR
+          </span>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: "32px",
+              fontWeight: 800,
+              letterSpacing: "-0.03em",
+              color: "var(--text-primary)",
+            }}
+          >
+            Dashboard Executivo
+          </h1>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
           <ThemeToggle />
 
           <button
@@ -242,126 +233,78 @@ export default function ExecutiveDashboardView({
             style={{
               background: "var(--brand-crimson)",
               color: "#ffffff",
-              border: "1px solid var(--brand-crimson-dark)",
-              borderRadius: "8px",
-              padding: "9px 16px",
-              fontSize: "12.5px",
-              fontWeight: 750,
+              border: "none",
+              borderRadius: "999px",
+              padding: "8px 18px",
+              fontSize: "13px",
+              fontWeight: 600,
               cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              boxShadow: "0 2px 6px rgba(166, 38, 29, 0.2)",
-              transition: "background-color 0.15s ease",
+              boxShadow: "var(--shadow-button)",
+              transition: "all 0.15s ease",
             }}
           >
-            📥 Exportar Relatório CSV
+            Exportar CSV
           </button>
         </div>
       </div>
 
-      {/* Grid de KPIs Principais */}
+      {/* Open Typographic Metrics Strip (Zero Boxes) */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-          gap: "16px",
-          marginBottom: "24px",
+          display: "flex",
+          alignItems: "center",
+          gap: "56px",
+          flexWrap: "wrap",
+          paddingBottom: "36px",
+          marginBottom: "40px",
+          borderBottom: "1px solid var(--border-hairline)",
         }}
       >
-        {/* Card 1: Hectares */}
-        <div
-          style={{
-            background: "var(--bg-surface)",
-            border: "1px solid var(--border-hairline)",
-            borderRadius: "10px",
-            padding: "20px",
-            boxShadow: "var(--shadow-subtle)",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-            <span style={{ fontSize: "11px", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.8px" }}>
-              Área Total Certificada
-            </span>
-            <span style={{ fontSize: "18px" }}>🌳</span>
-          </div>
-          <div style={{ fontSize: "26px", fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.1 }}>
-            {stats.totalHectares.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} <span style={{ fontSize: "15px", color: "var(--brand-crimson)", fontWeight: 700 }}>ha</span>
-          </div>
-          <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block", marginTop: "6px" }}>
-            Distribuição em {stats.totalPlots} talhões poligonais
+        <div>
+          <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>
+            Área Total Certificada
+          </span>
+          <strong style={{ fontSize: "32px", fontWeight: 900, color: "var(--text-primary)", display: "block", marginTop: "2px" }}>
+            {stats.totalHectares.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} <span style={{ fontSize: "16px", color: "var(--brand-crimson)", fontWeight: 700 }}>ha</span>
+          </strong>
+          <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+            {stats.totalPlots} talhões poligonais
           </span>
         </div>
 
-        {/* Card 2: Produtores */}
-        <div
-          style={{
-            background: "var(--bg-surface)",
-            border: "1px solid var(--border-hairline)",
-            borderRadius: "10px",
-            padding: "20px",
-            boxShadow: "var(--shadow-subtle)",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-            <span style={{ fontSize: "11px", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.8px" }}>
-              Produtores & Fazendas
-            </span>
-            <span style={{ fontSize: "18px" }}>👨‍🌾</span>
-          </div>
-          <div style={{ fontSize: "26px", fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.1 }}>
-            {stats.uniqueProducers} <span style={{ fontSize: "15px", color: "var(--text-secondary)", fontWeight: 700 }}>produtores</span>
-          </div>
-          <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block", marginTop: "6px" }}>
-            {stats.uniqueFarms} fazendas em {stats.uniqueRegions.length} regiões cafeeiras
+        <div>
+          <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>
+            Produtores & Fazendas
+          </span>
+          <strong style={{ fontSize: "32px", fontWeight: 900, color: "var(--text-primary)", display: "block", marginTop: "2px" }}>
+            {stats.uniqueProducers}
+          </strong>
+          <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+            {stats.uniqueFarms} fazendas ativas
           </span>
         </div>
 
-        {/* Card 3: Conformidade */}
-        <div
-          style={{
-            background: "var(--bg-surface)",
-            border: "1px solid var(--border-hairline)",
-            borderRadius: "10px",
-            padding: "20px",
-            boxShadow: "var(--shadow-subtle)",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-            <span style={{ fontSize: "11px", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.8px" }}>
-              Conformidade EUDR
-            </span>
-            <span style={{ fontSize: "18px" }}>🛡️</span>
-          </div>
-          <div style={{ fontSize: "26px", fontWeight: 800, color: "var(--status-success)", lineHeight: 1.1 }}>
-            100% <span style={{ fontSize: "15px", color: "var(--status-success)", fontWeight: 700 }}>Conforme</span>
-          </div>
-          <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block", marginTop: "6px" }}>
-            Zero desmatamento pós-31/12/2020 (MapBiomas + GFW)
+        <div>
+          <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>
+            Conformidade EUDR
+          </span>
+          <strong style={{ fontSize: "32px", fontWeight: 900, color: "var(--status-success)", display: "block", marginTop: "2px" }}>
+            100%
+          </strong>
+          <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+            Zero desmatamento pós-2020
           </span>
         </div>
 
-        {/* Card 4: Sacas Estimadas */}
-        <div
-          style={{
-            background: "var(--bg-surface)",
-            border: "1px solid var(--border-hairline)",
-            borderRadius: "10px",
-            padding: "20px",
-            boxShadow: "var(--shadow-subtle)",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-            <span style={{ fontSize: "11px", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.8px" }}>
-              Potencial Produtivo
-            </span>
-            <span style={{ fontSize: "18px" }}>☕</span>
-          </div>
-          <div style={{ fontSize: "26px", fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.1 }}>
-            ~{stats.estimatedBags.toLocaleString("pt-BR")} <span style={{ fontSize: "15px", color: "var(--brand-ochre)", fontWeight: 700 }}>sacas</span>
-          </div>
-          <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block", marginTop: "6px" }}>
-            {stats.totalContracts} contratos cadastrados no sistema
+        <div>
+          <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>
+            Potencial Produtivo
+          </span>
+          <strong style={{ fontSize: "32px", fontWeight: 900, color: "var(--text-primary)", display: "block", marginTop: "2px" }}>
+            ~{stats.estimatedBags.toLocaleString("pt-BR")} <span style={{ fontSize: "16px", color: "var(--brand-gold)", fontWeight: 700 }}>sc</span>
+          </strong>
+          <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+            {stats.totalContracts} contratos vinculados
           </span>
         </div>
       </div>

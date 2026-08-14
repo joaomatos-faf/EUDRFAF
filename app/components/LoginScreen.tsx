@@ -31,15 +31,15 @@ export function LoginScreen({
   loginError,
   onLogin,
   onBackToLanding,
-  title = "Autenticação Corporativa",
+  title = "Iniciar Sessão",
   eyebrow = "FAF Coffees · Sustentabilidade",
-  subtitle = "Informe suas credenciais para gerenciar contratos, talhões e conformidade EUDR.",
-  buttonText = "Entrar no Sistema ➔",
+  subtitle = "Informe suas credenciais para acessar a plataforma geoespacial EUDR.",
+  buttonText = "Continuar ›",
   userLabel = "Usuário",
   passLabel = "Senha",
-  userPlaceholder = "Digite seu usuário",
-  passPlaceholder = "Digite sua senha",
-  backText = "← Voltar à Página Inicial",
+  userPlaceholder = "ex: joao",
+  passPlaceholder = "••••••••",
+  backText = "‹ Voltar ao Início",
 }: LoginScreenProps) {
   const { isDark } = useTheme();
 
@@ -79,11 +79,11 @@ export function LoginScreen({
       <div
         style={{
           width: "100%",
-          maxWidth: "420px",
+          maxWidth: "380px",
           background: "var(--bg-surface)",
-          border: "1px solid var(--border-strong)",
-          borderRadius: "12px",
-          padding: "36px 32px",
+          border: "0.5px solid var(--border-hairline)",
+          borderRadius: "24px",
+          padding: "40px 32px",
           boxShadow: "var(--shadow-card)",
         }}
       >
@@ -91,16 +91,12 @@ export function LoginScreen({
           <button
             onClick={handleBack}
             style={{
-              background: "transparent",
-              border: "none",
-              color: "var(--brand-ochre)",
-              fontSize: "12.5px",
-              fontWeight: 700,
-              cursor: "pointer",
+              color: "var(--brand-crimson)",
+              fontSize: "13px",
+              fontWeight: 600,
               display: "inline-flex",
               alignItems: "center",
-              gap: "6px",
-              marginBottom: "20px",
+              marginBottom: "24px",
               padding: 0,
             }}
           >
@@ -108,36 +104,23 @@ export function LoginScreen({
           </button>
         )}
 
-        <div style={{ textAlign: "center", marginBottom: "24px" }}>
+        <div style={{ textAlign: "center", marginBottom: "28px" }}>
           <img
             src="/faf-logo-transparent.png"
             alt="FAF Coffees"
             style={{
-              height: "56px",
+              height: "44px",
               width: "auto",
               objectFit: "contain",
-              margin: "0 auto 14px",
+              margin: "0 auto 16px",
               display: "block",
             }}
           />
-          <span
-            style={{
-              display: "block",
-              fontSize: "10.5px",
-              fontWeight: 800,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              color: "var(--brand-ochre)",
-              marginBottom: "4px",
-            }}
-          >
-            {eyebrow}
-          </span>
           <h1
             style={{
-              fontSize: "20px",
-              fontWeight: 800,
-              letterSpacing: "-0.01em",
+              fontSize: "22px",
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
               color: "var(--text-primary)",
               margin: "0 0 6px",
             }}
@@ -149,7 +132,7 @@ export function LoginScreen({
               fontSize: "13px",
               color: "var(--text-secondary)",
               margin: 0,
-              lineHeight: "1.5",
+              lineHeight: 1.45,
             }}
           >
             {subtitle}
@@ -163,7 +146,7 @@ export function LoginScreen({
               flexDirection: "column",
               gap: "6px",
               fontSize: "12px",
-              fontWeight: 700,
+              fontWeight: 600,
               color: "var(--text-primary)",
             }}
           >
@@ -176,11 +159,11 @@ export function LoginScreen({
               autoFocus
               required
               style={{
-                padding: "10px 14px",
-                borderRadius: "8px",
-                border: "1px solid var(--border-strong)",
+                padding: "11px 14px",
+                borderRadius: "10px",
+                border: "0.5px solid var(--border-strong)",
                 outline: "none",
-                fontSize: "13.5px",
+                fontSize: "14px",
                 background: "var(--bg-surface)",
                 color: "var(--text-primary)",
               }}
@@ -193,7 +176,7 @@ export function LoginScreen({
               flexDirection: "column",
               gap: "6px",
               fontSize: "12px",
-              fontWeight: 700,
+              fontWeight: 600,
               color: "var(--text-primary)",
             }}
           >
@@ -205,11 +188,11 @@ export function LoginScreen({
               placeholder={passPlaceholder}
               required
               style={{
-                padding: "10px 14px",
-                borderRadius: "8px",
-                border: "1px solid var(--border-strong)",
+                padding: "11px 14px",
+                borderRadius: "10px",
+                border: "0.5px solid var(--border-strong)",
                 outline: "none",
-                fontSize: "13.5px",
+                fontSize: "14px",
                 background: "var(--bg-surface)",
                 color: "var(--text-primary)",
               }}
@@ -221,11 +204,10 @@ export function LoginScreen({
               style={{
                 color: "var(--status-danger)",
                 background: "var(--status-danger-bg)",
-                border: "1px solid rgba(166, 38, 29, 0.3)",
-                padding: "8px 12px",
-                borderRadius: "6px",
+                padding: "10px 14px",
+                borderRadius: "8px",
                 fontSize: "12.5px",
-                fontWeight: 650,
+                fontWeight: 600,
                 textAlign: "center",
               }}
             >
@@ -238,16 +220,16 @@ export function LoginScreen({
             style={{
               width: "100%",
               padding: "12px",
-              marginTop: "6px",
-              fontSize: "13.5px",
-              fontWeight: 750,
-              borderRadius: "8px",
+              marginTop: "8px",
+              fontSize: "14px",
+              fontWeight: 600,
+              borderRadius: "999px",
               background: "var(--brand-crimson)",
               color: "#ffffff",
-              border: "1px solid var(--brand-crimson-dark)",
+              border: "none",
               cursor: "pointer",
-              boxShadow: "0 2px 6px rgba(166, 38, 29, 0.2)",
-              transition: "background-color 0.15s ease",
+              boxShadow: "var(--shadow-button)",
+              transition: "all 0.15s ease",
             }}
           >
             {buttonText}

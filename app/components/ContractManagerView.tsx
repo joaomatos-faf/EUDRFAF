@@ -717,96 +717,73 @@ export function ContractManagerView({
         transition: "background 0.25s ease, color 0.25s ease",
       }}
     >
-      {/* Top Corporate Navbar */}
+      {/* Apple-style Global Nav Header */}
       <header
         style={{
           position: "sticky",
           top: 0,
-          zIndex: 40,
+          zIndex: 100,
           background: "var(--bg-header)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          color: "var(--text-primary)",
-          padding: "0 max(28px, calc((100vw - 1480px) / 2))",
-          height: "72px",
+          backdropFilter: "saturate(180%) blur(20px)",
+          WebkitBackdropFilter: "saturate(180%) blur(20px)",
+          borderBottom: "0.5px solid var(--border-hairline)",
+          height: "50px",
           display: "flex",
           alignItems: "center",
+          padding: "0 32px",
           justifyContent: "space-between",
-          borderBottom: "1px solid var(--border-hairline)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <img
             src="/faf-logo-transparent.png"
             alt="FAF Coffees"
             style={{
-              height: "40px",
+              height: "26px",
               width: "auto",
               objectFit: "contain",
               display: "block",
             }}
           />
-          <div>
-            <p
-              style={{
-                margin: "0 0 2px",
-                color: "var(--brand-ochre)",
-                fontSize: "10.5px",
-                fontWeight: 800,
-                letterSpacing: ".12em",
-                textTransform: "uppercase",
-              }}
-            >
-              FAF COFFEES • GESTÃO DE CONTRATOS & CLOUDFLARE R2
-            </p>
-            <h1
-              style={{
-                margin: 0,
-                color: "var(--text-primary)",
-                fontSize: "17px",
-                fontWeight: 750,
-                letterSpacing: "-.01em",
-              }}
-            >
-              Gestão de Contratos e Importadores
-            </h1>
-          </div>
+          <span
+            style={{
+              fontSize: "13px",
+              fontWeight: 700,
+              color: "var(--text-primary)",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            Gestão de Contratos
+          </span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <ThemeToggle />
 
           <span
             style={{
               color: "var(--text-secondary)",
               fontSize: "12px",
-              fontWeight: 650,
-              background: "var(--bg-surface)",
-              padding: "5px 12px",
-              borderRadius: "6px",
-              border: "1px solid var(--border-hairline)",
+              fontWeight: 600,
             }}
           >
-            👤 {loggedUserKey}
+            {loggedUserKey}
           </span>
 
           {onOpenDashboard && (
             <button
               onClick={onOpenDashboard}
               style={{
-                background: "var(--bg-surface)",
-                border: "1px solid var(--border-strong)",
-                color: "var(--text-primary)",
-                padding: "6px 14px",
-                borderRadius: "6px",
-                fontSize: "12px",
-                fontWeight: 700,
+                background: "transparent",
+                border: "none",
+                color: "var(--text-secondary)",
+                fontSize: "12.5px",
+                fontWeight: 550,
                 cursor: "pointer",
-                boxShadow: "var(--shadow-subtle)",
-                transition: "all 0.15s ease",
+                transition: "color 0.15s ease",
               }}
             >
-              📊 Dashboard & Métricas
+              Dashboard
             </button>
           )}
 
@@ -815,18 +792,18 @@ export function ContractManagerView({
             title="Voltar para a página principal (fafeu.online)"
             style={{
               background: "var(--brand-crimson)",
-              border: "1px solid var(--brand-crimson-dark)",
+              border: "none",
               color: "#ffffff",
               padding: "6px 14px",
-              borderRadius: "6px",
+              borderRadius: "999px",
               fontSize: "12px",
-              fontWeight: 750,
+              fontWeight: 600,
               cursor: "pointer",
-              boxShadow: "0 2px 6px rgba(166, 38, 29, 0.2)",
+              boxShadow: "var(--shadow-button)",
               transition: "all 0.15s ease",
             }}
           >
-            🏠 Voltar ao Início
+            Início
           </button>
         </div>
       </header>
@@ -834,210 +811,86 @@ export function ContractManagerView({
       {/* Main Content Area */}
       <main
         style={{
-          maxWidth: "1480px",
+          maxWidth: "1400px",
           margin: "0 auto",
-          padding: "28px 24px 80px",
+          padding: "48px 32px 80px",
+          width: "100%",
         }}
       >
-        {/* KPI Metrics Strip */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "16px",
-            marginBottom: "24px",
-          }}
-        >
-          <div
+        {/* Open Minimalist Header & Metrics */}
+        <div style={{ marginBottom: "40px" }}>
+          <span
             style={{
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border-hairline)",
-              padding: "18px 22px",
-              borderRadius: "10px",
-              boxShadow: "var(--shadow-subtle)",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              fontSize: "12px",
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "var(--brand-crimson)",
+              display: "block",
+              marginBottom: "4px",
             }}
           >
-            <div>
-              <span
-                style={{
-                  fontSize: "10.5px",
-                  fontWeight: 800,
-                  color: "var(--text-muted)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                }}
-              >
-                Total de Contratos Ativos
-              </span>
-              <div
-                style={{
-                  fontSize: "24px",
-                  fontWeight: 800,
-                  color: "var(--text-primary)",
-                  marginTop: "4px",
-                }}
-              >
-                {contracts.length}{" "}
-                <span
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  contratos
-                </span>
-              </div>
-            </div>
-            <div
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "8px",
-                background: "var(--bg-subtle)",
-                display: "grid",
-                placeItems: "center",
-                fontSize: "18px",
-                border: "1px solid var(--border-hairline)",
-              }}
-            >
-              📄
-            </div>
-          </div>
+            Ledger Executivo
+          </span>
+          <h1
+            style={{
+              fontSize: "32px",
+              fontWeight: 800,
+              letterSpacing: "-0.03em",
+              color: "var(--text-primary)",
+              margin: "0 0 28px",
+            }}
+          >
+            Contratos e Importadores
+          </h1>
 
+          {/* Open Metrics Strip (Zero Boxes, Pure Typographic Numbers) */}
           <div
             style={{
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border-hairline)",
-              padding: "18px 22px",
-              borderRadius: "10px",
-              boxShadow: "var(--shadow-subtle)",
               display: "flex",
-              justifyContent: "space-between",
               alignItems: "center",
+              gap: "48px",
+              flexWrap: "wrap",
+              paddingBottom: "32px",
+              borderBottom: "1px solid var(--border-hairline)",
             }}
           >
             <div>
-              <span
-                style={{
-                  fontSize: "10.5px",
-                  fontWeight: 800,
-                  color: "var(--text-muted)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                }}
-              >
-                Lotes Mapeados & Validados
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>
+                Contratos Ativos
               </span>
-              <div
-                style={{
-                  fontSize: "24px",
-                  fontWeight: 800,
-                  color: "var(--text-primary)",
-                  marginTop: "4px",
-                }}
-              >
-                {contracts.reduce(
-                  (acc, c) => acc + (c.lots ? c.lots.length : 0),
-                  0
-                )}{" "}
-                <span
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  lotes
-                </span>
-              </div>
+              <strong style={{ fontSize: "28px", fontWeight: 900, color: "var(--text-primary)", display: "block", marginTop: "2px" }}>
+                {contracts.length}
+              </strong>
             </div>
-            <div
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "8px",
-                background: "var(--bg-subtle)",
-                display: "grid",
-                placeItems: "center",
-                fontSize: "18px",
-                border: "1px solid var(--border-hairline)",
-              }}
-            >
-              📦
-            </div>
-          </div>
 
-          <div
-            style={{
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border-hairline)",
-              padding: "18px 22px",
-              borderRadius: "10px",
-              boxShadow: "var(--shadow-subtle)",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
             <div>
-              <span
-                style={{
-                  fontSize: "10.5px",
-                  fontWeight: 800,
-                  color: "var(--text-muted)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                }}
-              >
-                Cloudflare R2 Storage
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>
+                Lotes Mapeados
               </span>
-              <div
-                style={{
-                  fontSize: "24px",
-                  fontWeight: 800,
-                  color: "var(--brand-ochre)",
-                  marginTop: "4px",
-                }}
-              >
+              <strong style={{ fontSize: "28px", fontWeight: 900, color: "var(--brand-crimson)", display: "block", marginTop: "2px" }}>
+                {contracts.reduce((acc, c) => acc + (c.lots ? c.lots.length : 0), 0)}
+              </strong>
+            </div>
+
+            <div>
+              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>
+                Talhões com Polígono WGS84
+              </span>
+              <strong style={{ fontSize: "28px", fontWeight: 900, color: "var(--status-success)", display: "block", marginTop: "2px" }}>
                 {contracts.reduce(
                   (acc, c) =>
                     acc +
                     (c.lots
                       ? c.lots.reduce(
-                          (pAcc, l) => pAcc + (l.plots ? l.plots.length : 0),
+                          (lAcc, l) =>
+                            lAcc + (l.plots ? l.plots.filter((p) => p.plotId || p.targetGeojsonKey).length : 0),
                           0
                         )
                       : 0),
                   0
-                )}{" "}
-                <span
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: 600,
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  talhões EUDR
-                </span>
-              </div>
-            </div>
-            <div
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "8px",
-                background: "var(--bg-subtle)",
-                display: "grid",
-                placeItems: "center",
-                fontSize: "18px",
-                border: "1px solid var(--border-hairline)",
-              }}
-            >
-              ☁️
+                )}
+              </strong>
             </div>
           </div>
         </div>
