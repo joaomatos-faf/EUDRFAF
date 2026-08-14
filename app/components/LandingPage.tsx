@@ -214,25 +214,31 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal, onOpenDashboard 
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => onOpenFafApp?.()}
+            <a
+              href="https://app.fafeu.online"
+              onClick={(e) => {
+                if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
+                  e.preventDefault();
+                  onOpenFafApp?.();
+                }
+              }}
               style={{
-                width: "100%",
                 padding: "14px 20px",
                 fontSize: "14px",
                 fontWeight: 800,
                 borderRadius: "12px",
                 background: "linear-gradient(135deg, #bd2820 0%, #8d1b15 100%)",
                 color: "#ffffff",
+                textDecoration: "none",
+                textAlign: "center",
+                display: "block",
                 border: "1px solid rgba(209, 160, 104, 0.3)",
                 boxShadow: "0 8px 24px rgba(189, 40, 32, 0.35)",
-                cursor: "pointer",
                 transition: "all 0.2s ease",
               }}
             >
               🔒 Acessar Sistema FAF ➔
-            </button>
+            </a>
           </div>
 
           {/* Card 2: Importers & Clients Portal */}
@@ -274,25 +280,31 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal, onOpenDashboard 
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => onOpenClientPortal?.()}
+            <a
+              href="https://portal.fafeu.online"
+              onClick={(e) => {
+                if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
+                  e.preventDefault();
+                  onOpenClientPortal?.();
+                }
+              }}
               style={{
-                width: "100%",
                 padding: "14px 20px",
                 fontSize: "14px",
                 fontWeight: 800,
                 borderRadius: "12px",
                 background: "linear-gradient(135deg, #d1a068 0%, #a8793e 100%)",
                 color: "#1a0f0d",
+                textDecoration: "none",
+                textAlign: "center",
+                display: "block",
                 border: "1px solid rgba(255, 255, 255, 0.2)",
                 boxShadow: "0 8px 24px rgba(209, 160, 104, 0.3)",
-                cursor: "pointer",
                 transition: "all 0.2s ease",
               }}
             >
               🌐 Acessar Portal do Cliente ➔
-            </button>
+            </a>
           </div>
 
           {/* Card 3: Cloudflare R2 Storage */}

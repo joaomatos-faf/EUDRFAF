@@ -17,7 +17,20 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 1. Suporte a subdomínio cloud.fafeu.online
+  // 1. Suporte a subdomínio app.fafeu.online ou preparador.fafeu.online
+  if (hostname.startsWith("app.") || hostname.startsWith("preparador.")) {
+    if (pathname === "/landing" || request.nextUrl.searchParams.get("view") === "landing") {
+      return NextResponse.redirect(new URL("https://fafeu.online", request.url), 301);
+    }
+    if (pathname === "/") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      url.searchParams.set("view", "app");
+      return NextResponse.rewrite(url);
+    }
+  }
+
+  // 2. Suporte a subdomínio cloud.fafeu.online
   if (hostname.startsWith("cloud.")) {
     if (pathname === "/cloud") {
       const url = request.nextUrl.clone();
@@ -36,7 +49,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // 2. Suporte a subdomínio contratos.fafeu.online
+  // 3. Suporte a subdomínio contratos.fafeu.online
   if (hostname.startsWith("contratos.")) {
     if (pathname === "/landing" || request.nextUrl.searchParams.get("view") === "landing") {
       return NextResponse.redirect(new URL("https://fafeu.online", request.url), 301);
@@ -49,7 +62,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // 3. Suporte a subdomínio portal.fafeu.online ou cliente.fafeu.online
+  // 4. Suporte a subdomínio portal.fafeu.online ou cliente.fafeu.online
   if (hostname.startsWith("portal.") || hostname.startsWith("cliente.")) {
     if (pathname === "/landing" || request.nextUrl.searchParams.get("view") === "landing") {
       return NextResponse.redirect(new URL("https://fafeu.online", request.url), 301);
