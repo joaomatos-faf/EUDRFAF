@@ -31,19 +31,23 @@ export function EudrHeader({
 }: EudrHeaderProps) {
   return (
     <header className="topbar">
-      <div className="brand-lockup">
+      <div className="brand-lockup" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
         <img
-          src="/faf-symbol.png"
+          src="/faf-logo-transparent.png"
           alt="FAF Coffees"
-          style={{ height: "36px", width: "auto", objectFit: "contain", display: "block" }}
+          style={{ height: "42px", width: "auto", objectFit: "contain", display: "block" }}
         />
         <div>
-          <p className="eyebrow">FAF COFFEES · SUSTENTABILIDADE & CONFORMIDADE</p>
-          <h1>Preparador de Dossiê EUDR</h1>
+          <p className="eyebrow" style={{ color: "#dfa84a", fontSize: "10.5px", fontWeight: 800, margin: "0 0 2px" }}>
+            FAF COFFEES · SUSTENTABILIDADE & CONFORMIDADE
+          </p>
+          <h1 style={{ fontSize: "17px", fontWeight: 700, margin: 0, color: "#ffffff" }}>
+            Preparador de Dossiê EUDR
+          </h1>
         </div>
       </div>
 
-      <div className="topbar-actions">
+      <div className="topbar-actions" style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
         <span className="privacy-pill">
           <span></span>Privacidade local ativada
         </span>
@@ -52,14 +56,15 @@ export function EudrHeader({
           <button
             onClick={onOpenLanding}
             style={{
-              background: "rgba(255, 255, 255, 0.12)",
-              border: "1px solid rgba(255, 255, 255, 0.22)",
-              color: "#e7f0eb",
+              background: "rgba(255, 255, 255, 0.08)",
+              border: "1px solid rgba(209, 160, 104, 0.25)",
+              color: "#fcf9f5",
               borderRadius: "8px",
-              padding: "7px 12px",
+              padding: "7px 14px",
               fontSize: "12px",
-              fontWeight: 600,
+              fontWeight: 700,
               cursor: "pointer",
+              transition: "all 0.2s ease",
             }}
           >
             🏠 Início
@@ -70,14 +75,15 @@ export function EudrHeader({
           <button
             onClick={onOpenDashboard}
             style={{
-              background: "rgba(52, 211, 153, 0.18)",
-              border: "1px solid rgba(52, 211, 153, 0.35)",
-              color: "#6ee7b7",
+              background: "linear-gradient(135deg, rgba(209, 160, 104, 0.2), rgba(189, 40, 32, 0.15))",
+              border: "1px solid rgba(209, 160, 104, 0.4)",
+              color: "#dfa84a",
               borderRadius: "8px",
-              padding: "7px 12px",
+              padding: "7px 14px",
               fontSize: "12px",
-              fontWeight: 700,
+              fontWeight: 800,
               cursor: "pointer",
+              transition: "all 0.2s ease",
             }}
           >
             📊 Dashboard & Métricas
@@ -90,14 +96,15 @@ export function EudrHeader({
               <button
                 onClick={onNewProcess}
                 style={{
-                  background: "rgba(255, 255, 255, 0.12)",
-                  border: "1px solid rgba(255, 255, 255, 0.22)",
-                  color: "#e7f0eb",
+                  background: "linear-gradient(135deg, #bd2820, #8d1b15)",
+                  border: "1px solid rgba(209, 160, 104, 0.3)",
+                  color: "#ffffff",
                   borderRadius: "8px",
-                  padding: "7px 12px",
+                  padding: "7px 14px",
                   fontSize: "12px",
-                  fontWeight: 600,
+                  fontWeight: 800,
                   cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(189, 40, 32, 0.3)",
                 }}
               >
                 + Novo Processo
@@ -108,11 +115,11 @@ export function EudrHeader({
               <button
                 onClick={onOpenLogsModal}
                 style={{
-                  background: "rgba(255, 255, 255, 0.12)",
-                  border: "1px solid rgba(255, 255, 255, 0.22)",
-                  color: "#e7f0eb",
+                  background: "rgba(255, 255, 255, 0.08)",
+                  border: "1px solid rgba(209, 160, 104, 0.25)",
+                  color: "#fcf9f5",
                   borderRadius: "8px",
-                  padding: "7px 12px",
+                  padding: "7px 14px",
                   fontSize: "12px",
                   fontWeight: 600,
                   cursor: "pointer",
@@ -126,14 +133,15 @@ export function EudrHeader({
               <button
                 onClick={onOpenAdminModal}
                 style={{
-                  background: "#eab308",
-                  color: "#1c1917",
+                  background: "linear-gradient(135deg, #d1a068, #a8793e)",
+                  color: "#1a0f0d",
                   border: "none",
                   borderRadius: "8px",
-                  padding: "7px 12px",
+                  padding: "7px 14px",
                   fontSize: "12px",
-                  fontWeight: 700,
+                  fontWeight: 800,
                   cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(209, 160, 104, 0.3)",
                 }}
               >
                 ⚙️ Gerenciar Usuários
@@ -143,13 +151,13 @@ export function EudrHeader({
             <button
               onClick={onLogout}
               style={{
-                background: "rgba(239, 68, 68, 0.2)",
-                border: "1px solid rgba(239, 68, 68, 0.4)",
+                background: "rgba(189, 40, 32, 0.15)",
+                border: "1px solid rgba(189, 40, 32, 0.35)",
                 color: "#fca5a5",
                 borderRadius: "8px",
                 padding: "7px 12px",
                 fontSize: "12px",
-                fontWeight: 600,
+                fontWeight: 700,
                 cursor: "pointer",
               }}
             >

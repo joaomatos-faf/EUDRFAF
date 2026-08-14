@@ -562,45 +562,46 @@ export default function CloudStoragePage() {
       <div
         style={{
           minHeight: "100vh",
-          background: "radial-gradient(circle at top, #0f2b20 0%, #060f0b 100%)",
+          background: "radial-gradient(ellipse at 50% 0%, #28120e 0%, #160a08 50%, #0a0403 100%)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           padding: "24px",
-          fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif",
-          color: "#f1f5f9",
+          fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+          color: "#fcf9f5",
         }}
       >
         <div
           style={{
-            background: "rgba(11, 29, 23, 0.95)",
-            border: "1px solid rgba(52, 211, 153, 0.35)",
-            borderRadius: "20px",
+            background: "linear-gradient(150deg, rgba(38, 18, 14, 0.95) 0%, rgba(20, 10, 8, 0.98) 100%)",
+            border: "1px solid rgba(209, 160, 104, 0.35)",
+            borderRadius: "24px",
             padding: "40px 36px",
-            maxWidth: "430px",
+            maxWidth: "440px",
             width: "100%",
-            boxShadow: "0 25px 60px rgba(0, 0, 0, 0.7)",
+            boxShadow: "0 25px 60px rgba(0, 0, 0, 0.7), 0 0 35px rgba(189, 40, 32, 0.15)",
             textAlign: "center",
           }}
         >
           <img
-            src="/faf-symbol.png"
+            src="/faf-logo-transparent.png"
             alt="FAF Coffees"
             style={{
-              height: "60px",
+              height: "72px",
               width: "auto",
               objectFit: "contain",
-              margin: "0 auto 16px",
+              margin: "0 auto 18px",
               display: "block",
+              filter: "drop-shadow(0 8px 20px rgba(189, 40, 32, 0.35))",
             }}
           />
 
           <div
             style={{
               display: "inline-block",
-              background: "rgba(52, 211, 153, 0.15)",
-              color: "#34d399",
-              border: "1px solid rgba(52, 211, 153, 0.3)",
+              background: "rgba(189, 40, 32, 0.2)",
+              color: "#fca5a5",
+              border: "1px solid rgba(189, 40, 32, 0.4)",
               borderRadius: "999px",
               padding: "4px 14px",
               fontSize: "11px",
@@ -616,19 +617,19 @@ export default function CloudStoragePage() {
           <h2 style={{ fontSize: "22px", fontWeight: 800, color: "#ffffff", margin: "0 0 8px" }}>
             FAF Cloud Storage
           </h2>
-          <p style={{ fontSize: "13px", color: "#94a3b8", margin: "0 0 26px", lineHeight: 1.5 }}>
+          <p style={{ fontSize: "13px", color: "#d4c4b6", margin: "0 0 26px", lineHeight: 1.5 }}>
             Faça login com seu usuário corporativo FAF para gerenciar os arquivos e talhões no Cloudflare R2.
           </p>
 
           {userMgmt.loginError && (
             <div
               style={{
-                background: "rgba(239, 68, 68, 0.15)",
-                border: "1px solid rgba(239, 68, 68, 0.4)",
+                background: "rgba(189, 40, 32, 0.2)",
+                border: "1px solid rgba(189, 40, 32, 0.4)",
                 color: "#fca5a5",
                 padding: "10px 14px",
-                borderRadius: "8px",
-                fontSize: "12px",
+                borderRadius: "10px",
+                fontSize: "12.5px",
                 fontWeight: 700,
                 marginBottom: "18px",
               }}
@@ -639,7 +640,7 @@ export default function CloudStoragePage() {
 
           <form onSubmit={userMgmt.handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px", textAlign: "left" }}>
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#a7f3d0", marginBottom: "6px" }}>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#dfa84a", marginBottom: "6px" }}>
                 USUÁRIO FAF:
               </label>
               <input
@@ -651,11 +652,11 @@ export default function CloudStoragePage() {
                 onChange={(e) => userMgmt.setLoginUsername(e.target.value)}
                 style={{
                   width: "100%",
-                  background: "#081611",
-                  border: "1px solid rgba(52, 211, 153, 0.3)",
-                  borderRadius: "8px",
+                  background: "rgba(10, 4, 3, 0.7)",
+                  border: "1px solid rgba(209, 160, 104, 0.3)",
+                  borderRadius: "10px",
                   color: "#ffffff",
-                  padding: "11px 14px",
+                  padding: "12px 14px",
                   fontSize: "14px",
                   outline: "none",
                   boxSizing: "border-box",
@@ -664,7 +665,7 @@ export default function CloudStoragePage() {
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#a7f3d0", marginBottom: "6px" }}>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#dfa84a", marginBottom: "6px" }}>
                 SENHA:
               </label>
               <input
@@ -675,11 +676,11 @@ export default function CloudStoragePage() {
                 onChange={(e) => userMgmt.setLoginPassword(e.target.value)}
                 style={{
                   width: "100%",
-                  background: "#081611",
-                  border: "1px solid rgba(52, 211, 153, 0.3)",
-                  borderRadius: "8px",
+                  background: "rgba(10, 4, 3, 0.7)",
+                  border: "1px solid rgba(209, 160, 104, 0.3)",
+                  borderRadius: "10px",
                   color: "#ffffff",
-                  padding: "11px 14px",
+                  padding: "12px 14px",
                   fontSize: "14px",
                   outline: "none",
                   boxSizing: "border-box",
@@ -691,15 +692,15 @@ export default function CloudStoragePage() {
               type="submit"
               style={{
                 marginTop: "8px",
-                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                background: "linear-gradient(135deg, #bd2820 0%, #8d1b15 100%)",
                 color: "#ffffff",
-                border: "none",
-                borderRadius: "10px",
+                border: "1px solid rgba(209, 160, 104, 0.3)",
+                borderRadius: "12px",
                 padding: "13px",
                 fontSize: "14px",
                 fontWeight: 800,
                 cursor: "pointer",
-                boxShadow: "0 8px 20px rgba(16, 185, 129, 0.25)",
+                boxShadow: "0 8px 20px rgba(189, 40, 32, 0.35)",
               }}
             >
               🔓 Acessar Nuvem R2
@@ -716,19 +717,19 @@ export default function CloudStoragePage() {
       <div
         style={{
           minHeight: "100vh",
-          background: "radial-gradient(circle at top, #0f2b20 0%, #060f0b 100%)",
+          background: "radial-gradient(ellipse at 50% 0%, #28120e 0%, #160a08 50%, #0a0403 100%)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           padding: "24px",
-          fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
-          color: "#f1f5f9",
+          fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+          color: "#fcf9f5",
         }}
       >
         <div
           style={{
-            background: "rgba(11, 29, 23, 0.95)",
-            border: "1px solid rgba(239, 68, 68, 0.3)",
+            background: "linear-gradient(150deg, rgba(38, 18, 14, 0.95), rgba(20, 10, 8, 0.98))",
+            border: "1px solid rgba(209, 160, 104, 0.35)",
             borderRadius: "20px",
             padding: "40px 36px",
             maxWidth: "460px",
@@ -741,20 +742,21 @@ export default function CloudStoragePage() {
           <h2 style={{ fontSize: "20px", fontWeight: 800, color: "#ffffff", margin: "0 0 10px" }}>
             Acesso Restrito à Equipe FAF
           </h2>
-          <p style={{ fontSize: "13.5px", color: "#cbd5e1", margin: "0 0 24px", lineHeight: 1.6 }}>
+          <p style={{ fontSize: "13.5px", color: "#d4c4b6", margin: "0 0 24px", lineHeight: 1.6 }}>
             Olá, <strong>{userMgmt.loggedUserName}</strong>. A gestão bruta do Cloudflare R2 é restrita a operadores internos. Acesse seus lotes pelo Portal do Cliente.
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <a
               href="https://portal.fafeu.online"
               style={{
-                background: "#2563eb",
-                color: "#ffffff",
+                background: "linear-gradient(135deg, #d1a068, #a8793e)",
+                color: "#1a0f0d",
                 padding: "12px 18px",
                 borderRadius: "10px",
                 fontSize: "13px",
                 fontWeight: 800,
                 textDecoration: "none",
+                boxShadow: "0 4px 15px rgba(209, 160, 104, 0.3)",
               }}
             >
               🌐 Ir para o Portal do Cliente
@@ -763,8 +765,8 @@ export default function CloudStoragePage() {
               onClick={userMgmt.handleLogout}
               style={{
                 background: "rgba(255, 255, 255, 0.08)",
-                border: "1px solid rgba(255, 255, 255, 0.2)",
-                color: "#e2e8f0",
+                border: "1px solid rgba(209, 160, 104, 0.25)",
+                color: "#fcf9f5",
                 padding: "10px 18px",
                 borderRadius: "10px",
                 fontSize: "13px",
@@ -785,9 +787,9 @@ export default function CloudStoragePage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#060f0b",
-        color: "#f1f5f9",
-        fontFamily: "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif",
+        background: "radial-gradient(ellipse at 50% 0%, #28120e 0%, #160a08 50%, #0a0403 100%)",
+        color: "#fcf9f5",
+        fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif",
         display: "flex",
         flexDirection: "column",
       }}
@@ -798,28 +800,28 @@ export default function CloudStoragePage() {
           position: "sticky",
           top: 0,
           zIndex: 40,
-          background: "rgba(9, 24, 19, 0.96)",
-          backdropFilter: "blur(12px)",
-          borderBottom: "1px solid rgba(52, 211, 153, 0.18)",
+          background: "rgba(22, 10, 8, 0.9)",
+          backdropFilter: "blur(14px)",
+          borderBottom: "1px solid rgba(209, 160, 104, 0.25)",
           padding: "0 28px",
           height: "72px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <img
-            src="/faf-symbol.png"
+            src="/faf-logo-transparent.png"
             alt="FAF Coffees"
-            style={{ height: "38px", width: "auto", objectFit: "contain" }}
+            style={{ height: "42px", width: "auto", objectFit: "contain", display: "block" }}
           />
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span
                 style={{
-                  color: "#d77442",
+                  color: "#dfa84a",
                   fontSize: "11px",
                   fontWeight: 800,
                   letterSpacing: "0.08em",
@@ -830,13 +832,13 @@ export default function CloudStoragePage() {
               </span>
               <span
                 style={{
-                  background: "rgba(52, 211, 153, 0.15)",
-                  color: "#34d399",
+                  background: "rgba(189, 40, 32, 0.2)",
+                  color: "#fca5a5",
                   fontSize: "10px",
                   fontWeight: 800,
                   padding: "2px 8px",
                   borderRadius: "999px",
-                  border: "1px solid rgba(52, 211, 153, 0.3)",
+                  border: "1px solid rgba(189, 40, 32, 0.35)",
                 }}
               >
                 ● CLOUDFLARE R2
@@ -860,8 +862,8 @@ export default function CloudStoragePage() {
           {/* User Profile Badge */}
           <div
             style={{
-              background: "rgba(16, 44, 36, 0.8)",
-              border: "1px solid rgba(52, 211, 153, 0.3)",
+              background: "rgba(38, 18, 14, 0.9)",
+              border: "1px solid rgba(209, 160, 104, 0.3)",
               borderRadius: "8px",
               padding: "5px 12px",
               display: "flex",
@@ -874,7 +876,7 @@ export default function CloudStoragePage() {
               <div style={{ fontSize: "12px", fontWeight: 700, color: "#ffffff", lineHeight: 1.2 }}>
                 {userMgmt.loggedUserName || userMgmt.loggedUserKey}
               </div>
-              <div style={{ fontSize: "10px", fontWeight: 800, color: "#34d399", textTransform: "uppercase" }}>
+              <div style={{ fontSize: "10px", fontWeight: 800, color: "#dfa84a", textTransform: "uppercase" }}>
                 {userMgmt.loggedUserRole === "admin" ? "ADMINISTRADOR FAF" : "OPERADOR FAF"}
               </div>
             </div>
