@@ -13,11 +13,12 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal, onOpenDashboard 
     <div
       style={{
         minHeight: "100vh",
-        background: "radial-gradient(ellipse at 50% 0%, #133324 0%, #091a13 50%, #050e0a 100%)",
-        color: "#f1f6f3",
+        background: "radial-gradient(ellipse at 50% 0%, #28120e 0%, #160a08 50%, #0a0403 100%)",
+        color: "#fcf9f5",
         fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         display: "flex",
         flexDirection: "column",
+        position: "relative",
       }}
     >
       <style>{`
@@ -26,7 +27,7 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal, onOpenDashboard 
           grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 24px;
           width: 100%;
-          max-width: 1180px;
+          max-width: 1200px;
         }
         @media (max-width: 980px) {
           .landing-cards-grid {
@@ -35,57 +36,51 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal, onOpenDashboard 
           }
         }
         .landing-card {
-          transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+          transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
         }
         .landing-card:hover {
-          transform: translateY(-4px);
+          transform: translateY(-6px);
         }
       `}</style>
 
       {/* Top Navbar */}
       <header
         style={{
-          padding: "20px 36px",
+          padding: "18px 40px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
-          background: "rgba(9, 26, 19, 0.6)",
-          backdropFilter: "blur(12px)",
+          borderBottom: "1px solid rgba(209, 160, 104, 0.2)",
+          background: "rgba(18, 9, 8, 0.8)",
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <img
-            src="/faf-symbol.png"
+            src="/faf-logo-transparent.png"
             alt="FAF Coffees"
-            style={{ height: "36px", width: "auto", objectFit: "contain", display: "block" }}
+            style={{ height: "46px", width: "auto", objectFit: "contain", display: "block" }}
           />
-          <div>
-            <div style={{ fontSize: "14px", fontWeight: 800, color: "#ffffff", letterSpacing: "0.5px" }}>
-              FAF COFFEES
-            </div>
-            <div style={{ fontSize: "11px", color: "#d1a068", fontWeight: 600 }}>
-              Fazenda Ambiental Fortaleza
-            </div>
-          </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
           {onOpenDashboard && (
             <button
               onClick={onOpenDashboard}
               style={{
                 fontSize: "12px",
-                background: "rgba(52, 211, 153, 0.15)",
-                color: "#6ee7b7",
-                border: "1px solid rgba(52, 211, 153, 0.35)",
-                padding: "6px 14px",
+                background: "rgba(209, 160, 104, 0.12)",
+                color: "#dfa84a",
+                border: "1px solid rgba(209, 160, 104, 0.35)",
+                padding: "8px 16px",
                 borderRadius: "999px",
-                fontWeight: 700,
+                fontWeight: 800,
                 cursor: "pointer",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "6px",
+                transition: "all 0.2s ease",
               }}
             >
               <span>📊</span> Dashboard Executivo
@@ -95,10 +90,10 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal, onOpenDashboard 
           <span
             style={{
               fontSize: "12px",
-              background: "rgba(16, 185, 129, 0.12)",
-              color: "#34d399",
-              border: "1px solid rgba(52, 211, 153, 0.25)",
-              padding: "6px 14px",
+              background: "rgba(189, 40, 32, 0.15)",
+              color: "#fca5a5",
+              border: "1px solid rgba(189, 40, 32, 0.35)",
+              padding: "7px 14px",
               borderRadius: "999px",
               fontWeight: 700,
               display: "inline-flex",
@@ -106,77 +101,77 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal, onOpenDashboard 
               gap: "8px",
             }}
           >
-            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#10b981" }}></span>
+            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#10b981", boxShadow: "0 0 8px #10b981" }}></span>
             Regulation (EU) 2023/1115 (EUDR)
           </span>
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Main Hero Content */}
       <main
         style={{
           flex: 1,
-          maxWidth: "1260px",
+          maxWidth: "1280px",
           width: "100%",
           margin: "0 auto",
-          padding: "50px 24px 60px",
+          padding: "40px 24px 70px",
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
         }}
       >
-        {/* Central Logo & Title */}
-        <div style={{ textAlign: "center", marginBottom: "40px" }}>
+        {/* Central Logo & Brand Typography */}
+        <div style={{ textAlign: "center", marginBottom: "44px" }}>
           <img
-            src="/faf-symbol.png"
+            src="/faf-logo-transparent.png"
             alt="FAF Coffees"
             style={{
-              height: "84px",
+              height: "115px",
               width: "auto",
               objectFit: "contain",
               margin: "0 auto 20px",
               display: "block",
-              filter: "drop-shadow(0 12px 28px rgba(179, 44, 37, 0.35))",
+              filter: "drop-shadow(0 15px 35px rgba(189, 40, 32, 0.45))",
             }}
           />
 
           <h1
             style={{
-              fontSize: "34px",
+              fontSize: "32px",
               fontWeight: 800,
               color: "#ffffff",
               margin: "0 0 10px",
-              letterSpacing: "-0.8px",
+              letterSpacing: "-0.5px",
             }}
           >
-            EUDR Compliance Platform
+            Plataforma de Conformidade & Rastreabilidade EUDR
           </h1>
 
           <p
             style={{
               fontSize: "15px",
-              color: "#94a3b8",
+              color: "#d4c4b6",
               margin: 0,
-              maxWidth: "580px",
-              lineHeight: 1.5,
+              maxWidth: "620px",
+              lineHeight: 1.55,
             }}
           >
-            Geospatial traceability and due diligence dossiers for specialty coffee exports.
+            Diligência prévia geoespacial, polígonos certificados e gestão em nuvem para exportações de cafés especiais sustentáveis.
           </p>
         </div>
 
-        {/* 3 Cards in 1 Single Line */}
+        {/* 3 Cards Grid */}
         <div className="landing-cards-grid">
-          {/* Card 1: FAF Team */}
+          {/* Card 1: FAF Team / Preparador & Contratos */}
           <div
             className="landing-card"
             style={{
-              background: "linear-gradient(145deg, rgba(17, 43, 31, 0.85) 0%, rgba(10, 26, 19, 0.95) 100%)",
+              background: "linear-gradient(150deg, rgba(40, 18, 14, 0.9) 0%, rgba(22, 10, 8, 0.95) 100%)",
               borderRadius: "20px",
-              padding: "30px 26px",
-              border: "1px solid rgba(52, 211, 153, 0.25)",
-              boxShadow: "0 16px 36px rgba(0, 0, 0, 0.3)",
+              padding: "32px 28px",
+              border: "1px solid rgba(189, 40, 32, 0.35)",
+              boxShadow: "0 18px 45px rgba(0, 0, 0, 0.4), 0 0 30px rgba(189, 40, 32, 0.1)",
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
@@ -187,24 +182,24 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal, onOpenDashboard 
                 style={{
                   fontSize: "11px",
                   fontWeight: 800,
-                  color: "#34d399",
+                  color: "#dfa84a",
                   textTransform: "uppercase",
-                  letterSpacing: "1px",
+                  letterSpacing: "1.2px",
                   marginBottom: "8px",
                 }}
               >
-                FAF Team
+                Equipe & Agrônomos FAF
               </div>
-              <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#ffffff", margin: "0 0 10px" }}>
-                FAF Internal Portal
+              <h2 style={{ fontSize: "21px", fontWeight: 700, color: "#ffffff", margin: "0 0 12px" }}>
+                Gestão & Preparador EUDR
               </h2>
-              <p style={{ fontSize: "13.5px", color: "#cbd5e1", lineHeight: 1.5, margin: "0 0 28px" }}>
-                Restricted access for agronomists to upload plots, validate deforestation on MapBiomas, and publish dossiers.
+              <p style={{ fontSize: "13.5px", color: "#d4c4b6", lineHeight: 1.55, margin: "0 0 28px" }}>
+                Acesso interno para criação de novos contratos, desenho e simplificação de polígonos e validação no MapBiomas / GFW.
               </p>
             </div>
 
             <a
-              href="https://app.fafeu.online"
+              href="https://contratos.fafeu.online"
               onClick={(e) => {
                 if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
                   e.preventDefault();
@@ -212,32 +207,33 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal, onOpenDashboard 
                 }
               }}
               style={{
-                padding: "13px 20px",
+                padding: "14px 20px",
                 fontSize: "14px",
-                fontWeight: 700,
+                fontWeight: 800,
                 borderRadius: "12px",
-                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                background: "linear-gradient(135deg, #bd2820 0%, #8d1b15 100%)",
                 color: "#ffffff",
                 textDecoration: "none",
                 textAlign: "center",
                 display: "block",
-                boxShadow: "0 8px 20px rgba(16, 185, 129, 0.25)",
-                transition: "all 0.15s ease",
+                border: "1px solid rgba(209, 160, 104, 0.3)",
+                boxShadow: "0 8px 24px rgba(189, 40, 32, 0.35)",
+                transition: "all 0.2s ease",
               }}
             >
-              🔒 Access FAF System ➔
+              🔒 Acessar Sistema FAF ➔
             </a>
           </div>
 
-          {/* Card 2: Importers & Clients */}
+          {/* Card 2: Importers & Clients Portal */}
           <div
             className="landing-card"
             style={{
-              background: "linear-gradient(145deg, rgba(18, 32, 54, 0.85) 0%, rgba(10, 20, 36, 0.95) 100%)",
+              background: "linear-gradient(150deg, rgba(32, 22, 14, 0.9) 0%, rgba(18, 12, 8, 0.95) 100%)",
               borderRadius: "20px",
-              padding: "30px 26px",
-              border: "1px solid rgba(96, 165, 250, 0.25)",
-              boxShadow: "0 16px 36px rgba(0, 0, 0, 0.3)",
+              padding: "32px 28px",
+              border: "1px solid rgba(209, 160, 104, 0.35)",
+              boxShadow: "0 18px 45px rgba(0, 0, 0, 0.4), 0 0 30px rgba(209, 160, 104, 0.1)",
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
@@ -248,19 +244,19 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal, onOpenDashboard 
                 style={{
                   fontSize: "11px",
                   fontWeight: 800,
-                  color: "#93c5fd",
+                  color: "#dfa84a",
                   textTransform: "uppercase",
-                  letterSpacing: "1px",
+                  letterSpacing: "1.2px",
                   marginBottom: "8px",
                 }}
               >
-                Importers & Roasters
+                Importadores & Torrefações
               </div>
-              <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#ffffff", margin: "0 0 10px" }}>
-                Client Portal
+              <h2 style={{ fontSize: "21px", fontWeight: 700, color: "#ffffff", margin: "0 0 12px" }}>
+                Portal do Cliente
               </h2>
-              <p style={{ fontSize: "13.5px", color: "#cbd5e1", lineHeight: 1.5, margin: "0 0 28px" }}>
-                Search lots by purchase contract and download verified GeoJSON files ready for EU Due Diligence submission.
+              <p style={{ fontSize: "13.5px", color: "#d4c4b6", lineHeight: 1.55, margin: "0 0 28px" }}>
+                Consulte os lotes vinculados ao seu contrato de compra e baixe os arquivos GeoJSON e relatórios auditados prontos para a UE.
               </p>
             </div>
 
@@ -273,32 +269,33 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal, onOpenDashboard 
                 }
               }}
               style={{
-                padding: "13px 20px",
+                padding: "14px 20px",
                 fontSize: "14px",
-                fontWeight: 700,
+                fontWeight: 800,
                 borderRadius: "12px",
-                background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-                color: "#ffffff",
+                background: "linear-gradient(135deg, #d1a068 0%, #a8793e 100%)",
+                color: "#1a0f0d",
                 textDecoration: "none",
                 textAlign: "center",
                 display: "block",
-                boxShadow: "0 8px 20px rgba(37, 99, 235, 0.25)",
-                transition: "all 0.15s ease",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                boxShadow: "0 8px 24px rgba(209, 160, 104, 0.3)",
+                transition: "all 0.2s ease",
               }}
             >
-              🌐 Access Client Portal ➔
+              🌐 Acessar Portal do Cliente ➔
             </a>
           </div>
 
-          {/* Card 3: FAF Cloud Storage */}
+          {/* Card 3: Cloudflare R2 Storage */}
           <div
             className="landing-card"
             style={{
-              background: "linear-gradient(145deg, rgba(30, 27, 75, 0.85) 0%, rgba(15, 14, 38, 0.95) 100%)",
+              background: "linear-gradient(150deg, rgba(28, 16, 20, 0.9) 0%, rgba(15, 8, 10, 0.95) 100%)",
               borderRadius: "20px",
-              padding: "30px 26px",
-              border: "1px solid rgba(167, 139, 250, 0.25)",
-              boxShadow: "0 16px 36px rgba(0, 0, 0, 0.3)",
+              padding: "32px 28px",
+              border: "1px solid rgba(189, 40, 32, 0.25)",
+              boxShadow: "0 18px 45px rgba(0, 0, 0, 0.4)",
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
@@ -309,55 +306,57 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal, onOpenDashboard 
                 style={{
                   fontSize: "11px",
                   fontWeight: 800,
-                  color: "#c4b5fd",
+                  color: "#e03b31",
                   textTransform: "uppercase",
-                  letterSpacing: "1px",
+                  letterSpacing: "1.2px",
                   marginBottom: "8px",
                 }}
               >
-                Cloudflare R2 Storage
+                Armazenamento em Nuvem R2
               </div>
-              <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#ffffff", margin: "0 0 10px" }}>
+              <h2 style={{ fontSize: "21px", fontWeight: 700, color: "#ffffff", margin: "0 0 12px" }}>
                 Cloud Explorer
               </h2>
-              <p style={{ fontSize: "13.5px", color: "#cbd5e1", lineHeight: 1.5, margin: "0 0 28px" }}>
-                Visualize geometries, download datasets, upload packages and manage cloud files in real-time.
+              <p style={{ fontSize: "13.5px", color: "#d4c4b6", lineHeight: 1.55, margin: "0 0 28px" }}>
+                Gerenciador completo de arquivos da nuvem, navegação por pastas regionais, visualização interativa e downloads diretos.
               </p>
             </div>
 
             <a
-              href="/cloud"
+              href="https://cloud.fafeu.online"
               style={{
-                padding: "13px 20px",
+                padding: "14px 20px",
                 fontSize: "14px",
-                fontWeight: 700,
+                fontWeight: 800,
                 borderRadius: "12px",
-                background: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)",
-                color: "#ffffff",
+                background: "linear-gradient(135deg, #42201a 0%, #29120e 100%)",
+                color: "#fcf9f5",
                 textDecoration: "none",
                 textAlign: "center",
                 display: "block",
-                boxShadow: "0 8px 20px rgba(124, 58, 237, 0.25)",
-                transition: "all 0.15s ease",
+                border: "1px solid rgba(209, 160, 104, 0.35)",
+                boxShadow: "0 8px 24px rgba(0, 0, 0, 0.3)",
+                transition: "all 0.2s ease",
               }}
             >
-              ☁️ Access Cloud Storage ➔
+              ☁️ Abrir Cloud Explorer ➔
             </a>
           </div>
         </div>
       </main>
 
-      {/* Minimal Footer */}
+      {/* Footer */}
       <footer
         style={{
-          padding: "20px 36px",
-          borderTop: "1px solid rgba(255, 255, 255, 0.05)",
+          borderTop: "1px solid rgba(209, 160, 104, 0.15)",
+          padding: "24px 40px",
           textAlign: "center",
-          fontSize: "12px",
-          color: "#64748b",
+          color: "#8e7c75",
+          fontSize: "12.5px",
+          background: "rgba(10, 4, 3, 0.8)",
         }}
       >
-        © {new Date().getFullYear()} <strong>FAF Coffees</strong> • Mococa, SP — Brazil • Regulation (EU) 2023/1115
+        FAF Coffees • Fazenda Ambiental Fortaleza • Plataforma Oficial de Sustentabilidade & Rastreabilidade EUDR
       </footer>
     </div>
   );

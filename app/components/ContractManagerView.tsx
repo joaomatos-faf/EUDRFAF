@@ -698,10 +698,10 @@ export function ContractManagerView({
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(ellipse at 50% 0%, #102a20 0%, #081611 60%, #040c09 100%)",
-        color: "#f1f5f9",
+          "radial-gradient(ellipse at 50% 0%, #28120e 0%, #160a08 50%, #0a0403 100%)",
+        color: "#fcf9f5",
         fontFamily:
-          "'Segoe UI Variable', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
+          "'Plus Jakarta Sans', 'Segoe UI Variable', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
       }}
     >
       {/* Top Corporate Navbar */}
@@ -710,7 +710,7 @@ export function ContractManagerView({
           position: "sticky",
           top: 0,
           zIndex: 40,
-          background: "rgba(11, 29, 23, 0.85)",
+          background: "rgba(22, 10, 8, 0.88)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
           color: "#ffffff",
@@ -719,16 +719,16 @@ export function ContractManagerView({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
-          borderBottom: "1px solid rgba(52, 211, 153, 0.15)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+          borderBottom: "1px solid rgba(209, 160, 104, 0.25)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <img
-            src="/faf-symbol.png"
+            src="/faf-logo-transparent.png"
             alt="FAF Coffees"
             style={{
-              height: "42px",
+              height: "44px",
               width: "auto",
               objectFit: "contain",
               display: "block",
@@ -738,8 +738,8 @@ export function ContractManagerView({
             <p
               style={{
                 margin: "0 0 2px",
-                color: "#34d399",
-                fontSize: "11px",
+                color: "#dfa84a",
+                fontSize: "10.5px",
                 fontWeight: 800,
                 letterSpacing: ".12em",
                 textTransform: "uppercase",
@@ -751,7 +751,7 @@ export function ContractManagerView({
               style={{
                 margin: 0,
                 color: "#ffffff",
-                fontSize: "19px",
+                fontSize: "18px",
                 fontWeight: 700,
                 letterSpacing: "-.02em",
               }}
@@ -764,13 +764,13 @@ export function ContractManagerView({
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <span
             style={{
-              color: "#a7f3d0",
-              fontSize: "12.5px",
-              fontWeight: 600,
-              background: "rgba(16, 185, 129, 0.12)",
+              color: "#dfa84a",
+              fontSize: "12px",
+              fontWeight: 700,
+              background: "rgba(209, 160, 104, 0.12)",
               padding: "6px 14px",
               borderRadius: "8px",
-              border: "1px solid rgba(52, 211, 153, 0.25)",
+              border: "1px solid rgba(209, 160, 104, 0.3)",
             }}
           >
             👤 {loggedUserKey}
@@ -779,22 +779,16 @@ export function ContractManagerView({
             <button
               onClick={onOpenDashboard}
               style={{
-                background: "rgba(52, 211, 153, 0.15)",
-                border: "1px solid rgba(52, 211, 153, 0.35)",
-                color: "#6ee7b7",
+                background: "linear-gradient(135deg, rgba(209, 160, 104, 0.2), rgba(189, 40, 32, 0.15))",
+                border: "1px solid rgba(209, 160, 104, 0.35)",
+                color: "#dfa84a",
                 padding: "8px 16px",
                 borderRadius: "8px",
-                fontSize: "12.5px",
-                fontWeight: 700,
+                fontSize: "12px",
+                fontWeight: 800,
                 cursor: "pointer",
                 transition: "all 0.15s ease",
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "rgba(52, 211, 153, 0.25)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "rgba(52, 211, 153, 0.15)")
-              }
             >
               📊 Dashboard & Métricas
             </button>
@@ -803,21 +797,15 @@ export function ContractManagerView({
             onClick={onOpenLanding}
             style={{
               background: "rgba(255, 255, 255, 0.08)",
-              border: "1px solid rgba(255, 255, 255, 0.18)",
+              border: "1px solid rgba(209, 160, 104, 0.25)",
               color: "#ffffff",
               padding: "8px 16px",
               borderRadius: "8px",
-              fontSize: "12.5px",
+              fontSize: "12px",
               fontWeight: 700,
               cursor: "pointer",
               transition: "all 0.15s ease",
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)")
-            }
           >
             🏠 Voltar ao Início
           </button>
@@ -843,8 +831,8 @@ export function ContractManagerView({
         >
           <div
             style={{
-              background: "rgba(11, 29, 23, 0.65)",
-              border: "1px solid rgba(52, 211, 153, 0.18)",
+              background: "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))",
+              border: "1px solid rgba(209, 160, 104, 0.25)",
               backdropFilter: "blur(12px)",
               padding: "18px 22px",
               borderRadius: "16px",
@@ -859,54 +847,53 @@ export function ContractManagerView({
                 style={{
                   fontSize: "11px",
                   fontWeight: 800,
-                  color: "#94a3b8",
+                  color: "#dfa84a",
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
                 }}
               >
-                Contratos Ativos no R2
+                Total de Contratos Ativos
               </span>
               <div
                 style={{
                   fontSize: "26px",
-                  fontWeight: 800,
+                  fontWeight: 900,
                   color: "#ffffff",
-                  marginTop: "2px",
+                  marginTop: "4px",
                 }}
               >
                 {contracts.length}{" "}
                 <span
                   style={{
-                    fontSize: "13px",
-                    color: "#94a3b8",
-                    fontWeight: 500,
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    color: "#d4c4b6",
                   }}
                 >
-                  contrato(s)
+                  contratos
                 </span>
               </div>
             </div>
             <div
               style={{
-                width: "46px",
-                height: "46px",
+                width: "44px",
+                height: "44px",
                 borderRadius: "12px",
-                background: "rgba(56, 189, 248, 0.15)",
-                color: "#38bdf8",
+                background: "rgba(209, 160, 104, 0.15)",
                 display: "grid",
                 placeItems: "center",
                 fontSize: "20px",
-                border: "1px solid rgba(56, 189, 248, 0.25)",
+                border: "1px solid rgba(209, 160, 104, 0.3)",
               }}
             >
-              📋
+              📄
             </div>
           </div>
 
           <div
             style={{
-              background: "rgba(11, 29, 23, 0.65)",
-              border: "1px solid rgba(52, 211, 153, 0.18)",
+              background: "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))",
+              border: "1px solid rgba(209, 160, 104, 0.25)",
               backdropFilter: "blur(12px)",
               padding: "18px 22px",
               borderRadius: "16px",
@@ -921,54 +908,56 @@ export function ContractManagerView({
                 style={{
                   fontSize: "11px",
                   fontWeight: 800,
-                  color: "#94a3b8",
+                  color: "#dfa84a",
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
                 }}
               >
-                Soma do Contrato Atual
+                Lotes Mapeados & Validados
               </span>
               <div
                 style={{
                   fontSize: "26px",
-                  fontWeight: 800,
-                  color: "#34d399",
-                  marginTop: "2px",
+                  fontWeight: 900,
+                  color: "#ffffff",
+                  marginTop: "4px",
                 }}
               >
-                {grandTotalHectares.toFixed(2)}{" "}
+                {contracts.reduce(
+                  (acc, c) => acc + (c.lots ? c.lots.length : 0),
+                  0
+                )}{" "}
                 <span
                   style={{
-                    fontSize: "13px",
-                    color: "#a7f3d0",
+                    fontSize: "14px",
                     fontWeight: 600,
+                    color: "#d4c4b6",
                   }}
                 >
-                  hectares
+                  lotes
                 </span>
               </div>
             </div>
             <div
               style={{
-                width: "46px",
-                height: "46px",
+                width: "44px",
+                height: "44px",
                 borderRadius: "12px",
-                background: "rgba(16, 185, 129, 0.18)",
-                color: "#34d399",
+                background: "rgba(189, 40, 32, 0.18)",
                 display: "grid",
                 placeItems: "center",
                 fontSize: "20px",
-                border: "1px solid rgba(52, 211, 153, 0.3)",
+                border: "1px solid rgba(189, 40, 32, 0.35)",
               }}
             >
-              📐
+              📦
             </div>
           </div>
 
           <div
             style={{
-              background: "rgba(11, 29, 23, 0.65)",
-              border: "1px solid rgba(52, 211, 153, 0.18)",
+              background: "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))",
+              border: "1px solid rgba(209, 160, 104, 0.25)",
               backdropFilter: "blur(12px)",
               padding: "18px 22px",
               borderRadius: "16px",
@@ -983,39 +972,56 @@ export function ContractManagerView({
                 style={{
                   fontSize: "11px",
                   fontWeight: 800,
-                  color: "#94a3b8",
+                  color: "#dfa84a",
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
                 }}
               >
-                Composição do Contrato
+                Cloudflare R2 Storage
               </span>
               <div
                 style={{
-                  fontSize: "20px",
-                  fontWeight: 800,
-                  color: "#ffffff",
+                  fontSize: "26px",
+                  fontWeight: 900,
+                  color: "#dfa84a",
                   marginTop: "4px",
                 }}
               >
-                {lots.length} {lots.length === 1 ? "lote" : "lotes"} ·{" "}
-                {totalPlotsCount} {totalPlotsCount === 1 ? "talhão" : "talhões"}
+                {contracts.reduce(
+                  (acc, c) =>
+                    acc +
+                    (c.lots
+                      ? c.lots.reduce(
+                          (pAcc, l) => pAcc + (l.plots ? l.plots.length : 0),
+                          0
+                        )
+                      : 0),
+                  0
+                )}{" "}
+                <span
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    color: "#d4c4b6",
+                  }}
+                >
+                  talhões EUDR
+                </span>
               </div>
             </div>
             <div
               style={{
-                width: "46px",
-                height: "46px",
+                width: "44px",
+                height: "44px",
                 borderRadius: "12px",
-                background: "rgba(167, 243, 208, 0.12)",
-                color: "#a7f3d0",
+                background: "rgba(209, 160, 104, 0.15)",
                 display: "grid",
                 placeItems: "center",
                 fontSize: "20px",
-                border: "1px solid rgba(167, 243, 208, 0.2)",
+                border: "1px solid rgba(209, 160, 104, 0.3)",
               }}
             >
-              🌱
+              ☁️
             </div>
           </div>
         </div>

@@ -245,23 +245,23 @@ export function ClientPortalModal({
           position: "sticky",
           top: 0,
           zIndex: 40,
-          background: "#102c24",
+          background: "linear-gradient(135deg, #1a0f0d 0%, #120908 100%)",
           color: "#ffffff",
           padding: "0 max(28px, calc((100vw - 1480px) / 2))",
           height: "76px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
-          borderBottom: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+          borderBottom: "1px solid rgba(209, 160, 104, 0.25)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <img
-            src="/faf-symbol.png"
+            src="/faf-logo-transparent.png"
             alt="FAF Coffees"
             style={{
-              height: "42px",
+              height: "44px",
               width: "auto",
               objectFit: "contain",
               display: "block",
@@ -271,7 +271,7 @@ export function ClientPortalModal({
             <p
               style={{
                 margin: "0 0 2px",
-                color: "var(--orange-500, #d77442)",
+                color: "#dfa84a",
                 fontSize: "11px",
                 fontWeight: 800,
                 letterSpacing: ".12em",
@@ -284,7 +284,7 @@ export function ClientPortalModal({
               style={{
                 margin: 0,
                 color: "#ffffff",
-                fontSize: "19px",
+                fontSize: "18px",
                 fontWeight: 700,
                 letterSpacing: "-.02em",
               }}
@@ -298,9 +298,9 @@ export function ClientPortalModal({
           {loggedClientName ? (
             <span
               style={{
-                background: "rgba(52, 211, 153, 0.18)",
-                border: "1px solid rgba(52, 211, 153, 0.35)",
-                color: "#34d399",
+                background: "rgba(209, 160, 104, 0.15)",
+                border: "1px solid rgba(209, 160, 104, 0.35)",
+                color: "#dfa84a",
                 padding: "6px 14px",
                 borderRadius: "999px",
                 fontSize: "12px",
@@ -313,9 +313,9 @@ export function ClientPortalModal({
           ) : (
             <span
               style={{
-                background: "rgba(255, 255, 255, 0.12)",
-                border: "1px solid rgba(255, 255, 255, 0.22)",
-                color: "#e2e8f0",
+                background: "rgba(255, 255, 255, 0.08)",
+                border: "1px solid rgba(209, 160, 104, 0.25)",
+                color: "#fcf9f5",
                 padding: "6px 12px",
                 borderRadius: "999px",
                 fontSize: "12px",
@@ -328,13 +328,13 @@ export function ClientPortalModal({
 
           <span
             style={{
-              color: "#d1fae5",
-              fontSize: "13px",
-              fontWeight: 600,
-              background: "rgba(255,255,255,0.08)",
+              color: "#dfa84a",
+              fontSize: "12px",
+              fontWeight: 700,
+              background: "rgba(209, 160, 104, 0.12)",
               padding: "6px 14px",
               borderRadius: "8px",
-              border: "1px solid rgba(255,255,255,0.12)",
+              border: "1px solid rgba(209, 160, 104, 0.25)",
             }}
           >
             👤 {displayName}
@@ -343,9 +343,9 @@ export function ClientPortalModal({
           <button
             onClick={() => setCurrentPortalTab("server-files")}
             style={{
-              background: "rgba(245, 158, 11, 0.2)",
-              border: "1px solid rgba(245, 158, 11, 0.45)",
-              color: "#fbbf24",
+              background: "linear-gradient(135deg, rgba(209, 160, 104, 0.2), rgba(189, 40, 32, 0.15))",
+              border: "1px solid rgba(209, 160, 104, 0.4)",
+              color: "#dfa84a",
               padding: "8px 16px",
               borderRadius: "8px",
               fontSize: "12px",
