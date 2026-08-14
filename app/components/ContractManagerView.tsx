@@ -7,6 +7,7 @@ import { ClientSelectAutocomplete } from "./ClientSelectAutocomplete";
 
 interface ContractManagerViewProps {
   onOpenLanding: () => void;
+  onOpenDashboard?: () => void;
   loggedUserKey?: string;
 }
 
@@ -228,6 +229,7 @@ function PlotAutocompleteInput({
 
 export function ContractManagerView({
   onOpenLanding,
+  onOpenDashboard,
   loggedUserKey = "usuario",
 }: ContractManagerViewProps) {
   const [contracts, setContracts] = useState<ContractRecord[]>([]);
@@ -773,6 +775,30 @@ export function ContractManagerView({
           >
             👤 {loggedUserKey}
           </span>
+          {onOpenDashboard && (
+            <button
+              onClick={onOpenDashboard}
+              style={{
+                background: "rgba(52, 211, 153, 0.15)",
+                border: "1px solid rgba(52, 211, 153, 0.35)",
+                color: "#6ee7b7",
+                padding: "8px 16px",
+                borderRadius: "8px",
+                fontSize: "12.5px",
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = "rgba(52, 211, 153, 0.25)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = "rgba(52, 211, 153, 0.15)")
+              }
+            >
+              📊 Dashboard & Métricas
+            </button>
+          )}
           <button
             onClick={onOpenLanding}
             style={{

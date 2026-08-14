@@ -13,6 +13,7 @@ interface EudrHeaderProps {
   onOpenClientPortal?: () => void;
   onOpenCloudExplorer?: () => void;
   onOpenLanding?: () => void;
+  onOpenDashboard?: () => void;
 }
 
 export function EudrHeader({
@@ -26,6 +27,7 @@ export function EudrHeader({
   onOpenClientPortal,
   onOpenCloudExplorer,
   onOpenLanding,
+  onOpenDashboard,
 }: EudrHeaderProps) {
   return (
     <header className="topbar">
@@ -61,6 +63,24 @@ export function EudrHeader({
             }}
           >
             🏠 Início
+          </button>
+        )}
+
+        {onOpenDashboard && (
+          <button
+            onClick={onOpenDashboard}
+            style={{
+              background: "rgba(52, 211, 153, 0.18)",
+              border: "1px solid rgba(52, 211, 153, 0.35)",
+              color: "#6ee7b7",
+              borderRadius: "8px",
+              padding: "7px 12px",
+              fontSize: "12px",
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            📊 Dashboard & Métricas
           </button>
         )}
 
