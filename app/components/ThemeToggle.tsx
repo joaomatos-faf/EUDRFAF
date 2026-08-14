@@ -21,30 +21,26 @@ export function ThemeToggle({ style, showText = true }: ThemeToggleProps) {
         display: "inline-flex",
         alignItems: "center",
         gap: "6px",
-        padding: showText ? "7px 13px" : "7px 9px",
-        borderRadius: "999px",
+        padding: showText ? "6px 12px" : "6px 8px",
+        borderRadius: "6px",
         fontSize: "12px",
-        fontWeight: 750,
+        fontWeight: 650,
         cursor: "pointer",
-        transition: "all 0.2s ease",
-        border: isDark
-          ? "1px solid rgba(209, 160, 104, 0.35)"
-          : "1px solid rgba(189, 40, 32, 0.35)",
-        background: isDark
-          ? "linear-gradient(135deg, rgba(209, 160, 104, 0.15), rgba(189, 40, 32, 0.12))"
-          : "linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(250, 238, 231, 0.95))",
-        color: isDark ? "#dfa84a" : "#bd2820",
-        boxShadow: isDark
-          ? "0 2px 8px rgba(0, 0, 0, 0.3)"
-          : "0 2px 8px rgba(189, 40, 32, 0.12)",
+        transition: "all 0.15s ease",
+        border: "1px solid var(--border-strong)",
+        background: "var(--bg-surface)",
+        color: "var(--text-primary)",
+        boxShadow: "var(--shadow-subtle)",
         ...style,
       }}
     >
-      <span style={{ fontSize: "14px", lineHeight: 1 }}>
+      <span style={{ fontSize: "13px", lineHeight: 1 }}>
         {isDark ? "☀️" : "🌙"}
       </span>
       {showText && (
-        <span>{isDark ? "Modo Claro" : "Modo Escuro"}</span>
+        <span style={{ letterSpacing: "0.01em" }}>
+          {isDark ? "Modo Claro" : "Modo Escuro"}
+        </span>
       )}
     </button>
   );

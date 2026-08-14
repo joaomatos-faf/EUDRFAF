@@ -31,22 +31,29 @@ export function LoginScreen({
   loginError,
   onLogin,
   onBackToLanding,
-  title = "Acesso Autorizado FAF",
+  title = "Autenticação Corporativa",
   eyebrow = "FAF Coffees · Sustentabilidade",
   subtitle = "Informe suas credenciais para gerenciar contratos, talhões e conformidade EUDR.",
-  buttonText = "Entrar no Sistema FAF ➔",
+  buttonText = "Entrar no Sistema ➔",
   userLabel = "Usuário",
   passLabel = "Senha",
-  userPlaceholder = "Informe seu usuário",
-  passPlaceholder = "Informe sua senha",
-  backText = "← Voltar à Página Inicial (fafeu.online)",
+  userPlaceholder = "Digite seu usuário",
+  passPlaceholder = "Digite sua senha",
+  backText = "← Voltar à Página Inicial",
 }: LoginScreenProps) {
   const { isDark } = useTheme();
 
   const handleBack = () => {
     if (typeof window !== "undefined") {
       const host = window.location.hostname.toLowerCase();
-      if (host.startsWith("contratos.") || host.startsWith("portal.") || host.startsWith("cliente.") || host.startsWith("cloud.") || host.includes("fafeu.online")) {
+      if (
+        host.startsWith("contratos.") ||
+        host.startsWith("portal.") ||
+        host.startsWith("cliente.") ||
+        host.startsWith("cloud.") ||
+        host.startsWith("app.") ||
+        host.includes("fafeu.online")
+      ) {
         window.location.href = "https://fafeu.online";
         return;
       }
@@ -60,34 +67,24 @@ export function LoginScreen({
         display: "grid",
         minHeight: "100vh",
         placeItems: "center",
-        background: isDark
-          ? "radial-gradient(ellipse at 50% 0%, #28120e 0%, #160a08 50%, #0a0403 100%)"
-          : "radial-gradient(ellipse at 50% 0%, #fffbf7 0%, #f7efe6 50%, #eddcd0 100%)",
+        background: "var(--bg-canvas)",
         padding: "24px",
-        fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
         position: "relative",
-        transition: "background 0.3s ease, color 0.3s ease",
       }}
     >
-      <div style={{ position: "absolute", top: "24px", right: "24px" }}>
+      <div style={{ position: "absolute", top: "20px", right: "24px" }}>
         <ThemeToggle />
       </div>
 
       <div
         style={{
           width: "100%",
-          maxWidth: "440px",
-          background: isDark
-            ? "linear-gradient(150deg, rgba(38, 18, 14, 0.95) 0%, rgba(20, 10, 8, 0.98) 100%)"
-            : "linear-gradient(150deg, rgba(255, 255, 255, 0.98) 0%, rgba(253, 248, 242, 0.98) 100%)",
-          border: isDark ? "1px solid rgba(209, 160, 104, 0.35)" : "1px solid rgba(209, 160, 104, 0.4)",
-          borderRadius: "24px",
-          padding: "40px 36px",
-          boxShadow: isDark
-            ? "0 25px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(189, 40, 32, 0.15)"
-            : "0 20px 50px rgba(70, 30, 20, 0.1)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
+          maxWidth: "420px",
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border-strong)",
+          borderRadius: "12px",
+          padding: "36px 32px",
+          boxShadow: "var(--shadow-card)",
         }}
       >
         {onBackToLanding && (
@@ -96,14 +93,14 @@ export function LoginScreen({
             style={{
               background: "transparent",
               border: "none",
-              color: isDark ? "#dfa84a" : "#b37e33",
-              fontSize: "13px",
+              color: "var(--brand-ochre)",
+              fontSize: "12.5px",
               fontWeight: 700,
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
               gap: "6px",
-              marginBottom: "24px",
+              marginBottom: "20px",
               padding: 0,
             }}
           >
@@ -111,34 +108,65 @@ export function LoginScreen({
           </button>
         )}
 
-        <div style={{ textAlign: "center", marginBottom: "28px" }}>
+        <div style={{ textAlign: "center", marginBottom: "24px" }}>
           <img
             src="/faf-logo-transparent.png"
             alt="FAF Coffees"
             style={{
-              height: "72px",
+              height: "56px",
               width: "auto",
               objectFit: "contain",
-              margin: "0 auto 16px",
+              margin: "0 auto 14px",
               display: "block",
-              filter: isDark
-                ? "drop-shadow(0 8px 20px rgba(189, 40, 32, 0.35))"
-                : "drop-shadow(0 6px 15px rgba(189, 40, 32, 0.2))",
             }}
           />
-          <p style={{ margin: "0 0 4px", color: isDark ? "#dfa84a" : "#b37e33", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px" }}>
+          <span
+            style={{
+              display: "block",
+              fontSize: "10.5px",
+              fontWeight: 800,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "var(--brand-ochre)",
+              marginBottom: "4px",
+            }}
+          >
             {eyebrow}
-          </p>
-          <h1 style={{ margin: 0, fontSize: "22px", color: isDark ? "#ffffff" : "#1a0f0d", fontWeight: 800, letterSpacing: "-0.3px" }}>
+          </span>
+          <h1
+            style={{
+              fontSize: "20px",
+              fontWeight: 800,
+              letterSpacing: "-0.01em",
+              color: "var(--text-primary)",
+              margin: "0 0 6px",
+            }}
+          >
             {title}
           </h1>
-          <p style={{ margin: "10px 0 0", color: isDark ? "#d4c4b6" : "#5c4d44", fontSize: "13px", lineHeight: "1.5" }}>
+          <p
+            style={{
+              fontSize: "13px",
+              color: "var(--text-secondary)",
+              margin: 0,
+              lineHeight: "1.5",
+            }}
+          >
             {subtitle}
           </p>
         </div>
 
-        <form onSubmit={onLogin} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-          <label style={{ display: "flex", flexDirection: "column", gap: "7px", fontSize: "12px", fontWeight: 700, color: isDark ? "#fcf9f5" : "#1a0f0d" }}>
+        <form onSubmit={onLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <label
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px",
+              fontSize: "12px",
+              fontWeight: 700,
+              color: "var(--text-primary)",
+            }}
+          >
             {userLabel}
             <input
               type="text"
@@ -146,35 +174,44 @@ export function LoginScreen({
               onChange={(e) => setLoginUsername(e.target.value)}
               placeholder={userPlaceholder}
               autoFocus
+              required
               style={{
-                padding: "13px 16px",
-                borderRadius: "12px",
-                border: isDark ? "1px solid rgba(209, 160, 104, 0.3)" : "1px solid rgba(209, 160, 104, 0.4)",
+                padding: "10px 14px",
+                borderRadius: "8px",
+                border: "1px solid var(--border-strong)",
                 outline: "none",
-                fontSize: "14px",
-                background: isDark ? "rgba(10, 4, 3, 0.6)" : "#ffffff",
-                color: isDark ? "#ffffff" : "#1a0f0d",
-                transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+                fontSize: "13.5px",
+                background: "var(--bg-surface)",
+                color: "var(--text-primary)",
               }}
             />
           </label>
 
-          <label style={{ display: "flex", flexDirection: "column", gap: "7px", fontSize: "12px", fontWeight: 700, color: isDark ? "#fcf9f5" : "#1a0f0d" }}>
+          <label
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px",
+              fontSize: "12px",
+              fontWeight: 700,
+              color: "var(--text-primary)",
+            }}
+          >
             {passLabel}
             <input
               type="password"
               value={loginPassword}
               onChange={(e) => setLoginPassword(e.target.value)}
               placeholder={passPlaceholder}
+              required
               style={{
-                padding: "13px 16px",
-                borderRadius: "12px",
-                border: isDark ? "1px solid rgba(209, 160, 104, 0.3)" : "1px solid rgba(209, 160, 104, 0.4)",
+                padding: "10px 14px",
+                borderRadius: "8px",
+                border: "1px solid var(--border-strong)",
                 outline: "none",
-                fontSize: "14px",
-                background: isDark ? "rgba(10, 4, 3, 0.6)" : "#ffffff",
-                color: isDark ? "#ffffff" : "#1a0f0d",
-                transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+                fontSize: "13.5px",
+                background: "var(--bg-surface)",
+                color: "var(--text-primary)",
               }}
             />
           </label>
@@ -182,14 +219,13 @@ export function LoginScreen({
           {loginError && (
             <div
               style={{
-                margin: 0,
-                color: "#fca5a5",
-                background: "rgba(189, 40, 32, 0.2)",
-                border: "1px solid rgba(189, 40, 32, 0.4)",
-                padding: "10px 14px",
-                borderRadius: "10px",
-                fontSize: "13px",
-                fontWeight: 600,
+                color: "var(--status-danger)",
+                background: "var(--status-danger-bg)",
+                border: "1px solid rgba(166, 38, 29, 0.3)",
+                padding: "8px 12px",
+                borderRadius: "6px",
+                fontSize: "12.5px",
+                fontWeight: 650,
                 textAlign: "center",
               }}
             >
@@ -201,17 +237,17 @@ export function LoginScreen({
             type="submit"
             style={{
               width: "100%",
-              padding: "14px",
-              marginTop: "8px",
-              fontSize: "14px",
-              fontWeight: 800,
-              borderRadius: "12px",
-              border: "1px solid rgba(209, 160, 104, 0.4)",
-              background: "linear-gradient(135deg, #bd2820 0%, #8d1b15 100%)",
+              padding: "12px",
+              marginTop: "6px",
+              fontSize: "13.5px",
+              fontWeight: 750,
+              borderRadius: "8px",
+              background: "var(--brand-crimson)",
               color: "#ffffff",
+              border: "1px solid var(--brand-crimson-dark)",
               cursor: "pointer",
-              boxShadow: "0 8px 24px rgba(189, 40, 32, 0.4)",
-              transition: "transform 0.15s ease, box-shadow 0.15s ease",
+              boxShadow: "0 2px 6px rgba(166, 38, 29, 0.2)",
+              transition: "background-color 0.15s ease",
             }}
           >
             {buttonText}

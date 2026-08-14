@@ -246,16 +246,12 @@ export function ClientPortalModal({
         position: "fixed",
         inset: 0,
         zIndex: 9999,
-        background: isDark
-          ? "radial-gradient(ellipse at 50% 0%, #28120e 0%, #160a08 50%, #0a0403 100%)"
-          : "radial-gradient(ellipse at 50% 0%, #fffbf7 0%, #f7efe6 50%, #eddcd0 100%)",
-        color: isDark ? "#fcf9f5" : "#1a0f0d",
+        background: "var(--bg-canvas)",
+        color: "var(--text-primary)",
         overflowY: "auto",
         display: "flex",
         flexDirection: "column",
-        fontFamily:
-          "'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-        transition: "background 0.3s ease, color 0.3s ease",
+        transition: "background 0.25s ease, color 0.25s ease",
       }}
     >
       {/* Top Navbar */}
@@ -264,15 +260,15 @@ export function ClientPortalModal({
           position: "sticky",
           top: 0,
           zIndex: 40,
-          background: isDark ? "linear-gradient(135deg, #1a0f0d 0%, #120908 100%)" : "rgba(255, 255, 255, 0.94)",
-          color: isDark ? "#ffffff" : "#1a0f0d",
+          background: "var(--bg-header)",
+          backdropFilter: "blur(12px)",
+          color: "var(--text-primary)",
           padding: "0 max(28px, calc((100vw - 1480px) / 2))",
-          height: "76px",
+          height: "72px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.4)" : "0 4px 20px rgba(70,30,20,0.06)",
-          borderBottom: isDark ? "1px solid rgba(209, 160, 104, 0.25)" : "1px solid rgba(209, 160, 104, 0.35)",
+          borderBottom: "1px solid var(--border-hairline)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
@@ -280,7 +276,7 @@ export function ClientPortalModal({
             src="/faf-logo-transparent.png"
             alt="FAF Coffees"
             style={{
-              height: "44px",
+              height: "40px",
               width: "auto",
               objectFit: "contain",
               display: "block",
@@ -290,8 +286,8 @@ export function ClientPortalModal({
             <p
               style={{
                 margin: "0 0 2px",
-                color: isDark ? "#dfa84a" : "#b37e33",
-                fontSize: "11px",
+                color: "var(--brand-ochre)",
+                fontSize: "10.5px",
                 fontWeight: 800,
                 letterSpacing: ".12em",
                 textTransform: "uppercase",
@@ -302,10 +298,10 @@ export function ClientPortalModal({
             <h1
               style={{
                 margin: 0,
-                color: isDark ? "#ffffff" : "#1a0f0d",
-                fontSize: "18px",
-                fontWeight: 700,
-                letterSpacing: "-.02em",
+                color: "var(--text-primary)",
+                fontSize: "17px",
+                fontWeight: 750,
+                letterSpacing: "-.01em",
               }}
             >
               Client Portal & EUDR Dossiers
@@ -319,11 +315,11 @@ export function ClientPortalModal({
           {loggedClientName ? (
             <span
               style={{
-                background: isDark ? "rgba(209, 160, 104, 0.15)" : "rgba(209, 160, 104, 0.2)",
-                border: "1px solid rgba(209, 160, 104, 0.35)",
-                color: isDark ? "#dfa84a" : "#b37e33",
-                padding: "6px 14px",
-                borderRadius: "999px",
+                background: "var(--bg-surface)",
+                border: "1px solid var(--border-strong)",
+                color: "var(--brand-ochre)",
+                padding: "5px 12px",
+                borderRadius: "6px",
                 fontSize: "12px",
                 fontWeight: 800,
                 letterSpacing: "0.5px",
@@ -334,11 +330,11 @@ export function ClientPortalModal({
           ) : (
             <span
               style={{
-                background: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)",
-                border: "1px solid rgba(209, 160, 104, 0.25)",
-                color: isDark ? "#fcf9f5" : "#1a0f0d",
-                padding: "6px 12px",
-                borderRadius: "999px",
+                background: "var(--bg-surface)",
+                border: "1px solid var(--border-hairline)",
+                color: "var(--text-secondary)",
+                padding: "5px 12px",
+                borderRadius: "6px",
                 fontSize: "12px",
                 fontWeight: 700,
               }}
@@ -349,13 +345,13 @@ export function ClientPortalModal({
 
           <span
             style={{
-              color: isDark ? "#dfa84a" : "#b37e33",
+              color: "var(--text-secondary)",
               fontSize: "12px",
-              fontWeight: 700,
-              background: isDark ? "rgba(209, 160, 104, 0.12)" : "rgba(209, 160, 104, 0.2)",
-              padding: "6px 14px",
-              borderRadius: "8px",
-              border: "1px solid rgba(209, 160, 104, 0.25)",
+              fontWeight: 650,
+              background: "var(--bg-surface)",
+              padding: "5px 12px",
+              borderRadius: "6px",
+              border: "1px solid var(--border-hairline)",
             }}
           >
             👤 {displayName}
@@ -364,10 +360,6 @@ export function ClientPortalModal({
           <button
             onClick={() => setCurrentPortalTab("server-files")}
             style={{
-              background: isDark
-                ? "linear-gradient(135deg, rgba(209, 160, 104, 0.2), rgba(189, 40, 32, 0.15))"
-                : "linear-gradient(135deg, rgba(209, 160, 104, 0.25), rgba(189, 40, 32, 0.1))",
-              border: "1px solid rgba(209, 160, 104, 0.4)",
               color: isDark ? "#dfa84a" : "#b37e33",
               padding: "8px 16px",
               borderRadius: "8px",

@@ -781,11 +781,11 @@ export default function CloudStoragePage() {
             <button
               onClick={userMgmt.handleLogout}
               style={{
-                background: "rgba(255, 255, 255, 0.08)",
-                border: "1px solid rgba(209, 160, 104, 0.25)",
-                color: "#fcf9f5",
+                background: "var(--bg-surface)",
+                border: "1px solid var(--border-strong)",
+                color: "var(--text-primary)",
                 padding: "10px 18px",
-                borderRadius: "10px",
+                borderRadius: "8px",
                 fontSize: "13px",
                 fontWeight: 700,
                 cursor: "pointer",
@@ -804,14 +804,11 @@ export default function CloudStoragePage() {
     <div
       style={{
         minHeight: "100vh",
-        background: isDark
-          ? "radial-gradient(ellipse at 50% 0%, #28120e 0%, #160a08 50%, #0a0403 100%)"
-          : "radial-gradient(ellipse at 50% 0%, #fffbf7 0%, #f7efe6 50%, #eddcd0 100%)",
-        color: isDark ? "#fcf9f5" : "#1a0f0d",
-        fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif",
+        background: "var(--bg-canvas)",
+        color: "var(--text-primary)",
         display: "flex",
         flexDirection: "column",
-        transition: "background 0.3s ease, color 0.3s ease",
+        transition: "background 0.25s ease, color 0.25s ease",
       }}
     >
       {/* Top Header */}
@@ -820,28 +817,27 @@ export default function CloudStoragePage() {
           position: "sticky",
           top: 0,
           zIndex: 40,
-          background: isDark ? "rgba(22, 10, 8, 0.9)" : "rgba(255, 255, 255, 0.94)",
-          backdropFilter: "blur(14px)",
-          borderBottom: isDark ? "1px solid rgba(209, 160, 104, 0.25)" : "1px solid rgba(209, 160, 104, 0.35)",
+          background: "var(--bg-header)",
+          backdropFilter: "blur(12px)",
+          borderBottom: "1px solid var(--border-hairline)",
           padding: "0 28px",
           height: "72px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.5)" : "0 4px 20px rgba(70,30,20,0.06)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <img
             src="/faf-logo-transparent.png"
             alt="FAF Coffees"
-            style={{ height: "42px", width: "auto", objectFit: "contain", display: "block" }}
+            style={{ height: "40px", width: "auto", objectFit: "contain", display: "block" }}
           />
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span
                 style={{
-                  color: isDark ? "#dfa84a" : "#b37e33",
+                  color: "var(--brand-ochre)",
                   fontSize: "11px",
                   fontWeight: 800,
                   letterSpacing: "0.08em",
@@ -852,28 +848,28 @@ export default function CloudStoragePage() {
               </span>
               <span
                 style={{
-                  background: isDark ? "rgba(189, 40, 32, 0.2)" : "rgba(189, 40, 32, 0.1)",
-                  color: isDark ? "#fca5a5" : "#bd2820",
+                  background: "var(--status-danger-bg)",
+                  color: "var(--brand-crimson)",
                   fontSize: "10px",
                   fontWeight: 800,
                   padding: "2px 8px",
-                  borderRadius: "999px",
-                  border: "1px solid rgba(189, 40, 32, 0.35)",
+                  borderRadius: "4px",
+                  border: "1px solid rgba(166, 38, 29, 0.2)",
                 }}
               >
-                ● CLOUDFLARE R2
+                R2 BUCKET
               </span>
             </div>
             <h1
               style={{
                 margin: 0,
                 fontSize: "17px",
-                fontWeight: 700,
-                color: isDark ? "#ffffff" : "#1a0f0d",
+                fontWeight: 750,
+                color: "var(--text-primary)",
                 letterSpacing: "-0.01em",
               }}
             >
-              FAF Cloud Storage & Arquivos EUDR
+              FAF Cloud Storage · Repositório Regional
             </h1>
           </div>
         </div>

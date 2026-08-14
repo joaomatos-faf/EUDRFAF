@@ -184,8 +184,7 @@ export default function ExecutiveDashboardView({
         maxWidth: "1600px",
         margin: "0 auto",
         padding: "20px 24px 60px",
-        color: isDark ? "#fcf9f5" : "#1a0f0d",
-        fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
+        color: "var(--text-primary)",
       }}
     >
       {/* Header Executivo com Identidade FAF */}
@@ -197,43 +196,39 @@ export default function ExecutiveDashboardView({
           flexWrap: "wrap",
           gap: "16px",
           marginBottom: "24px",
-          background: isDark
-            ? "linear-gradient(135deg, rgba(38, 18, 14, 0.95), rgba(20, 10, 8, 0.95))"
-            : "linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(253, 248, 242, 0.95))",
-          padding: "22px 28px",
-          borderRadius: "20px",
-          border: isDark ? "1px solid rgba(209, 160, 104, 0.35)" : "1px solid rgba(209, 160, 104, 0.4)",
-          boxShadow: isDark
-            ? "0 15px 35px rgba(0,0,0,0.4), 0 0 30px rgba(189, 40, 32, 0.1)"
-            : "0 14px 40px rgba(70, 30, 20, 0.08)",
+          background: "var(--bg-surface)",
+          padding: "20px 24px",
+          borderRadius: "12px",
+          border: "1px solid var(--border-hairline)",
+          boxShadow: "var(--shadow-subtle)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
           <img
             src="/faf-symbol.png"
             alt="FAF Coffees"
-            style={{ height: "48px", width: "auto", objectFit: "contain", display: "block" }}
+            style={{ height: "44px", width: "auto", objectFit: "contain", display: "block" }}
           />
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
-              <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 800, color: isDark ? "#ffffff" : "#1a0f0d", letterSpacing: "-0.02em" }}>
+              <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
                 Dashboard Executivo · Conformidade EUDR & Métricas
               </h2>
               <span
                 style={{
-                  background: isDark ? "rgba(189, 40, 32, 0.2)" : "rgba(189, 40, 32, 0.1)",
-                  color: isDark ? "#fca5a5" : "#bd2820",
+                  background: "var(--status-success-bg)",
+                  color: "var(--status-success)",
                   fontSize: "11px",
-                  fontWeight: 800,
-                  padding: "3px 10px",
-                  borderRadius: "999px",
-                  border: "1px solid rgba(189, 40, 32, 0.4)",
+                  fontWeight: 700,
+                  padding: "3px 8px",
+                  borderRadius: "4px",
+                  border: "1px solid rgba(27, 122, 67, 0.2)",
                 }}
               >
                 ● DADOS EM TEMPO REAL
               </span>
             </div>
-            <p style={{ margin: 0, fontSize: "13px", color: isDark ? "#d4c4b6" : "#5c4d44" }}>
+            <p style={{ margin: 0, fontSize: "13px", color: "var(--text-secondary)" }}>
               Monitoramento geoespacial de cafezais certificados, regulamento (UE 2023/1115) e auditoria de talhões FAF Coffees.
             </p>
           </div>
@@ -245,19 +240,19 @@ export default function ExecutiveDashboardView({
           <button
             onClick={handleExportCSV}
             style={{
-              background: "linear-gradient(135deg, #d1a068, #a8793e)",
-              color: "#1a0f0d",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-              borderRadius: "10px",
-              padding: "10px 18px",
-              fontSize: "13px",
-              fontWeight: 800,
+              background: "var(--brand-crimson)",
+              color: "#ffffff",
+              border: "1px solid var(--brand-crimson-dark)",
+              borderRadius: "8px",
+              padding: "9px 16px",
+              fontSize: "12.5px",
+              fontWeight: 750,
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
               gap: "8px",
-              boxShadow: "0 4px 15px rgba(209, 160, 104, 0.3)",
-              transition: "all 0.2s ease",
+              boxShadow: "0 2px 6px rgba(166, 38, 29, 0.2)",
+              transition: "background-color 0.15s ease",
             }}
           >
             📥 Exportar Relatório CSV
@@ -277,27 +272,23 @@ export default function ExecutiveDashboardView({
         {/* Card 1: Hectares */}
         <div
           style={{
-            background: isDark
-              ? "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))"
-              : "linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(253, 248, 242, 0.98))",
-            border: isDark ? "1px solid rgba(209, 160, 104, 0.3)" : "1px solid rgba(209, 160, 104, 0.35)",
-            borderRadius: "16px",
-            padding: "22px",
-            position: "relative",
-            overflow: "hidden",
-            boxShadow: isDark ? "0 10px 25px rgba(0,0,0,0.3)" : "0 8px 24px rgba(70, 30, 20, 0.06)",
+            background: "var(--bg-surface)",
+            border: "1px solid var(--border-hairline)",
+            borderRadius: "10px",
+            padding: "20px",
+            boxShadow: "var(--shadow-subtle)",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-            <span style={{ fontSize: "11.5px", fontWeight: 800, color: isDark ? "#dfa84a" : "#b37e33", textTransform: "uppercase", letterSpacing: "0.8px" }}>
+            <span style={{ fontSize: "11px", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.8px" }}>
               Área Total Certificada
             </span>
-            <span style={{ fontSize: "20px" }}>🌳</span>
+            <span style={{ fontSize: "18px" }}>🌳</span>
           </div>
-          <div style={{ fontSize: "28px", fontWeight: 900, color: isDark ? "#ffffff" : "#1a0f0d", lineHeight: 1.1 }}>
-            {stats.totalHectares.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} <span style={{ fontSize: "16px", color: isDark ? "#dfa84a" : "#bd2820", fontWeight: 700 }}>ha</span>
+          <div style={{ fontSize: "26px", fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.1 }}>
+            {stats.totalHectares.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} <span style={{ fontSize: "15px", color: "var(--brand-crimson)", fontWeight: 700 }}>ha</span>
           </div>
-          <span style={{ fontSize: "12px", color: isDark ? "#d4c4b6" : "#5c4d44", display: "block", marginTop: "6px" }}>
+          <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block", marginTop: "6px" }}>
             Distribuição em {stats.totalPlots} talhões poligonais
           </span>
         </div>
@@ -305,25 +296,23 @@ export default function ExecutiveDashboardView({
         {/* Card 2: Produtores */}
         <div
           style={{
-            background: isDark
-              ? "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))"
-              : "linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(253, 248, 242, 0.98))",
-            border: isDark ? "1px solid rgba(209, 160, 104, 0.3)" : "1px solid rgba(209, 160, 104, 0.35)",
-            borderRadius: "16px",
-            padding: "22px",
-            boxShadow: isDark ? "0 10px 25px rgba(0,0,0,0.3)" : "0 8px 24px rgba(70, 30, 20, 0.06)",
+            background: "var(--bg-surface)",
+            border: "1px solid var(--border-hairline)",
+            borderRadius: "10px",
+            padding: "20px",
+            boxShadow: "var(--shadow-subtle)",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-            <span style={{ fontSize: "11.5px", fontWeight: 800, color: isDark ? "#dfa84a" : "#b37e33", textTransform: "uppercase", letterSpacing: "0.8px" }}>
+            <span style={{ fontSize: "11px", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.8px" }}>
               Produtores & Fazendas
             </span>
-            <span style={{ fontSize: "20px" }}>👨‍🌾</span>
+            <span style={{ fontSize: "18px" }}>👨‍🌾</span>
           </div>
-          <div style={{ fontSize: "28px", fontWeight: 900, color: isDark ? "#ffffff" : "#1a0f0d", lineHeight: 1.1 }}>
-            {stats.uniqueProducers} <span style={{ fontSize: "16px", color: isDark ? "#d4c4b6" : "#7a6e66", fontWeight: 700 }}>produtores</span>
+          <div style={{ fontSize: "26px", fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.1 }}>
+            {stats.uniqueProducers} <span style={{ fontSize: "15px", color: "var(--text-secondary)", fontWeight: 700 }}>produtores</span>
           </div>
-          <span style={{ fontSize: "12px", color: isDark ? "#d4c4b6" : "#5c4d44", display: "block", marginTop: "6px" }}>
+          <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block", marginTop: "6px" }}>
             {stats.uniqueFarms} fazendas em {stats.uniqueRegions.length} regiões cafeeiras
           </span>
         </div>
@@ -331,25 +320,23 @@ export default function ExecutiveDashboardView({
         {/* Card 3: Conformidade */}
         <div
           style={{
-            background: isDark
-              ? "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))"
-              : "linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(253, 248, 242, 0.98))",
-            border: isDark ? "1px solid rgba(189, 40, 32, 0.35)" : "1px solid rgba(189, 40, 32, 0.35)",
-            borderRadius: "16px",
-            padding: "22px",
-            boxShadow: isDark ? "0 10px 25px rgba(0,0,0,0.3)" : "0 8px 24px rgba(70, 30, 20, 0.06)",
+            background: "var(--bg-surface)",
+            border: "1px solid var(--border-hairline)",
+            borderRadius: "10px",
+            padding: "20px",
+            boxShadow: "var(--shadow-subtle)",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-            <span style={{ fontSize: "11.5px", fontWeight: 800, color: isDark ? "#dfa84a" : "#b37e33", textTransform: "uppercase", letterSpacing: "0.8px" }}>
+            <span style={{ fontSize: "11px", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.8px" }}>
               Conformidade EUDR
             </span>
-            <span style={{ fontSize: "20px" }}>🛡️</span>
+            <span style={{ fontSize: "18px" }}>🛡️</span>
           </div>
-          <div style={{ fontSize: "28px", fontWeight: 900, color: "#16a34a", lineHeight: 1.1 }}>
-            100% <span style={{ fontSize: "16px", color: "#16a34a", fontWeight: 700 }}>Conforme</span>
+          <div style={{ fontSize: "26px", fontWeight: 800, color: "var(--status-success)", lineHeight: 1.1 }}>
+            100% <span style={{ fontSize: "15px", color: "var(--status-success)", fontWeight: 700 }}>Conforme</span>
           </div>
-          <span style={{ fontSize: "12px", color: isDark ? "#d4c4b6" : "#5c4d44", display: "block", marginTop: "6px" }}>
+          <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block", marginTop: "6px" }}>
             Zero desmatamento pós-31/12/2020 (MapBiomas + GFW)
           </span>
         </div>
@@ -357,25 +344,23 @@ export default function ExecutiveDashboardView({
         {/* Card 4: Sacas Estimadas */}
         <div
           style={{
-            background: isDark
-              ? "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))"
-              : "linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(253, 248, 242, 0.98))",
-            border: isDark ? "1px solid rgba(209, 160, 104, 0.3)" : "1px solid rgba(209, 160, 104, 0.35)",
-            borderRadius: "16px",
-            padding: "22px",
-            boxShadow: isDark ? "0 10px 25px rgba(0,0,0,0.3)" : "0 8px 24px rgba(70, 30, 20, 0.06)",
+            background: "var(--bg-surface)",
+            border: "1px solid var(--border-hairline)",
+            borderRadius: "10px",
+            padding: "20px",
+            boxShadow: "var(--shadow-subtle)",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-            <span style={{ fontSize: "11.5px", fontWeight: 800, color: isDark ? "#dfa84a" : "#b37e33", textTransform: "uppercase", letterSpacing: "0.8px" }}>
+            <span style={{ fontSize: "11px", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.8px" }}>
               Potencial Produtivo
             </span>
-            <span style={{ fontSize: "20px" }}>☕</span>
+            <span style={{ fontSize: "18px" }}>☕</span>
           </div>
-          <div style={{ fontSize: "28px", fontWeight: 900, color: isDark ? "#ffffff" : "#1a0f0d", lineHeight: 1.1 }}>
-            ~{stats.estimatedBags.toLocaleString("pt-BR")} <span style={{ fontSize: "16px", color: isDark ? "#dfa84a" : "#bd2820", fontWeight: 700 }}>sacas</span>
+          <div style={{ fontSize: "26px", fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.1 }}>
+            ~{stats.estimatedBags.toLocaleString("pt-BR")} <span style={{ fontSize: "15px", color: "var(--brand-ochre)", fontWeight: 700 }}>sacas</span>
           </div>
-          <span style={{ fontSize: "12px", color: isDark ? "#d4c4b6" : "#5c4d44", display: "block", marginTop: "6px" }}>
+          <span style={{ fontSize: "12px", color: "var(--text-secondary)", display: "block", marginTop: "6px" }}>
             {stats.totalContracts} contratos cadastrados no sistema
           </span>
         </div>

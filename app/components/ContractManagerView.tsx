@@ -712,13 +712,9 @@ export function ContractManagerView({
     <div
       style={{
         minHeight: "100vh",
-        background: isDark
-          ? "radial-gradient(ellipse at 50% 0%, #28120e 0%, #160a08 50%, #0a0403 100%)"
-          : "radial-gradient(ellipse at 50% 0%, #fffbf7 0%, #f7efe6 50%, #eddcd0 100%)",
-        color: isDark ? "#fcf9f5" : "#1a0f0d",
-        fontFamily:
-          "'Plus Jakarta Sans', 'Segoe UI Variable', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif",
-        transition: "background 0.3s ease, color 0.3s ease",
+        background: "var(--bg-canvas)",
+        color: "var(--text-primary)",
+        transition: "background 0.25s ease, color 0.25s ease",
       }}
     >
       {/* Top Corporate Navbar */}
@@ -727,17 +723,16 @@ export function ContractManagerView({
           position: "sticky",
           top: 0,
           zIndex: 40,
-          background: isDark ? "rgba(22, 10, 8, 0.88)" : "rgba(255, 255, 255, 0.92)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          color: isDark ? "#ffffff" : "#1a0f0d",
+          background: "var(--bg-header)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          color: "var(--text-primary)",
           padding: "0 max(28px, calc((100vw - 1480px) / 2))",
-          height: "76px",
+          height: "72px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.5)" : "0 4px 20px rgba(70,30,20,0.08)",
-          borderBottom: isDark ? "1px solid rgba(209, 160, 104, 0.25)" : "1px solid rgba(209, 160, 104, 0.35)",
+          borderBottom: "1px solid var(--border-hairline)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
@@ -745,7 +740,7 @@ export function ContractManagerView({
             src="/faf-logo-transparent.png"
             alt="FAF Coffees"
             style={{
-              height: "44px",
+              height: "40px",
               width: "auto",
               objectFit: "contain",
               display: "block",
@@ -755,7 +750,7 @@ export function ContractManagerView({
             <p
               style={{
                 margin: "0 0 2px",
-                color: isDark ? "#dfa84a" : "#b37e33",
+                color: "var(--brand-ochre)",
                 fontSize: "10.5px",
                 fontWeight: 800,
                 letterSpacing: ".12em",
@@ -767,10 +762,10 @@ export function ContractManagerView({
             <h1
               style={{
                 margin: 0,
-                color: isDark ? "#ffffff" : "#1a0f0d",
-                fontSize: "18px",
-                fontWeight: 700,
-                letterSpacing: "-.02em",
+                color: "var(--text-primary)",
+                fontSize: "17px",
+                fontWeight: 750,
+                letterSpacing: "-.01em",
               }}
             >
               Gestão de Contratos e Importadores
@@ -783,13 +778,13 @@ export function ContractManagerView({
 
           <span
             style={{
-              color: isDark ? "#dfa84a" : "#b37e33",
+              color: "var(--text-secondary)",
               fontSize: "12px",
-              fontWeight: 700,
-              background: isDark ? "rgba(209, 160, 104, 0.12)" : "rgba(209, 160, 104, 0.2)",
-              padding: "6px 14px",
-              borderRadius: "8px",
-              border: "1px solid rgba(209, 160, 104, 0.3)",
+              fontWeight: 650,
+              background: "var(--bg-surface)",
+              padding: "5px 12px",
+              borderRadius: "6px",
+              border: "1px solid var(--border-hairline)",
             }}
           >
             👤 {loggedUserKey}
@@ -799,16 +794,15 @@ export function ContractManagerView({
             <button
               onClick={onOpenDashboard}
               style={{
-                background: isDark
-                  ? "linear-gradient(135deg, rgba(209, 160, 104, 0.2), rgba(189, 40, 32, 0.15))"
-                  : "linear-gradient(135deg, rgba(209, 160, 104, 0.25), rgba(189, 40, 32, 0.1))",
-                border: "1px solid rgba(209, 160, 104, 0.35)",
-                color: isDark ? "#dfa84a" : "#b37e33",
-                padding: "8px 16px",
-                borderRadius: "8px",
+                background: "var(--bg-surface)",
+                border: "1px solid var(--border-strong)",
+                color: "var(--text-primary)",
+                padding: "6px 14px",
+                borderRadius: "6px",
                 fontSize: "12px",
-                fontWeight: 800,
+                fontWeight: 700,
                 cursor: "pointer",
+                boxShadow: "var(--shadow-subtle)",
                 transition: "all 0.15s ease",
               }}
             >
@@ -820,14 +814,15 @@ export function ContractManagerView({
             onClick={handleGoHome}
             title="Voltar para a página principal (fafeu.online)"
             style={{
-              background: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(189, 40, 32, 0.1)",
-              border: isDark ? "1px solid rgba(209, 160, 104, 0.25)" : "1px solid rgba(189, 40, 32, 0.3)",
-              color: isDark ? "#ffffff" : "#bd2820",
-              padding: "8px 16px",
-              borderRadius: "8px",
+              background: "var(--brand-crimson)",
+              border: "1px solid var(--brand-crimson-dark)",
+              color: "#ffffff",
+              padding: "6px 14px",
+              borderRadius: "6px",
               fontSize: "12px",
               fontWeight: 750,
               cursor: "pointer",
+              boxShadow: "0 2px 6px rgba(166, 38, 29, 0.2)",
               transition: "all 0.15s ease",
             }}
           >
@@ -855,12 +850,11 @@ export function ContractManagerView({
         >
           <div
             style={{
-              background: "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))",
-              border: "1px solid rgba(209, 160, 104, 0.25)",
-              backdropFilter: "blur(12px)",
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border-hairline)",
               padding: "18px 22px",
-              borderRadius: "16px",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.36)",
+              borderRadius: "10px",
+              boxShadow: "var(--shadow-subtle)",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -869,9 +863,9 @@ export function ContractManagerView({
             <div>
               <span
                 style={{
-                  fontSize: "11px",
+                  fontSize: "10.5px",
                   fontWeight: 800,
-                  color: "#dfa84a",
+                  color: "var(--text-muted)",
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
                 }}
@@ -880,18 +874,18 @@ export function ContractManagerView({
               </span>
               <div
                 style={{
-                  fontSize: "26px",
-                  fontWeight: 900,
-                  color: "#ffffff",
+                  fontSize: "24px",
+                  fontWeight: 800,
+                  color: "var(--text-primary)",
                   marginTop: "4px",
                 }}
               >
                 {contracts.length}{" "}
                 <span
                   style={{
-                    fontSize: "14px",
+                    fontSize: "13px",
                     fontWeight: 600,
-                    color: "#d4c4b6",
+                    color: "var(--text-secondary)",
                   }}
                 >
                   contratos
@@ -900,14 +894,14 @@ export function ContractManagerView({
             </div>
             <div
               style={{
-                width: "44px",
-                height: "44px",
-                borderRadius: "12px",
-                background: "rgba(209, 160, 104, 0.15)",
+                width: "40px",
+                height: "40px",
+                borderRadius: "8px",
+                background: "var(--bg-subtle)",
                 display: "grid",
                 placeItems: "center",
-                fontSize: "20px",
-                border: "1px solid rgba(209, 160, 104, 0.3)",
+                fontSize: "18px",
+                border: "1px solid var(--border-hairline)",
               }}
             >
               📄
@@ -916,12 +910,11 @@ export function ContractManagerView({
 
           <div
             style={{
-              background: "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))",
-              border: "1px solid rgba(209, 160, 104, 0.25)",
-              backdropFilter: "blur(12px)",
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border-hairline)",
               padding: "18px 22px",
-              borderRadius: "16px",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.36)",
+              borderRadius: "10px",
+              boxShadow: "var(--shadow-subtle)",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -930,9 +923,9 @@ export function ContractManagerView({
             <div>
               <span
                 style={{
-                  fontSize: "11px",
+                  fontSize: "10.5px",
                   fontWeight: 800,
-                  color: "#dfa84a",
+                  color: "var(--text-muted)",
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
                 }}
@@ -941,9 +934,9 @@ export function ContractManagerView({
               </span>
               <div
                 style={{
-                  fontSize: "26px",
-                  fontWeight: 900,
-                  color: "#ffffff",
+                  fontSize: "24px",
+                  fontWeight: 800,
+                  color: "var(--text-primary)",
                   marginTop: "4px",
                 }}
               >
@@ -953,9 +946,9 @@ export function ContractManagerView({
                 )}{" "}
                 <span
                   style={{
-                    fontSize: "14px",
+                    fontSize: "13px",
                     fontWeight: 600,
-                    color: "#d4c4b6",
+                    color: "var(--text-secondary)",
                   }}
                 >
                   lotes
@@ -964,14 +957,14 @@ export function ContractManagerView({
             </div>
             <div
               style={{
-                width: "44px",
-                height: "44px",
-                borderRadius: "12px",
-                background: "rgba(189, 40, 32, 0.18)",
+                width: "40px",
+                height: "40px",
+                borderRadius: "8px",
+                background: "var(--bg-subtle)",
                 display: "grid",
                 placeItems: "center",
-                fontSize: "20px",
-                border: "1px solid rgba(189, 40, 32, 0.35)",
+                fontSize: "18px",
+                border: "1px solid var(--border-hairline)",
               }}
             >
               📦
@@ -980,12 +973,11 @@ export function ContractManagerView({
 
           <div
             style={{
-              background: "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))",
-              border: "1px solid rgba(209, 160, 104, 0.25)",
-              backdropFilter: "blur(12px)",
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border-hairline)",
               padding: "18px 22px",
-              borderRadius: "16px",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.36)",
+              borderRadius: "10px",
+              boxShadow: "var(--shadow-subtle)",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -994,9 +986,9 @@ export function ContractManagerView({
             <div>
               <span
                 style={{
-                  fontSize: "11px",
+                  fontSize: "10.5px",
                   fontWeight: 800,
-                  color: "#dfa84a",
+                  color: "var(--text-muted)",
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",
                 }}
@@ -1005,9 +997,9 @@ export function ContractManagerView({
               </span>
               <div
                 style={{
-                  fontSize: "26px",
-                  fontWeight: 900,
-                  color: "#dfa84a",
+                  fontSize: "24px",
+                  fontWeight: 800,
+                  color: "var(--brand-ochre)",
                   marginTop: "4px",
                 }}
               >
@@ -1024,9 +1016,9 @@ export function ContractManagerView({
                 )}{" "}
                 <span
                   style={{
-                    fontSize: "14px",
+                    fontSize: "13px",
                     fontWeight: 600,
-                    color: "#d4c4b6",
+                    color: "var(--text-secondary)",
                   }}
                 >
                   talhões EUDR
@@ -1035,14 +1027,14 @@ export function ContractManagerView({
             </div>
             <div
               style={{
-                width: "44px",
-                height: "44px",
-                borderRadius: "12px",
-                background: "rgba(209, 160, 104, 0.15)",
+                width: "40px",
+                height: "40px",
+                borderRadius: "8px",
+                background: "var(--bg-subtle)",
                 display: "grid",
                 placeItems: "center",
-                fontSize: "20px",
-                border: "1px solid rgba(209, 160, 104, 0.3)",
+                fontSize: "18px",
+                border: "1px solid var(--border-hairline)",
               }}
             >
               ☁️
