@@ -35,42 +35,48 @@ export function EudrHeader({
 
   return (
     <header className="topbar">
-      <div className="brand-lockup" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+      <div className="brand-lockup">
         <img
           src="/faf-logo-transparent.png"
           alt="FAF Coffees"
-          style={{ height: "42px", width: "auto", objectFit: "contain", display: "block" }}
+          style={{
+            height: "40px",
+            width: "auto",
+            objectFit: "contain",
+            display: "block",
+          }}
         />
-        <div>
-          <p className="eyebrow" style={{ color: isDark ? "#dfa84a" : "#b37e33", fontSize: "10.5px", fontWeight: 800, margin: "0 0 2px" }}>
-            FAF COFFEES · SUSTENTABILIDADE & CONFORMIDADE
-          </p>
-          <h1 style={{ fontSize: "17px", fontWeight: 700, margin: 0, color: isDark ? "#ffffff" : "#1a0f0d" }}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <span className="eyebrow">
+            FAF Coffees · Agronomia & Operações
+          </span>
+          <h1>
             Preparador de Dossiê EUDR
           </h1>
         </div>
       </div>
 
-      <div className="topbar-actions" style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+      <div className="topbar-actions">
         <ThemeToggle />
 
         <span className="privacy-pill">
-          <span></span>Privacidade local ativada
+          <span />
+          WGS84 Submétrico
         </span>
 
         {onOpenLanding && (
           <button
             onClick={onOpenLanding}
             style={{
-              background: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(189, 40, 32, 0.1)",
-              border: isDark ? "1px solid rgba(209, 160, 104, 0.25)" : "1px solid rgba(189, 40, 32, 0.3)",
-              color: isDark ? "#fcf9f5" : "#bd2820",
-              borderRadius: "8px",
-              padding: "7px 14px",
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border-strong)",
+              color: "var(--text-primary)",
+              borderRadius: "6px",
+              padding: "6px 12px",
               fontSize: "12px",
-              fontWeight: 700,
-              cursor: "pointer",
-              transition: "all 0.2s ease",
+              fontWeight: 650,
+              boxShadow: "var(--shadow-subtle)",
+              transition: "all 0.15s ease",
             }}
           >
             🏠 Início
@@ -81,20 +87,18 @@ export function EudrHeader({
           <button
             onClick={onOpenDashboard}
             style={{
-              background: isDark
-                ? "linear-gradient(135deg, rgba(209, 160, 104, 0.2), rgba(189, 40, 32, 0.15))"
-                : "linear-gradient(135deg, rgba(209, 160, 104, 0.25), rgba(189, 40, 32, 0.1))",
-              border: "1px solid rgba(209, 160, 104, 0.4)",
-              color: isDark ? "#dfa84a" : "#b37e33",
-              borderRadius: "8px",
-              padding: "7px 14px",
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border-strong)",
+              color: "var(--text-primary)",
+              borderRadius: "6px",
+              padding: "6px 12px",
               fontSize: "12px",
-              fontWeight: 800,
-              cursor: "pointer",
-              transition: "all 0.2s ease",
+              fontWeight: 650,
+              boxShadow: "var(--shadow-subtle)",
+              transition: "all 0.15s ease",
             }}
           >
-            📊 Dashboard & Métricas
+            📊 Dashboard
           </button>
         )}
 
@@ -104,15 +108,15 @@ export function EudrHeader({
               <button
                 onClick={onNewProcess}
                 style={{
-                  background: "linear-gradient(135deg, #bd2820, #8d1b15)",
-                  border: "1px solid rgba(209, 160, 104, 0.3)",
+                  background: "var(--brand-crimson)",
+                  border: "1px solid var(--brand-crimson-dark)",
                   color: "#ffffff",
-                  borderRadius: "8px",
-                  padding: "7px 14px",
+                  borderRadius: "6px",
+                  padding: "6px 12px",
                   fontSize: "12px",
-                  fontWeight: 800,
-                  cursor: "pointer",
-                  boxShadow: "0 2px 8px rgba(189, 40, 32, 0.3)",
+                  fontWeight: 750,
+                  boxShadow: "0 2px 6px rgba(166, 38, 29, 0.2)",
+                  transition: "all 0.15s ease",
                 }}
               >
                 + Novo Processo
@@ -123,17 +127,17 @@ export function EudrHeader({
               <button
                 onClick={onOpenLogsModal}
                 style={{
-                  background: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)",
-                  border: "1px solid rgba(209, 160, 104, 0.25)",
-                  color: isDark ? "#fcf9f5" : "#1a0f0d",
-                  borderRadius: "8px",
-                  padding: "7px 14px",
+                  background: "var(--bg-surface)",
+                  border: "1px solid var(--border-hairline)",
+                  color: "var(--text-secondary)",
+                  borderRadius: "6px",
+                  padding: "6px 12px",
                   fontSize: "12px",
                   fontWeight: 600,
-                  cursor: "pointer",
+                  transition: "all 0.15s ease",
                 }}
               >
-                📋 Audit Logs
+                📋 Auditoria
               </button>
             )}
 
@@ -141,36 +145,50 @@ export function EudrHeader({
               <button
                 onClick={onOpenAdminModal}
                 style={{
-                  background: "linear-gradient(135deg, #d1a068, #a8793e)",
-                  color: "#1a0f0d",
-                  border: "none",
-                  borderRadius: "8px",
-                  padding: "7px 14px",
+                  background: "var(--bg-surface)",
+                  border: "1px solid var(--border-strong)",
+                  color: "var(--brand-ochre)",
+                  borderRadius: "6px",
+                  padding: "6px 12px",
                   fontSize: "12px",
-                  fontWeight: 800,
-                  cursor: "pointer",
-                  boxShadow: "0 2px 8px rgba(209, 160, 104, 0.3)",
+                  fontWeight: 700,
+                  transition: "all 0.15s ease",
                 }}
               >
-                ⚙️ Gerenciar Usuários
+                ⚙️ Usuários
               </button>
             )}
 
-            <button
-              onClick={onLogout}
+            <div
               style={{
-                background: "rgba(189, 40, 32, 0.15)",
-                border: "1px solid rgba(189, 40, 32, 0.35)",
-                color: isDark ? "#fca5a5" : "#bd2820",
-                borderRadius: "8px",
-                padding: "7px 12px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "4px 10px",
+                borderRadius: "6px",
+                border: "1px solid var(--border-hairline)",
+                background: "var(--bg-subtle)",
                 fontSize: "12px",
-                fontWeight: 700,
-                cursor: "pointer",
+                fontWeight: 650,
+                color: "var(--text-secondary)",
               }}
             >
-              Sair ({loggedUserKey})
-            </button>
+              <span>👤 {loggedUserKey}</span>
+              <button
+                onClick={onLogout}
+                title="Encerrar sessão"
+                style={{
+                  color: "var(--brand-crimson)",
+                  fontWeight: 800,
+                  fontSize: "11px",
+                  padding: "2px 6px",
+                  borderRadius: "4px",
+                  background: "var(--status-danger-bg)",
+                }}
+              >
+                Sair
+              </button>
+            </div>
           </>
         )}
       </div>

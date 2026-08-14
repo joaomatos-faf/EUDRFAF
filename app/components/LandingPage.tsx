@@ -10,381 +10,601 @@ interface LandingPageProps {
   onOpenDashboard?: () => void;
 }
 
-export function LandingPage({ onOpenFafApp, onOpenClientPortal, onOpenDashboard }: LandingPageProps) {
+export function LandingPage({
+  onOpenFafApp,
+  onOpenClientPortal,
+  onOpenDashboard,
+}: LandingPageProps) {
   const { isDark } = useTheme();
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: isDark
-          ? "radial-gradient(ellipse at 50% 0%, #28120e 0%, #160a08 50%, #0a0403 100%)"
-          : "radial-gradient(ellipse at 50% 0%, #fffbf7 0%, #f7efe6 50%, #eddcd0 100%)",
-        color: isDark ? "#fcf9f5" : "#1a0f0d",
-        fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        background: "var(--bg-canvas)",
+        color: "var(--text-primary)",
         display: "flex",
         flexDirection: "column",
-        position: "relative",
-        transition: "background 0.3s ease, color 0.3s ease",
+        transition: "background-color 0.25s ease, color 0.25s ease",
       }}
     >
-      <style>{`
-        .landing-cards-grid {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 24px;
-          width: 100%;
-          max-width: 1200px;
-        }
-        @media (max-width: 980px) {
-          .landing-cards-grid {
-            grid-template-columns: 1fr;
-            max-width: 520px;
-          }
-        }
-        .landing-card {
-          transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-        }
-        .landing-card:hover {
-          transform: translateY(-6px);
-        }
-      `}</style>
-
-      {/* Top Navbar */}
+      {/* Top Architectural Header */}
       <header
         style={{
-          padding: "18px 40px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          borderBottom: isDark ? "1px solid rgba(209, 160, 104, 0.2)" : "1px solid rgba(209, 160, 104, 0.35)",
-          background: isDark ? "rgba(18, 9, 8, 0.85)" : "rgba(255, 255, 255, 0.9)",
-          backdropFilter: "blur(14px)",
-          WebkitBackdropFilter: "blur(14px)",
-          boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.4)" : "0 4px 20px rgba(70,30,20,0.06)",
+          borderBottom: "1px solid var(--border-hairline)",
+          background: "var(--bg-header)",
+          backdropFilter: "blur(12px)",
+          position: "sticky",
+          top: 0,
+          zIndex: 40,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <img
-            src="/faf-logo-transparent.png"
-            alt="FAF Coffees"
-            style={{ height: "46px", width: "auto", objectFit: "contain", display: "block" }}
-          />
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-          <ThemeToggle />
-
-          {onOpenDashboard && (
-            <button
-              onClick={onOpenDashboard}
+        <div
+          style={{
+            maxWidth: "1400px",
+            margin: "0 auto",
+            padding: "16px 32px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+            <img
+              src="/faf-logo-transparent.png"
+              alt="FAF Coffees"
               style={{
-                fontSize: "12px",
-                background: isDark ? "rgba(209, 160, 104, 0.12)" : "rgba(209, 160, 104, 0.2)",
-                color: isDark ? "#dfa84a" : "#b37e33",
-                border: "1px solid rgba(209, 160, 104, 0.35)",
-                padding: "8px 16px",
-                borderRadius: "999px",
-                fontWeight: 800,
-                cursor: "pointer",
-                display: "inline-flex",
+                height: "44px",
+                width: "auto",
+                objectFit: "contain",
+                display: "block",
+              }}
+            />
+            <div
+              style={{
+                height: "28px",
+                width: "1px",
+                background: "var(--border-hairline)",
+              }}
+            />
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 800,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: "var(--brand-ochre)",
+                }}
+              >
+                Fazenda Ambiental Fortaleza
+              </span>
+              <span
+                style={{
+                  fontSize: "13px",
+                  fontWeight: 650,
+                  color: "var(--text-secondary)",
+                }}
+              >
+                Regulamento Europeu de Desmatamento (UE 2023/1115)
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <ThemeToggle />
+
+            {onOpenDashboard && (
+              <button
+                onClick={onOpenDashboard}
+                style={{
+                  fontSize: "12.5px",
+                  fontWeight: 700,
+                  color: "var(--text-primary)",
+                  background: "var(--bg-surface)",
+                  border: "1px solid var(--border-strong)",
+                  padding: "7px 14px",
+                  borderRadius: "6px",
+                  boxShadow: "var(--shadow-subtle)",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                📊 Dashboard Executivo
+              </button>
+            )}
+
+            <div
+              style={{
+                display: "flex",
                 alignItems: "center",
                 gap: "6px",
-                transition: "all 0.2s ease",
+                fontSize: "11.5px",
+                fontWeight: 650,
+                color: "var(--status-success)",
+                background: "var(--status-success-bg)",
+                padding: "6px 12px",
+                borderRadius: "6px",
+                border: "1px solid rgba(27, 122, 67, 0.2)",
               }}
             >
-              <span>📊</span> Dashboard Executivo
-            </button>
-          )}
-
-          <span
-            style={{
-              fontSize: "12px",
-              background: isDark ? "rgba(189, 40, 32, 0.15)" : "rgba(189, 40, 32, 0.1)",
-              color: isDark ? "#fca5a5" : "#bd2820",
-              border: "1px solid rgba(189, 40, 32, 0.35)",
-              padding: "7px 14px",
-              borderRadius: "999px",
-              fontWeight: 700,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-          >
-            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#10b981", boxShadow: "0 0 8px #10b981" }}></span>
-            Regulation (EU) 2023/1115 (EUDR)
-          </span>
+              <span>●</span> Sistema Ativo · WGS84
+            </div>
+          </div>
         </div>
       </header>
 
-      {/* Main Hero Content */}
+      {/* Main Editorial Body */}
       <main
         style={{
           flex: 1,
-          maxWidth: "1280px",
+          maxWidth: "1400px",
           width: "100%",
           margin: "0 auto",
-          padding: "40px 24px 70px",
+          padding: "48px 32px 80px",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
+          gap: "48px",
         }}
       >
-        {/* Central Logo & Brand Typography */}
-        <div style={{ textAlign: "center", marginBottom: "44px" }}>
-          <img
-            src="/faf-logo-transparent.png"
-            alt="FAF Coffees"
-            style={{
-              height: "115px",
-              width: "auto",
-              objectFit: "contain",
-              margin: "0 auto 20px",
-              display: "block",
-              filter: isDark
-                ? "drop-shadow(0 15px 35px rgba(189, 40, 32, 0.45))"
-                : "drop-shadow(0 12px 25px rgba(189, 40, 32, 0.25))",
-            }}
-          />
-
-          <h1
-            style={{
-              fontSize: "32px",
-              fontWeight: 800,
-              color: isDark ? "#ffffff" : "#1a0f0d",
-              margin: "0 0 10px",
-              letterSpacing: "-0.5px",
-            }}
-          >
-            Plataforma de Conformidade & Rastreabilidade EUDR
-          </h1>
-
-          <p
-            style={{
-              fontSize: "15px",
-              color: isDark ? "#d4c4b6" : "#5c4d44",
-              margin: 0,
-              maxWidth: "620px",
-              lineHeight: 1.55,
-            }}
-          >
-            Diligência prévia geoespacial, polígonos certificados e gestão em nuvem para exportações de cafés especiais sustentáveis.
-          </p>
-        </div>
-
-        {/* 3 Cards Grid */}
-        <div className="landing-cards-grid">
-          {/* Card 1: FAF Team / Preparador & Contratos */}
-          <div
-            className="landing-card"
-            style={{
-              background: isDark
-                ? "linear-gradient(150deg, rgba(40, 18, 14, 0.9) 0%, rgba(22, 10, 8, 0.95) 100%)"
-                : "linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(253, 248, 242, 0.98))",
-              borderRadius: "20px",
-              padding: "32px 28px",
-              border: isDark ? "1px solid rgba(189, 40, 32, 0.35)" : "1px solid rgba(209, 160, 104, 0.35)",
-              boxShadow: isDark
-                ? "0 18px 45px rgba(0, 0, 0, 0.4), 0 0 30px rgba(189, 40, 32, 0.1)"
-                : "0 14px 40px rgba(70, 30, 20, 0.08)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-            }}
-          >
-            <div>
-              <div
+        {/* Editorial Split Hero */}
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.1fr 0.9fr",
+            gap: "56px",
+            alignItems: "start",
+          }}
+        >
+          {/* Left Column: Brand & Regulatory Statement */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <span
                 style={{
                   fontSize: "11px",
                   fontWeight: 800,
-                  color: isDark ? "#dfa84a" : "#b37e33",
+                  letterSpacing: "0.14em",
                   textTransform: "uppercase",
-                  letterSpacing: "1.2px",
-                  marginBottom: "8px",
+                  color: "var(--brand-crimson)",
                 }}
               >
-                Equipe & Agrônomos FAF
-              </div>
-              <h2 style={{ fontSize: "21px", fontWeight: 700, color: isDark ? "#ffffff" : "#1a0f0d", margin: "0 0 12px" }}>
-                Gestão & Preparador EUDR
-              </h2>
-              <p style={{ fontSize: "13.5px", color: isDark ? "#d4c4b6" : "#5c4d44", lineHeight: 1.55, margin: "0 0 28px" }}>
-                Acesso interno para criação de novos contratos, desenho e simplificação de polígonos e validação no MapBiomas / GFW.
-              </p>
-            </div>
-
-            <a
-              href="https://app.fafeu.online"
-              onClick={(e) => {
-                if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
-                  e.preventDefault();
-                  onOpenFafApp?.();
-                }
-              }}
-              style={{
-                padding: "14px 20px",
-                fontSize: "14px",
-                fontWeight: 800,
-                borderRadius: "12px",
-                background: "linear-gradient(135deg, #bd2820 0%, #8d1b15 100%)",
-                color: "#ffffff",
-                textDecoration: "none",
-                textAlign: "center",
-                display: "block",
-                border: "1px solid rgba(209, 160, 104, 0.3)",
-                boxShadow: "0 8px 24px rgba(189, 40, 32, 0.35)",
-                transition: "all 0.2s ease",
-              }}
-            >
-              🔒 Acessar Sistema FAF ➔
-            </a>
-          </div>
-
-          {/* Card 2: Importers & Clients Portal */}
-          <div
-            className="landing-card"
-            style={{
-              background: isDark
-                ? "linear-gradient(150deg, rgba(32, 22, 14, 0.9) 0%, rgba(18, 12, 8, 0.95) 100%)"
-                : "linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(253, 248, 242, 0.98))",
-              borderRadius: "20px",
-              padding: "32px 28px",
-              border: isDark ? "1px solid rgba(209, 160, 104, 0.35)" : "1px solid rgba(209, 160, 104, 0.35)",
-              boxShadow: isDark
-                ? "0 18px 45px rgba(0, 0, 0, 0.4), 0 0 30px rgba(209, 160, 104, 0.1)"
-                : "0 14px 40px rgba(70, 30, 20, 0.08)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-            }}
-          >
-            <div>
-              <div
+                Rastreabilidade de Origem & Diligência Prévia
+              </span>
+              <h1
                 style={{
-                  fontSize: "11px",
+                  fontSize: "36px",
+                  lineHeight: "1.2",
                   fontWeight: 800,
-                  color: isDark ? "#dfa84a" : "#b37e33",
-                  textTransform: "uppercase",
-                  letterSpacing: "1.2px",
-                  marginBottom: "8px",
+                  letterSpacing: "-0.03em",
+                  color: "var(--text-primary)",
+                  margin: 0,
                 }}
               >
-                Importadores & Torrefações
-              </div>
-              <h2 style={{ fontSize: "21px", fontWeight: 700, color: isDark ? "#ffffff" : "#1a0f0d", margin: "0 0 12px" }}>
-                Portal do Cliente
-              </h2>
-              <p style={{ fontSize: "13.5px", color: isDark ? "#d4c4b6" : "#5c4d44", lineHeight: 1.55, margin: "0 0 28px" }}>
-                Consulte os lotes vinculados ao seu contrato de compra e baixe os arquivos GeoJSON e relatórios auditados prontos para a UE.
-              </p>
-            </div>
-
-            <a
-              href="https://portal.fafeu.online"
-              onClick={(e) => {
-                if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
-                  e.preventDefault();
-                  onOpenClientPortal?.();
-                }
-              }}
-              style={{
-                padding: "14px 20px",
-                fontSize: "14px",
-                fontWeight: 800,
-                borderRadius: "12px",
-                background: "linear-gradient(135deg, #d1a068 0%, #a8793e 100%)",
-                color: "#1a0f0d",
-                textDecoration: "none",
-                textAlign: "center",
-                display: "block",
-                border: "1px solid rgba(255, 255, 255, 0.2)",
-                boxShadow: "0 8px 24px rgba(209, 160, 104, 0.3)",
-                transition: "all 0.2s ease",
-              }}
-            >
-              🌐 Acessar Portal do Cliente ➔
-            </a>
-          </div>
-
-          {/* Card 3: Cloudflare R2 Storage */}
-          <div
-            className="landing-card"
-            style={{
-              background: isDark
-                ? "linear-gradient(150deg, rgba(28, 16, 20, 0.9) 0%, rgba(15, 8, 10, 0.95) 100%)"
-                : "linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(253, 248, 242, 0.98))",
-              borderRadius: "20px",
-              padding: "32px 28px",
-              border: isDark ? "1px solid rgba(189, 40, 32, 0.25)" : "1px solid rgba(209, 160, 104, 0.35)",
-              boxShadow: isDark
-                ? "0 18px 45px rgba(0, 0, 0, 0.4)"
-                : "0 14px 40px rgba(70, 30, 20, 0.08)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-            }}
-          >
-            <div>
-              <div
+                Auditoria geoespacial e conformidade de cafés especiais para a União Europeia.
+              </h1>
+              <p
                 style={{
-                  fontSize: "11px",
-                  fontWeight: 800,
-                  color: isDark ? "#e03b31" : "#bd2820",
-                  textTransform: "uppercase",
-                  letterSpacing: "1.2px",
-                  marginBottom: "8px",
+                  fontSize: "15px",
+                  lineHeight: "1.65",
+                  color: "var(--text-secondary)",
+                  margin: "8px 0 0",
+                  maxWidth: "580px",
                 }}
               >
-                Armazenamento em Nuvem R2
-              </div>
-              <h2 style={{ fontSize: "21px", fontWeight: 700, color: isDark ? "#ffffff" : "#1a0f0d", margin: "0 0 12px" }}>
-                Cloud Explorer
-              </h2>
-              <p style={{ fontSize: "13.5px", color: isDark ? "#d4c4b6" : "#5c4d44", lineHeight: 1.55, margin: "0 0 28px" }}>
-                Gerenciador completo de arquivos da nuvem, navegação por pastas regionais, visualização interativa e downloads diretos.
+                A FAF Coffees conecta cafeicultores brasileiros regenerativos e importadores globais por meio de polígonos auditados, monitoramento temporal de satélite pós-2020 e emissão de declarações de conformidade EUDR.
               </p>
             </div>
 
-            <a
-              href="https://cloud.fafeu.online"
+            {/* Structured Specifications Strip */}
+            <div
               style={{
-                padding: "14px 20px",
-                fontSize: "14px",
-                fontWeight: 800,
-                borderRadius: "12px",
-                background: isDark
-                  ? "linear-gradient(135deg, #42201a 0%, #29120e 100%)"
-                  : "linear-gradient(135deg, #faf3ec 0%, #eee1d3 100%)",
-                color: isDark ? "#fcf9f5" : "#1a0f0d",
-                textDecoration: "none",
-                textAlign: "center",
-                display: "block",
-                border: "1px solid rgba(209, 160, 104, 0.35)",
-                boxShadow: isDark
-                  ? "0 8px 24px rgba(0, 0, 0, 0.3)"
-                  : "0 4px 15px rgba(209, 160, 104, 0.15)",
-                transition: "all 0.2s ease",
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: "16px",
+                padding: "20px 24px",
+                borderRadius: "10px",
+                border: "1px solid var(--border-hairline)",
+                background: "var(--bg-surface)",
+                boxShadow: "var(--shadow-subtle)",
               }}
             >
-              ☁️ Abrir Cloud Explorer ➔
-            </a>
+              <div>
+                <span
+                  style={{
+                    fontSize: "10px",
+                    fontWeight: 800,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "var(--text-muted)",
+                    display: "block",
+                  }}
+                >
+                  Marco Temporal
+                </span>
+                <strong
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: 750,
+                    color: "var(--text-primary)",
+                    marginTop: "2px",
+                    display: "block",
+                  }}
+                >
+                  31 / 12 / 2020
+                </strong>
+                <span style={{ fontSize: "11px", color: "var(--status-success)" }}>
+                  Zero Desmatamento
+                </span>
+              </div>
+
+              <div>
+                <span
+                  style={{
+                    fontSize: "10px",
+                    fontWeight: 800,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "var(--text-muted)",
+                    display: "block",
+                  }}
+                >
+                  Padrão Geodésico
+                </span>
+                <strong
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: 750,
+                    color: "var(--text-primary)",
+                    marginTop: "2px",
+                    display: "block",
+                  }}
+                >
+                  WGS84 Submétrico
+                </strong>
+                <span style={{ fontSize: "11px", color: "var(--brand-ochre)" }}>
+                  GeoJSON + Shapefile
+                </span>
+              </div>
+
+              <div>
+                <span
+                  style={{
+                    fontSize: "10px",
+                    fontWeight: 800,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "var(--text-muted)",
+                    display: "block",
+                  }}
+                >
+                  Armazenamento
+                </span>
+                <strong
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: 750,
+                    color: "var(--text-primary)",
+                    marginTop: "2px",
+                    display: "block",
+                  }}
+                >
+                  Cloudflare R2
+                </strong>
+                <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                  Nuvem Certificada
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
+
+          {/* Right Column: Portal Directory Index (Architectural Cards) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {/* Dossier Item 01: EUDR Preparer & Agronomy */}
+            <div
+              style={{
+                border: "1px solid var(--border-hairline)",
+                borderRadius: "12px",
+                padding: "24px 26px",
+                background: "var(--bg-surface)",
+                boxShadow: "var(--shadow-subtle)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "14px",
+                transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 800,
+                    letterSpacing: "0.1em",
+                    color: "var(--brand-crimson)",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Módulo 01 · Agronomia & Operações
+                </span>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  app.fafeu.online
+                </span>
+              </div>
+
+              <div>
+                <h2
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: 750,
+                    color: "var(--text-primary)",
+                    margin: "0 0 6px",
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  Preparador de Dossiê EUDR
+                </h2>
+                <p
+                  style={{
+                    fontSize: "13px",
+                    color: "var(--text-secondary)",
+                    margin: 0,
+                    lineHeight: "1.55",
+                  }}
+                >
+                  Importação de coordenadas, simplificação geométrica, conferência temporal MapBiomas e geração dos pacotes oficiais para submissão.
+                </p>
+              </div>
+
+              <div style={{ paddingTop: "8px" }}>
+                <a
+                  href="https://app.fafeu.online"
+                  onClick={(e) => {
+                    if (
+                      typeof window !== "undefined" &&
+                      (window.location.hostname === "localhost" ||
+                        window.location.hostname === "127.0.0.1")
+                    ) {
+                      e.preventDefault();
+                      onOpenFafApp?.();
+                    }
+                  }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    width: "100%",
+                    padding: "12px 18px",
+                    borderRadius: "8px",
+                    background: "var(--brand-crimson)",
+                    color: "#ffffff",
+                    fontSize: "13px",
+                    fontWeight: 750,
+                    boxShadow: "0 2px 6px rgba(166, 38, 29, 0.2)",
+                    transition: "background-color 0.15s ease",
+                  }}
+                >
+                  <span>Acessar Preparador de Talhões</span>
+                  <span style={{ fontSize: "16px" }}>➔</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Dossier Item 02: Client Portal */}
+            <div
+              style={{
+                border: "1px solid var(--border-hairline)",
+                borderRadius: "12px",
+                padding: "24px 26px",
+                background: "var(--bg-surface)",
+                boxShadow: "var(--shadow-subtle)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "14px",
+                transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 800,
+                    letterSpacing: "0.1em",
+                    color: "var(--brand-ochre)",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Módulo 02 · Importadores & Torrefadores
+                </span>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  portal.fafeu.online
+                </span>
+              </div>
+
+              <div>
+                <h2
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: 750,
+                    color: "var(--text-primary)",
+                    margin: "0 0 6px",
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  Portal do Cliente & Lotes
+                </h2>
+                <p
+                  style={{
+                    fontSize: "13px",
+                    color: "var(--text-secondary)",
+                    margin: 0,
+                    lineHeight: "1.55",
+                  }}
+                >
+                  Acesso aos lotes vinculados ao contrato de compra, com download direto de arquivos GeoJSON e relatórios auditados prontos para desembaraço.
+                </p>
+              </div>
+
+              <div style={{ paddingTop: "8px" }}>
+                <a
+                  href="https://portal.fafeu.online"
+                  onClick={(e) => {
+                    if (
+                      typeof window !== "undefined" &&
+                      (window.location.hostname === "localhost" ||
+                        window.location.hostname === "127.0.0.1")
+                    ) {
+                      e.preventDefault();
+                      onOpenClientPortal?.();
+                    }
+                  }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    width: "100%",
+                    padding: "12px 18px",
+                    borderRadius: "8px",
+                    background: "var(--bg-surface)",
+                    color: "var(--text-primary)",
+                    border: "1px solid var(--border-strong)",
+                    fontSize: "13px",
+                    fontWeight: 750,
+                    boxShadow: "var(--shadow-subtle)",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <span>Acessar Portal do Importador</span>
+                  <span style={{ fontSize: "16px" }}>➔</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Dossier Item 03: Cloud Storage Explorer */}
+            <div
+              style={{
+                border: "1px solid var(--border-hairline)",
+                borderRadius: "12px",
+                padding: "24px 26px",
+                background: "var(--bg-surface)",
+                boxShadow: "var(--shadow-subtle)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "14px",
+                transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 800,
+                    letterSpacing: "0.1em",
+                    color: "var(--text-secondary)",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Módulo 03 · Repositório Central R2
+                </span>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  cloud.fafeu.online
+                </span>
+              </div>
+
+              <div>
+                <h2
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: 750,
+                    color: "var(--text-primary)",
+                    margin: "0 0 6px",
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  FAF Cloud Storage
+                </h2>
+                <p
+                  style={{
+                    fontSize: "13px",
+                    color: "var(--text-secondary)",
+                    margin: 0,
+                    lineHeight: "1.55",
+                  }}
+                >
+                  Explorador de arquivos na nuvem com navegação por pastas regionais, visualização de metadados e backup seguro de talhões.
+                </p>
+              </div>
+
+              <div style={{ paddingTop: "8px" }}>
+                <a
+                  href="https://cloud.fafeu.online"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    width: "100%",
+                    padding: "12px 18px",
+                    borderRadius: "8px",
+                    background: "var(--bg-subtle)",
+                    color: "var(--text-primary)",
+                    border: "1px solid var(--border-hairline)",
+                    fontSize: "13px",
+                    fontWeight: 750,
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <span>Abrir Cloud Explorer</span>
+                  <span style={{ fontSize: "16px" }}>➔</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
 
-      {/* Footer */}
+      {/* Institutional Footer */}
       <footer
         style={{
-          borderTop: isDark ? "1px solid rgba(209, 160, 104, 0.15)" : "1px solid rgba(209, 160, 104, 0.25)",
-          padding: "24px 40px",
-          textAlign: "center",
-          color: isDark ? "#8e7c75" : "#7a6e66",
-          fontSize: "12.5px",
-          background: isDark ? "rgba(10, 4, 3, 0.8)" : "rgba(255, 255, 255, 0.85)",
+          borderTop: "1px solid var(--border-hairline)",
+          background: "var(--bg-surface)",
+          padding: "24px 32px",
         }}
       >
-        FAF Coffees • Fazenda Ambiental Fortaleza • Plataforma Oficial de Sustentabilidade & Rastreabilidade EUDR
+        <div
+          style={{
+            maxWidth: "1400px",
+            margin: "0 auto",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "16px",
+            fontSize: "12px",
+            color: "var(--text-muted)",
+          }}
+        >
+          <span>
+            © {new Date().getFullYear()} FAF Coffees · Fazenda Ambiental Fortaleza. Todos os direitos reservados.
+          </span>
+          <span style={{ fontWeight: 650, color: "var(--text-secondary)" }}>
+            Conformidade Técnica EUDR · Regulation (EU) 2023/1115
+          </span>
+        </div>
       </footer>
     </div>
   );
