@@ -5,9 +5,10 @@ import React from "react";
 interface LandingPageProps {
   onOpenFafApp?: () => void;
   onOpenClientPortal?: () => void;
+  onOpenDashboard?: () => void;
 }
 
-export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPageProps) {
+export function LandingPage({ onOpenFafApp, onOpenClientPortal, onOpenDashboard }: LandingPageProps) {
   return (
     <div
       style={{
@@ -69,7 +70,28 @@ export function LandingPage({ onOpenFafApp, onOpenClientPortal }: LandingPagePro
           </div>
         </div>
 
-        <div>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {onOpenDashboard && (
+            <button
+              onClick={onOpenDashboard}
+              style={{
+                fontSize: "12px",
+                background: "rgba(52, 211, 153, 0.15)",
+                color: "#6ee7b7",
+                border: "1px solid rgba(52, 211, 153, 0.35)",
+                padding: "6px 14px",
+                borderRadius: "999px",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              <span>📊</span> Dashboard Executivo
+            </button>
+          )}
+
           <span
             style={{
               fontSize: "12px",

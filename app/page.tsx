@@ -14,6 +14,7 @@ import { AuditLogModal } from "./components/AuditLogModal";
 import { NewProcessModal } from "./components/NewProcessModal";
 import { ClientPortalModal } from "./components/ClientPortalModal";
 import { ServerStorageExplorer } from "./components/ServerStorageExplorer";
+import ExecutiveDashboardView from "./components/ExecutiveDashboardView";
 import { useUserManagement } from "./hooks/useUserManagement";
 import { recordAuditLog } from "./lib/auditLogger";
 import {
@@ -537,7 +538,7 @@ export default function Home() {
     );
   };
 
-  const [activeView, setActiveView] = useState<"landing" | "app" | "portal" | "contratos">("landing");
+  const [activeView, setActiveView] = useState<"landing" | "app" | "portal" | "contratos" | "dashboard">("landing");
   const [contractIdToPublish, setContractIdToPublish] = useState("2026-C001");
   const [isPublishingR2, setIsPublishingR2] = useState(false);
   const [lastPublishedR2Key, setLastPublishedR2Key] = useState<string | null>(null);
@@ -549,6 +550,12 @@ export default function Home() {
       const hash = window.location.hash.toLowerCase();
 
       if (
+        host.startsWith("dashboard.") ||
+        search.includes("view=dashboard") ||
+        hash.includes("dashboard")
+      ) {
+        setActiveView("dashboard");
+      } else if (
         host.startsWith("contratos.") ||
         search.includes("view=contratos") ||
         hash.includes("contratos")
@@ -777,6 +784,37 @@ export default function Home() {
     );
   }
 
+  if (activeView === "dashboard") {
+    return (
+      <div style={{ minHeight: "100vh", background: "radial-gradient(ellipse at 50% 0%, #102a20 0%, #081611 60%, #040c09 100%)" }}>
+        <EudrHeader
+          isAuthenticated={userMgmt.isAuthenticated || false}
+          loggedUserRole={userMgmt.loggedUserRole}
+          loggedUserKey={userMgmt.loggedUserKey}
+          onOpenAdminModal={() => userMgmt.setShowAdminModal(true)}
+          onLogout={userMgmt.handleLogout}
+          onNewProcess={handleNewProcessClick}
+          onOpenLogsModal={() => setShowLogsModal(true)}
+          onOpenClientPortal={() => setActiveView("portal")}
+          onOpenCloudExplorer={() => setShowCloudExplorer(true)}
+          onOpenLanding={() => setActiveView("landing")}
+          onOpenDashboard={() => setActiveView("dashboard")}
+        />
+        <ExecutiveDashboardView
+          onNavigateToContracts={() => setActiveView("contratos")}
+          onNavigateToPreparer={() => setActiveView("app")}
+          onNavigateToCloud={() => {
+            if (typeof window !== "undefined") {
+              window.location.href = "/cloud";
+            }
+          }}
+          userRole={userMgmt.loggedUserRole}
+          userName={userMgmt.loggedUserName || userMgmt.loggedUserKey}
+        />
+      </div>
+    );
+  }
+
   if (activeView === "contratos") {
     if (userMgmt.isAuthenticated === false) {
       return (
@@ -794,6 +832,7 @@ export default function Home() {
     return (
       <ContractManagerView
         onOpenLanding={() => setActiveView("landing")}
+        onOpenDashboard={() => setActiveView("dashboard")}
         loggedUserKey={userMgmt.loggedUserKey}
       />
     );
@@ -848,6 +887,7 @@ export default function Home() {
       <LandingPage
         onOpenFafApp={() => setActiveView("app")}
         onOpenClientPortal={() => setActiveView("portal")}
+        onOpenDashboard={() => setActiveView("dashboard")}
       />
     );
   }
@@ -898,6 +938,7 @@ export default function Home() {
         onOpenClientPortal={() => setActiveView("portal")}
         onOpenCloudExplorer={() => setShowCloudExplorer(true)}
         onOpenLanding={() => setActiveView("landing")}
+        onOpenDashboard={() => setActiveView("dashboard")}
       />
 
       <section className="dashboard-head">

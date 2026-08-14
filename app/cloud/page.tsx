@@ -4,9 +4,33 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useUserManagement } from "../hooks/useUserManagement";
 
 // Client-only GeoJSON Map Viewer
+const layerUrls = {
+  google: "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+  esri: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  hybrid: "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+  osm: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+};
+
 function GeoJsonMap({ geojsonData }: { geojsonData: any }) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
+  const tileLayerRef = useRef<any>(null);
+  const geojsonLayerRef = useRef<any>(null);
+  const [activeLayer, setActiveLayer] = useState<"google" | "esri" | "hybrid" | "osm">("google");
+  const [activePeriod, setActivePeriod] = useState<"2020" | "2026">("2026");
+  const [isPlayingTimelapse, setIsPlayingTimelapse] = useState(false);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (isPlayingTimelapse) {
+      interval = setInterval(() => {
+        setActivePeriod((prev) => (prev === "2020" ? "2026" : "2020"));
+      }, 1500);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isPlayingTimelapse]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !mapContainerRef.current || !geojsonData) return;
@@ -35,22 +59,16 @@ function GeoJsonMap({ geojsonData }: { geojsonData: any }) {
         attributionControl: false,
       }).setView([-14.235, -51.9253], 4);
 
-      L.tileLayer(
-        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        { maxZoom: 19 }
-      ).addTo(map);
-
-      L.tileLayer(
-        "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
-        { maxZoom: 19, opacity: 0.8 }
-      ).addTo(map);
+      const tile = L.tileLayer(layerUrls[activeLayer], { maxZoom: 20 }).addTo(map);
+      tileLayerRef.current = tile;
 
       try {
+        const isCutoff = activePeriod === "2020";
         const layer = L.geoJSON(geojsonData, {
           style: {
-            color: "#34d399",
+            color: isCutoff ? "#eab308" : "#34d399",
             weight: 3,
-            fillColor: "#10b981",
+            fillColor: isCutoff ? "#ca8a04" : "#10b981",
             fillOpacity: 0.35,
           },
           onEachFeature: (feature: any, l: any) => {
@@ -63,6 +81,7 @@ function GeoJsonMap({ geojsonData }: { geojsonData: any }) {
           },
         }).addTo(map);
 
+        geojsonLayerRef.current = layer;
         const bounds = layer.getBounds();
         if (bounds.isValid()) {
           map.fitBounds(bounds, { padding: [30, 30] });
@@ -81,20 +100,115 @@ function GeoJsonMap({ geojsonData }: { geojsonData: any }) {
         mapInstanceRef.current = null;
       }
     };
-  }, [geojsonData]);
+  }, [geojsonData, activeLayer, activePeriod]);
 
   return (
-    <div
-      ref={mapContainerRef}
-      style={{
-        width: "100%",
-        height: "360px",
-        borderRadius: "10px",
-        overflow: "hidden",
-        border: "1px solid rgba(52, 211, 153, 0.3)",
-        background: "#06130e",
-      }}
-    />
+    <div style={{ borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(52, 211, 153, 0.3)", background: "#06130e" }}>
+      {/* Controles no Topo do Modal do Mapa */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "8px",
+          padding: "8px 12px",
+          background: "rgba(6, 18, 14, 0.95)",
+          borderBottom: "1px solid rgba(52, 211, 153, 0.2)",
+          fontSize: "11px",
+          color: "#ffffff",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <span style={{ fontWeight: 800, color: "#34d399" }}>🛰️ SATÉLITE:</span>
+          {(["google", "esri", "hybrid", "osm"] as const).map((layerKey) => (
+            <button
+              key={layerKey}
+              onClick={() => setActiveLayer(layerKey)}
+              style={{
+                background: activeLayer === layerKey ? "#10b981" : "rgba(255, 255, 255, 0.08)",
+                color: activeLayer === layerKey ? "#042f2e" : "#cbd5e1",
+                border: "none",
+                borderRadius: "4px",
+                padding: "3px 7px",
+                fontSize: "10px",
+                fontWeight: 700,
+                cursor: "pointer",
+                textTransform: "uppercase",
+              }}
+            >
+              {layerKey === "google" ? "Google HD" : layerKey === "esri" ? "ESRI" : layerKey === "hybrid" ? "Híbrido" : "OSM"}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <span style={{ fontWeight: 800, color: "#facc15" }}>📅 ÉPOCA:</span>
+          <button
+            onClick={() => {
+              setIsPlayingTimelapse(false);
+              setActivePeriod("2020");
+            }}
+            style={{
+              background: activePeriod === "2020" ? "#eab308" : "rgba(255, 255, 255, 0.08)",
+              color: activePeriod === "2020" ? "#000000" : "#cbd5e1",
+              border: "none",
+              borderRadius: "4px",
+              padding: "3px 7px",
+              fontSize: "10px",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            Marco 2020
+          </button>
+          <button
+            onClick={() => {
+              setIsPlayingTimelapse(false);
+              setActivePeriod("2026");
+            }}
+            style={{
+              background: activePeriod === "2026" ? "#10b981" : "rgba(255, 255, 255, 0.08)",
+              color: activePeriod === "2026" ? "#042f2e" : "#cbd5e1",
+              border: "none",
+              borderRadius: "4px",
+              padding: "3px 7px",
+              fontSize: "10px",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            Atual (2026)
+          </button>
+
+          <button
+            onClick={() => setIsPlayingTimelapse(!isPlayingTimelapse)}
+            style={{
+              background: isPlayingTimelapse ? "#ef4444" : "rgba(52, 211, 153, 0.2)",
+              color: isPlayingTimelapse ? "#ffffff" : "#34d399",
+              border: "1px solid rgba(52, 211, 153, 0.4)",
+              borderRadius: "4px",
+              padding: "3px 8px",
+              fontSize: "10px",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            {isPlayingTimelapse ? "⏸️ Pausar" : "▶️ Time-Lapse"}
+          </button>
+        </div>
+      </div>
+
+      <div
+        ref={mapContainerRef}
+        style={{
+          width: "100%",
+          height: "360px",
+          position: "relative",
+          background: "#06130e",
+        }}
+      />
+    </div>
   );
 }
 
