@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useUserManagement } from "../hooks/useUserManagement";
+import { ThemeToggle } from "../components/ThemeToggle";
+import { useTheme } from "../hooks/useTheme";
 
 // Client-only GeoJSON Map Viewer
 const layerUrls = {
@@ -240,6 +242,7 @@ function formatBytes(bytes: number): string {
 }
 
 export default function CloudStoragePage() {
+  const { isDark } = useTheme();
   const [mounted, setMounted] = useState(false);
   const userMgmt = useUserManagement();
 
@@ -562,24 +565,36 @@ export default function CloudStoragePage() {
       <div
         style={{
           minHeight: "100vh",
-          background: "radial-gradient(ellipse at 50% 0%, #28120e 0%, #160a08 50%, #0a0403 100%)",
+          background: isDark
+            ? "radial-gradient(ellipse at 50% 0%, #28120e 0%, #160a08 50%, #0a0403 100%)"
+            : "radial-gradient(ellipse at 50% 0%, #fffbf7 0%, #f7efe6 50%, #eddcd0 100%)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           padding: "24px",
           fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-          color: "#fcf9f5",
+          color: isDark ? "#fcf9f5" : "#1a0f0d",
+          position: "relative",
+          transition: "background 0.3s ease, color 0.3s ease",
         }}
       >
+        <div style={{ position: "absolute", top: "24px", right: "24px" }}>
+          <ThemeToggle />
+        </div>
+
         <div
           style={{
-            background: "linear-gradient(150deg, rgba(38, 18, 14, 0.95) 0%, rgba(20, 10, 8, 0.98) 100%)",
-            border: "1px solid rgba(209, 160, 104, 0.35)",
+            background: isDark
+              ? "linear-gradient(150deg, rgba(38, 18, 14, 0.95) 0%, rgba(20, 10, 8, 0.98) 100%)"
+              : "linear-gradient(150deg, rgba(255, 255, 255, 0.98) 0%, rgba(253, 248, 242, 0.98) 100%)",
+            border: isDark ? "1px solid rgba(209, 160, 104, 0.35)" : "1px solid rgba(209, 160, 104, 0.4)",
             borderRadius: "24px",
             padding: "40px 36px",
             maxWidth: "440px",
             width: "100%",
-            boxShadow: "0 25px 60px rgba(0, 0, 0, 0.7), 0 0 35px rgba(189, 40, 32, 0.15)",
+            boxShadow: isDark
+              ? "0 25px 60px rgba(0, 0, 0, 0.7), 0 0 35px rgba(189, 40, 32, 0.15)"
+              : "0 20px 50px rgba(70, 30, 20, 0.1)",
             textAlign: "center",
           }}
         >
@@ -592,7 +607,9 @@ export default function CloudStoragePage() {
               objectFit: "contain",
               margin: "0 auto 18px",
               display: "block",
-              filter: "drop-shadow(0 8px 20px rgba(189, 40, 32, 0.35))",
+              filter: isDark
+                ? "drop-shadow(0 8px 20px rgba(189, 40, 32, 0.35))"
+                : "drop-shadow(0 6px 15px rgba(189, 40, 32, 0.2))",
             }}
           />
 
@@ -787,11 +804,14 @@ export default function CloudStoragePage() {
     <div
       style={{
         minHeight: "100vh",
-        background: "radial-gradient(ellipse at 50% 0%, #28120e 0%, #160a08 50%, #0a0403 100%)",
-        color: "#fcf9f5",
+        background: isDark
+          ? "radial-gradient(ellipse at 50% 0%, #28120e 0%, #160a08 50%, #0a0403 100%)"
+          : "radial-gradient(ellipse at 50% 0%, #fffbf7 0%, #f7efe6 50%, #eddcd0 100%)",
+        color: isDark ? "#fcf9f5" : "#1a0f0d",
         fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif",
         display: "flex",
         flexDirection: "column",
+        transition: "background 0.3s ease, color 0.3s ease",
       }}
     >
       {/* Top Header */}
@@ -800,15 +820,15 @@ export default function CloudStoragePage() {
           position: "sticky",
           top: 0,
           zIndex: 40,
-          background: "rgba(22, 10, 8, 0.9)",
+          background: isDark ? "rgba(22, 10, 8, 0.9)" : "rgba(255, 255, 255, 0.94)",
           backdropFilter: "blur(14px)",
-          borderBottom: "1px solid rgba(209, 160, 104, 0.25)",
+          borderBottom: isDark ? "1px solid rgba(209, 160, 104, 0.25)" : "1px solid rgba(209, 160, 104, 0.35)",
           padding: "0 28px",
           height: "72px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+          boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.5)" : "0 4px 20px rgba(70,30,20,0.06)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
@@ -821,7 +841,7 @@ export default function CloudStoragePage() {
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span
                 style={{
-                  color: "#dfa84a",
+                  color: isDark ? "#dfa84a" : "#b37e33",
                   fontSize: "11px",
                   fontWeight: 800,
                   letterSpacing: "0.08em",
@@ -832,8 +852,8 @@ export default function CloudStoragePage() {
               </span>
               <span
                 style={{
-                  background: "rgba(189, 40, 32, 0.2)",
-                  color: "#fca5a5",
+                  background: isDark ? "rgba(189, 40, 32, 0.2)" : "rgba(189, 40, 32, 0.1)",
+                  color: isDark ? "#fca5a5" : "#bd2820",
                   fontSize: "10px",
                   fontWeight: 800,
                   padding: "2px 8px",
@@ -849,7 +869,7 @@ export default function CloudStoragePage() {
                 margin: 0,
                 fontSize: "17px",
                 fontWeight: 700,
-                color: "#ffffff",
+                color: isDark ? "#ffffff" : "#1a0f0d",
                 letterSpacing: "-0.01em",
               }}
             >
@@ -859,10 +879,12 @@ export default function CloudStoragePage() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <ThemeToggle />
+
           {/* User Profile Badge */}
           <div
             style={{
-              background: "rgba(38, 18, 14, 0.9)",
+              background: isDark ? "rgba(38, 18, 14, 0.9)" : "rgba(250, 238, 231, 0.9)",
               border: "1px solid rgba(209, 160, 104, 0.3)",
               borderRadius: "8px",
               padding: "5px 12px",

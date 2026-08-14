@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { ServerStorageExplorer } from "./ServerStorageExplorer";
+import { ThemeToggle } from "./ThemeToggle";
+import { useTheme } from "@/app/hooks/useTheme";
 
 export interface PublishedPlotRecord {
   id: string;
@@ -225,18 +227,35 @@ export function ClientPortalModal({
     );
   }
 
+  const { isDark } = useTheme();
+
+  const handleHomeClick = () => {
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname.toLowerCase();
+      if (host.startsWith("portal.") || host.startsWith("cliente.") || host.startsWith("contratos.") || host.includes("fafeu.online")) {
+        window.location.href = "https://fafeu.online";
+        return;
+      }
+    }
+    onClose();
+  };
+
   return (
     <div
       style={{
         position: "fixed",
         inset: 0,
         zIndex: 9999,
-        background: "var(--canvas, #f3f5f2)",
+        background: isDark
+          ? "radial-gradient(ellipse at 50% 0%, #28120e 0%, #160a08 50%, #0a0403 100%)"
+          : "radial-gradient(ellipse at 50% 0%, #fffbf7 0%, #f7efe6 50%, #eddcd0 100%)",
+        color: isDark ? "#fcf9f5" : "#1a0f0d",
         overflowY: "auto",
         display: "flex",
         flexDirection: "column",
         fontFamily:
-          "'Segoe UI Variable', 'Segoe UI', -apple-system, sans-serif",
+          "'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        transition: "background 0.3s ease, color 0.3s ease",
       }}
     >
       {/* Top Navbar */}
@@ -245,15 +264,15 @@ export function ClientPortalModal({
           position: "sticky",
           top: 0,
           zIndex: 40,
-          background: "linear-gradient(135deg, #1a0f0d 0%, #120908 100%)",
-          color: "#ffffff",
+          background: isDark ? "linear-gradient(135deg, #1a0f0d 0%, #120908 100%)" : "rgba(255, 255, 255, 0.94)",
+          color: isDark ? "#ffffff" : "#1a0f0d",
           padding: "0 max(28px, calc((100vw - 1480px) / 2))",
           height: "76px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
-          borderBottom: "1px solid rgba(209, 160, 104, 0.25)",
+          boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.4)" : "0 4px 20px rgba(70,30,20,0.06)",
+          borderBottom: isDark ? "1px solid rgba(209, 160, 104, 0.25)" : "1px solid rgba(209, 160, 104, 0.35)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
@@ -271,7 +290,7 @@ export function ClientPortalModal({
             <p
               style={{
                 margin: "0 0 2px",
-                color: "#dfa84a",
+                color: isDark ? "#dfa84a" : "#b37e33",
                 fontSize: "11px",
                 fontWeight: 800,
                 letterSpacing: ".12em",
@@ -283,7 +302,7 @@ export function ClientPortalModal({
             <h1
               style={{
                 margin: 0,
-                color: "#ffffff",
+                color: isDark ? "#ffffff" : "#1a0f0d",
                 fontSize: "18px",
                 fontWeight: 700,
                 letterSpacing: "-.02em",
@@ -295,12 +314,14 @@ export function ClientPortalModal({
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <ThemeToggle />
+
           {loggedClientName ? (
             <span
               style={{
-                background: "rgba(209, 160, 104, 0.15)",
+                background: isDark ? "rgba(209, 160, 104, 0.15)" : "rgba(209, 160, 104, 0.2)",
                 border: "1px solid rgba(209, 160, 104, 0.35)",
-                color: "#dfa84a",
+                color: isDark ? "#dfa84a" : "#b37e33",
                 padding: "6px 14px",
                 borderRadius: "999px",
                 fontSize: "12px",
@@ -313,9 +334,9 @@ export function ClientPortalModal({
           ) : (
             <span
               style={{
-                background: "rgba(255, 255, 255, 0.08)",
+                background: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)",
                 border: "1px solid rgba(209, 160, 104, 0.25)",
-                color: "#fcf9f5",
+                color: isDark ? "#fcf9f5" : "#1a0f0d",
                 padding: "6px 12px",
                 borderRadius: "999px",
                 fontSize: "12px",
@@ -328,10 +349,10 @@ export function ClientPortalModal({
 
           <span
             style={{
-              color: "#dfa84a",
+              color: isDark ? "#dfa84a" : "#b37e33",
               fontSize: "12px",
               fontWeight: 700,
-              background: "rgba(209, 160, 104, 0.12)",
+              background: isDark ? "rgba(209, 160, 104, 0.12)" : "rgba(209, 160, 104, 0.2)",
               padding: "6px 14px",
               borderRadius: "8px",
               border: "1px solid rgba(209, 160, 104, 0.25)",
@@ -343,9 +364,11 @@ export function ClientPortalModal({
           <button
             onClick={() => setCurrentPortalTab("server-files")}
             style={{
-              background: "linear-gradient(135deg, rgba(209, 160, 104, 0.2), rgba(189, 40, 32, 0.15))",
+              background: isDark
+                ? "linear-gradient(135deg, rgba(209, 160, 104, 0.2), rgba(189, 40, 32, 0.15))"
+                : "linear-gradient(135deg, rgba(209, 160, 104, 0.25), rgba(189, 40, 32, 0.1))",
               border: "1px solid rgba(209, 160, 104, 0.4)",
-              color: "#dfa84a",
+              color: isDark ? "#dfa84a" : "#b37e33",
               padding: "8px 16px",
               borderRadius: "8px",
               fontSize: "12px",
@@ -361,20 +384,20 @@ export function ClientPortalModal({
           </button>
 
           <button
-            onClick={onClose}
+            onClick={handleHomeClick}
             style={{
-              background: "rgba(255, 255, 255, 0.12)",
-              border: "1px solid rgba(255, 255, 255, 0.22)",
-              color: "#ffffff",
+              background: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(189, 40, 32, 0.1)",
+              border: isDark ? "1px solid rgba(209, 160, 104, 0.25)" : "1px solid rgba(189, 40, 32, 0.3)",
+              color: isDark ? "#ffffff" : "#bd2820",
               padding: "8px 16px",
               borderRadius: "8px",
               fontSize: "12px",
-              fontWeight: 700,
+              fontWeight: 750,
               cursor: "pointer",
               transition: "all 0.15s ease",
             }}
           >
-            🏠 Home
+            🏠 Voltar ao Início
           </button>
 
           {onLogout && (
@@ -383,7 +406,7 @@ export function ClientPortalModal({
               style={{
                 background: "rgba(239, 68, 68, 0.2)",
                 border: "1px solid rgba(239, 68, 68, 0.4)",
-                color: "#fca5a5",
+                color: isDark ? "#fca5a5" : "#dc2626",
                 padding: "8px 16px",
                 borderRadius: "8px",
                 fontSize: "12px",

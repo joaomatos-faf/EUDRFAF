@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import { ThemeToggle } from "./ThemeToggle";
+import { useTheme } from "@/app/hooks/useTheme";
 
 interface EudrHeaderProps {
   isAuthenticated: boolean;
@@ -29,6 +31,8 @@ export function EudrHeader({
   onOpenLanding,
   onOpenDashboard,
 }: EudrHeaderProps) {
+  const { isDark } = useTheme();
+
   return (
     <header className="topbar">
       <div className="brand-lockup" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
@@ -38,16 +42,18 @@ export function EudrHeader({
           style={{ height: "42px", width: "auto", objectFit: "contain", display: "block" }}
         />
         <div>
-          <p className="eyebrow" style={{ color: "#dfa84a", fontSize: "10.5px", fontWeight: 800, margin: "0 0 2px" }}>
+          <p className="eyebrow" style={{ color: isDark ? "#dfa84a" : "#b37e33", fontSize: "10.5px", fontWeight: 800, margin: "0 0 2px" }}>
             FAF COFFEES · SUSTENTABILIDADE & CONFORMIDADE
           </p>
-          <h1 style={{ fontSize: "17px", fontWeight: 700, margin: 0, color: "#ffffff" }}>
+          <h1 style={{ fontSize: "17px", fontWeight: 700, margin: 0, color: isDark ? "#ffffff" : "#1a0f0d" }}>
             Preparador de Dossiê EUDR
           </h1>
         </div>
       </div>
 
       <div className="topbar-actions" style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+        <ThemeToggle />
+
         <span className="privacy-pill">
           <span></span>Privacidade local ativada
         </span>
@@ -56,9 +62,9 @@ export function EudrHeader({
           <button
             onClick={onOpenLanding}
             style={{
-              background: "rgba(255, 255, 255, 0.08)",
-              border: "1px solid rgba(209, 160, 104, 0.25)",
-              color: "#fcf9f5",
+              background: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(189, 40, 32, 0.1)",
+              border: isDark ? "1px solid rgba(209, 160, 104, 0.25)" : "1px solid rgba(189, 40, 32, 0.3)",
+              color: isDark ? "#fcf9f5" : "#bd2820",
               borderRadius: "8px",
               padding: "7px 14px",
               fontSize: "12px",
@@ -75,9 +81,11 @@ export function EudrHeader({
           <button
             onClick={onOpenDashboard}
             style={{
-              background: "linear-gradient(135deg, rgba(209, 160, 104, 0.2), rgba(189, 40, 32, 0.15))",
+              background: isDark
+                ? "linear-gradient(135deg, rgba(209, 160, 104, 0.2), rgba(189, 40, 32, 0.15))"
+                : "linear-gradient(135deg, rgba(209, 160, 104, 0.25), rgba(189, 40, 32, 0.1))",
               border: "1px solid rgba(209, 160, 104, 0.4)",
-              color: "#dfa84a",
+              color: isDark ? "#dfa84a" : "#b37e33",
               borderRadius: "8px",
               padding: "7px 14px",
               fontSize: "12px",
@@ -115,9 +123,9 @@ export function EudrHeader({
               <button
                 onClick={onOpenLogsModal}
                 style={{
-                  background: "rgba(255, 255, 255, 0.08)",
+                  background: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)",
                   border: "1px solid rgba(209, 160, 104, 0.25)",
-                  color: "#fcf9f5",
+                  color: isDark ? "#fcf9f5" : "#1a0f0d",
                   borderRadius: "8px",
                   padding: "7px 14px",
                   fontSize: "12px",
@@ -153,7 +161,7 @@ export function EudrHeader({
               style={{
                 background: "rgba(189, 40, 32, 0.15)",
                 border: "1px solid rgba(189, 40, 32, 0.35)",
-                color: "#fca5a5",
+                color: isDark ? "#fca5a5" : "#bd2820",
                 borderRadius: "8px",
                 padding: "7px 12px",
                 fontSize: "12px",

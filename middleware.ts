@@ -38,6 +38,9 @@ export function middleware(request: NextRequest) {
 
   // 2. Suporte a subdomínio contratos.fafeu.online
   if (hostname.startsWith("contratos.")) {
+    if (pathname === "/landing" || request.nextUrl.searchParams.get("view") === "landing") {
+      return NextResponse.redirect(new URL("https://fafeu.online", request.url), 301);
+    }
     if (pathname === "/") {
       const url = request.nextUrl.clone();
       url.pathname = "/";
@@ -48,6 +51,9 @@ export function middleware(request: NextRequest) {
 
   // 3. Suporte a subdomínio portal.fafeu.online ou cliente.fafeu.online
   if (hostname.startsWith("portal.") || hostname.startsWith("cliente.")) {
+    if (pathname === "/landing" || request.nextUrl.searchParams.get("view") === "landing") {
+      return NextResponse.redirect(new URL("https://fafeu.online", request.url), 301);
+    }
     if (pathname === "/") {
       const url = request.nextUrl.clone();
       url.pathname = "/";
