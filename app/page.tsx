@@ -929,7 +929,16 @@ export default function Home() {
         onOpenLogsModal={() => setShowLogsModal(true)}
         onOpenClientPortal={() => setActiveView("portal")}
         onOpenCloudExplorer={() => setShowCloudExplorer(true)}
-        onOpenLanding={() => setActiveView("landing")}
+        onOpenLanding={() => {
+          if (typeof window !== "undefined") {
+            const host = window.location.hostname.toLowerCase();
+            if (host.startsWith("app.") || host.startsWith("preparador.") || host.startsWith("contratos.") || host.startsWith("portal.") || host.startsWith("cliente.") || host.includes("fafeu.online")) {
+              window.location.href = "https://fafeu.online";
+              return;
+            }
+          }
+          setActiveView("landing");
+        }}
         onOpenDashboard={() => setActiveView("dashboard")}
       />
 
