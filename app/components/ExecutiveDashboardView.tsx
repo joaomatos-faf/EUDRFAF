@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import type { PlotMasterRecord } from "@/app/lib/plotMasterData";
 import { getContracts, ContractRecord } from "@/app/lib/contractStore";
+import { ThemeToggle } from "./ThemeToggle";
+import { useTheme } from "@/app/hooks/useTheme";
 
 interface ExecutiveDashboardProps {
   onNavigateToContracts?: () => void;
@@ -19,6 +21,7 @@ export default function ExecutiveDashboardView({
   userRole = "admin",
   userName = "FAF Coffees",
 }: ExecutiveDashboardProps) {
+  const { isDark } = useTheme();
   const [selectedRegionFilter, setSelectedRegionFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [masterPlots, setMasterPlots] = useState<PlotMasterRecord[]>([]);
@@ -176,7 +179,15 @@ export default function ExecutiveDashboardView({
   };
 
   return (
-    <div style={{ maxWidth: "1600px", margin: "0 auto", padding: "20px 24px 60px", color: "#fcf9f5" }}>
+    <div
+      style={{
+        maxWidth: "1600px",
+        margin: "0 auto",
+        padding: "20px 24px 60px",
+        color: isDark ? "#fcf9f5" : "#1a0f0d",
+        fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
+      }}
+    >
       {/* Header Executivo com Identidade FAF */}
       <div
         style={{
@@ -186,11 +197,15 @@ export default function ExecutiveDashboardView({
           flexWrap: "wrap",
           gap: "16px",
           marginBottom: "24px",
-          background: "linear-gradient(135deg, rgba(38, 18, 14, 0.95), rgba(20, 10, 8, 0.95))",
+          background: isDark
+            ? "linear-gradient(135deg, rgba(38, 18, 14, 0.95), rgba(20, 10, 8, 0.95))"
+            : "linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(253, 248, 242, 0.95))",
           padding: "22px 28px",
           borderRadius: "20px",
-          border: "1px solid rgba(209, 160, 104, 0.35)",
-          boxShadow: "0 15px 35px rgba(0,0,0,0.4), 0 0 30px rgba(189, 40, 32, 0.1)",
+          border: isDark ? "1px solid rgba(209, 160, 104, 0.35)" : "1px solid rgba(209, 160, 104, 0.4)",
+          boxShadow: isDark
+            ? "0 15px 35px rgba(0,0,0,0.4), 0 0 30px rgba(189, 40, 32, 0.1)"
+            : "0 14px 40px rgba(70, 30, 20, 0.08)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
@@ -201,13 +216,13 @@ export default function ExecutiveDashboardView({
           />
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
-              <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 800, color: "#ffffff", letterSpacing: "-0.02em" }}>
+              <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 800, color: isDark ? "#ffffff" : "#1a0f0d", letterSpacing: "-0.02em" }}>
                 Dashboard Executivo · Conformidade EUDR & Métricas
               </h2>
               <span
                 style={{
-                  background: "rgba(189, 40, 32, 0.2)",
-                  color: "#fca5a5",
+                  background: isDark ? "rgba(189, 40, 32, 0.2)" : "rgba(189, 40, 32, 0.1)",
+                  color: isDark ? "#fca5a5" : "#bd2820",
                   fontSize: "11px",
                   fontWeight: 800,
                   padding: "3px 10px",
@@ -218,13 +233,15 @@ export default function ExecutiveDashboardView({
                 ● DADOS EM TEMPO REAL
               </span>
             </div>
-            <p style={{ margin: 0, fontSize: "13px", color: "#d4c4b6" }}>
+            <p style={{ margin: 0, fontSize: "13px", color: isDark ? "#d4c4b6" : "#5c4d44" }}>
               Monitoramento geoespacial de cafezais certificados, regulamento (UE 2023/1115) e auditoria de talhões FAF Coffees.
             </p>
           </div>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <ThemeToggle />
+
           <button
             onClick={handleExportCSV}
             style={{
@@ -260,25 +277,27 @@ export default function ExecutiveDashboardView({
         {/* Card 1: Hectares */}
         <div
           style={{
-            background: "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))",
-            border: "1px solid rgba(209, 160, 104, 0.3)",
+            background: isDark
+              ? "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))"
+              : "linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(253, 248, 242, 0.98))",
+            border: isDark ? "1px solid rgba(209, 160, 104, 0.3)" : "1px solid rgba(209, 160, 104, 0.35)",
             borderRadius: "16px",
             padding: "22px",
             position: "relative",
             overflow: "hidden",
-            boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+            boxShadow: isDark ? "0 10px 25px rgba(0,0,0,0.3)" : "0 8px 24px rgba(70, 30, 20, 0.06)",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-            <span style={{ fontSize: "11.5px", fontWeight: 800, color: "#dfa84a", textTransform: "uppercase", letterSpacing: "0.8px" }}>
+            <span style={{ fontSize: "11.5px", fontWeight: 800, color: isDark ? "#dfa84a" : "#b37e33", textTransform: "uppercase", letterSpacing: "0.8px" }}>
               Área Total Certificada
             </span>
             <span style={{ fontSize: "20px" }}>🌳</span>
           </div>
-          <div style={{ fontSize: "28px", fontWeight: 900, color: "#ffffff", lineHeight: 1.1 }}>
-            {stats.totalHectares.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} <span style={{ fontSize: "16px", color: "#dfa84a", fontWeight: 700 }}>ha</span>
+          <div style={{ fontSize: "28px", fontWeight: 900, color: isDark ? "#ffffff" : "#1a0f0d", lineHeight: 1.1 }}>
+            {stats.totalHectares.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} <span style={{ fontSize: "16px", color: isDark ? "#dfa84a" : "#bd2820", fontWeight: 700 }}>ha</span>
           </div>
-          <span style={{ fontSize: "12px", color: "#d4c4b6", display: "block", marginTop: "6px" }}>
+          <span style={{ fontSize: "12px", color: isDark ? "#d4c4b6" : "#5c4d44", display: "block", marginTop: "6px" }}>
             Distribuição em {stats.totalPlots} talhões poligonais
           </span>
         </div>
@@ -286,23 +305,25 @@ export default function ExecutiveDashboardView({
         {/* Card 2: Produtores */}
         <div
           style={{
-            background: "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))",
-            border: "1px solid rgba(209, 160, 104, 0.3)",
+            background: isDark
+              ? "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))"
+              : "linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(253, 248, 242, 0.98))",
+            border: isDark ? "1px solid rgba(209, 160, 104, 0.3)" : "1px solid rgba(209, 160, 104, 0.35)",
             borderRadius: "16px",
             padding: "22px",
-            boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+            boxShadow: isDark ? "0 10px 25px rgba(0,0,0,0.3)" : "0 8px 24px rgba(70, 30, 20, 0.06)",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-            <span style={{ fontSize: "11.5px", fontWeight: 800, color: "#dfa84a", textTransform: "uppercase", letterSpacing: "0.8px" }}>
+            <span style={{ fontSize: "11.5px", fontWeight: 800, color: isDark ? "#dfa84a" : "#b37e33", textTransform: "uppercase", letterSpacing: "0.8px" }}>
               Produtores & Fazendas
             </span>
             <span style={{ fontSize: "20px" }}>👨‍🌾</span>
           </div>
-          <div style={{ fontSize: "28px", fontWeight: 900, color: "#ffffff", lineHeight: 1.1 }}>
-            {stats.uniqueProducers} <span style={{ fontSize: "16px", color: "#d4c4b6", fontWeight: 700 }}>produtores</span>
+          <div style={{ fontSize: "28px", fontWeight: 900, color: isDark ? "#ffffff" : "#1a0f0d", lineHeight: 1.1 }}>
+            {stats.uniqueProducers} <span style={{ fontSize: "16px", color: isDark ? "#d4c4b6" : "#7a6e66", fontWeight: 700 }}>produtores</span>
           </div>
-          <span style={{ fontSize: "12px", color: "#d4c4b6", display: "block", marginTop: "6px" }}>
+          <span style={{ fontSize: "12px", color: isDark ? "#d4c4b6" : "#5c4d44", display: "block", marginTop: "6px" }}>
             {stats.uniqueFarms} fazendas em {stats.uniqueRegions.length} regiões cafeeiras
           </span>
         </div>
@@ -310,23 +331,25 @@ export default function ExecutiveDashboardView({
         {/* Card 3: Conformidade */}
         <div
           style={{
-            background: "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))",
-            border: "1px solid rgba(189, 40, 32, 0.35)",
+            background: isDark
+              ? "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))"
+              : "linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(253, 248, 242, 0.98))",
+            border: isDark ? "1px solid rgba(189, 40, 32, 0.35)" : "1px solid rgba(189, 40, 32, 0.35)",
             borderRadius: "16px",
             padding: "22px",
-            boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+            boxShadow: isDark ? "0 10px 25px rgba(0,0,0,0.3)" : "0 8px 24px rgba(70, 30, 20, 0.06)",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-            <span style={{ fontSize: "11.5px", fontWeight: 800, color: "#dfa84a", textTransform: "uppercase", letterSpacing: "0.8px" }}>
+            <span style={{ fontSize: "11.5px", fontWeight: 800, color: isDark ? "#dfa84a" : "#b37e33", textTransform: "uppercase", letterSpacing: "0.8px" }}>
               Conformidade EUDR
             </span>
             <span style={{ fontSize: "20px" }}>🛡️</span>
           </div>
-          <div style={{ fontSize: "28px", fontWeight: 900, color: "#10b981", lineHeight: 1.1 }}>
-            100% <span style={{ fontSize: "16px", color: "#6ee7b7", fontWeight: 700 }}>Conforme</span>
+          <div style={{ fontSize: "28px", fontWeight: 900, color: "#16a34a", lineHeight: 1.1 }}>
+            100% <span style={{ fontSize: "16px", color: "#16a34a", fontWeight: 700 }}>Conforme</span>
           </div>
-          <span style={{ fontSize: "12px", color: "#d4c4b6", display: "block", marginTop: "6px" }}>
+          <span style={{ fontSize: "12px", color: isDark ? "#d4c4b6" : "#5c4d44", display: "block", marginTop: "6px" }}>
             Zero desmatamento pós-31/12/2020 (MapBiomas + GFW)
           </span>
         </div>
@@ -334,23 +357,25 @@ export default function ExecutiveDashboardView({
         {/* Card 4: Sacas Estimadas */}
         <div
           style={{
-            background: "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))",
-            border: "1px solid rgba(209, 160, 104, 0.3)",
+            background: isDark
+              ? "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))"
+              : "linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(253, 248, 242, 0.98))",
+            border: isDark ? "1px solid rgba(209, 160, 104, 0.3)" : "1px solid rgba(209, 160, 104, 0.35)",
             borderRadius: "16px",
             padding: "22px",
-            boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+            boxShadow: isDark ? "0 10px 25px rgba(0,0,0,0.3)" : "0 8px 24px rgba(70, 30, 20, 0.06)",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-            <span style={{ fontSize: "11.5px", fontWeight: 800, color: "#dfa84a", textTransform: "uppercase", letterSpacing: "0.8px" }}>
+            <span style={{ fontSize: "11.5px", fontWeight: 800, color: isDark ? "#dfa84a" : "#b37e33", textTransform: "uppercase", letterSpacing: "0.8px" }}>
               Potencial Produtivo
             </span>
             <span style={{ fontSize: "20px" }}>☕</span>
           </div>
-          <div style={{ fontSize: "28px", fontWeight: 900, color: "#ffffff", lineHeight: 1.1 }}>
-            ~{stats.estimatedBags.toLocaleString("pt-BR")} <span style={{ fontSize: "16px", color: "#dfa84a", fontWeight: 700 }}>sacas</span>
+          <div style={{ fontSize: "28px", fontWeight: 900, color: isDark ? "#ffffff" : "#1a0f0d", lineHeight: 1.1 }}>
+            ~{stats.estimatedBags.toLocaleString("pt-BR")} <span style={{ fontSize: "16px", color: isDark ? "#dfa84a" : "#bd2820", fontWeight: 700 }}>sacas</span>
           </div>
-          <span style={{ fontSize: "12px", color: "#d4c4b6", display: "block", marginTop: "6px" }}>
+          <span style={{ fontSize: "12px", color: isDark ? "#d4c4b6" : "#5c4d44", display: "block", marginTop: "6px" }}>
             {stats.totalContracts} contratos cadastrados no sistema
           </span>
         </div>
@@ -361,18 +386,20 @@ export default function ExecutiveDashboardView({
         {/* Distribuição por Região */}
         <div
           style={{
-            background: "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))",
-            border: "1px solid rgba(209, 160, 104, 0.25)",
+            background: isDark
+              ? "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))"
+              : "linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(253, 248, 242, 0.98))",
+            border: isDark ? "1px solid rgba(209, 160, 104, 0.25)" : "1px solid rgba(209, 160, 104, 0.35)",
             borderRadius: "18px",
             padding: "24px",
-            boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+            boxShadow: isDark ? "0 10px 25px rgba(0,0,0,0.3)" : "0 8px 24px rgba(70, 30, 20, 0.06)",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
-            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: "#ffffff" }}>
+            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: isDark ? "#ffffff" : "#1a0f0d" }}>
               📍 Distribuição Geográfica por Região
             </h3>
-            <span style={{ fontSize: "12px", color: "#dfa84a", fontWeight: 700 }}>
+            <span style={{ fontSize: "12px", color: isDark ? "#dfa84a" : "#b37e33", fontWeight: 700 }}>
               {stats.uniqueRegions.length} Regiões Produtoras
             </span>
           </div>
@@ -381,13 +408,13 @@ export default function ExecutiveDashboardView({
             {stats.regionBreakdown.map((r) => (
               <div key={r.region}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "5px", fontSize: "13px" }}>
-                  <span style={{ fontWeight: 700, color: "#ffffff" }}>{r.region}</span>
-                  <span style={{ color: "#dfa84a", fontWeight: 600 }}>
+                  <span style={{ fontWeight: 700, color: isDark ? "#ffffff" : "#1a0f0d" }}>{r.region}</span>
+                  <span style={{ color: isDark ? "#dfa84a" : "#b37e33", fontWeight: 600 }}>
                     {r.hectares.toFixed(1)} ha ({r.percentage.toFixed(1)}%) · {r.plotCount} talhões
                   </span>
                 </div>
                 {/* Barra de Progresso em Vermelho & Ouro FAF */}
-                <div style={{ width: "100%", height: "8px", background: "rgba(255, 255, 255, 0.08)", borderRadius: "999px", overflow: "hidden" }}>
+                <div style={{ width: "100%", height: "8px", background: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)", borderRadius: "999px", overflow: "hidden" }}>
                   <div
                     style={{
                       width: `${Math.max(r.percentage, 3)}%`,
@@ -406,44 +433,46 @@ export default function ExecutiveDashboardView({
         {/* Quadro Regulatório EUDR 2023/1115 */}
         <div
           style={{
-            background: "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))",
-            border: "1px solid rgba(209, 160, 104, 0.25)",
+            background: isDark
+              ? "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))"
+              : "linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(253, 248, 242, 0.98))",
+            border: isDark ? "1px solid rgba(209, 160, 104, 0.25)" : "1px solid rgba(209, 160, 104, 0.35)",
             borderRadius: "18px",
             padding: "24px",
-            boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+            boxShadow: isDark ? "0 10px 25px rgba(0,0,0,0.3)" : "0 8px 24px rgba(70, 30, 20, 0.06)",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
             <span style={{ fontSize: "20px" }}>🇪🇺</span>
-            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: "#ffffff" }}>
+            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: isDark ? "#ffffff" : "#1a0f0d" }}>
               Auditoria de Conformidade (EUDR 2023/1115)
             </h3>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <div style={{ background: "rgba(18, 9, 8, 0.7)", border: "1px solid rgba(209, 160, 104, 0.25)", borderRadius: "12px", padding: "14px 16px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#10b981", fontWeight: 700, fontSize: "13px", marginBottom: "3px" }}>
+            <div style={{ background: isDark ? "rgba(18, 9, 8, 0.7)" : "rgba(250, 238, 231, 0.6)", border: isDark ? "1px solid rgba(209, 160, 104, 0.25)" : "1px solid rgba(209, 160, 104, 0.35)", borderRadius: "12px", padding: "14px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#16a34a", fontWeight: 700, fontSize: "13px", marginBottom: "3px" }}>
                 <span>✅ Marco Temporal Legal (Cutoff Date)</span>
               </div>
-              <p style={{ margin: 0, fontSize: "12.5px", color: "#d4c4b6", lineHeight: 1.45 }}>
+              <p style={{ margin: 0, fontSize: "12.5px", color: isDark ? "#d4c4b6" : "#524239", lineHeight: 1.45 }}>
                 Todos os talhões cadastrados possuem comprovação histórica via satélite de ausência de desmatamento ou conversão florestal após <strong>31 de Dezembro de 2020</strong>.
               </p>
             </div>
 
-            <div style={{ background: "rgba(18, 9, 8, 0.7)", border: "1px solid rgba(209, 160, 104, 0.25)", borderRadius: "12px", padding: "14px 16px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#10b981", fontWeight: 700, fontSize: "13px", marginBottom: "3px" }}>
+            <div style={{ background: isDark ? "rgba(18, 9, 8, 0.7)" : "rgba(250, 238, 231, 0.6)", border: isDark ? "1px solid rgba(209, 160, 104, 0.25)" : "1px solid rgba(209, 160, 104, 0.35)", borderRadius: "12px", padding: "14px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#16a34a", fontWeight: 700, fontSize: "13px", marginBottom: "3px" }}>
                 <span>✅ Precisão Georreferenciada WGS84</span>
               </div>
-              <p style={{ margin: 0, fontSize: "12.5px", color: "#d4c4b6", lineHeight: 1.45 }}>
+              <p style={{ margin: 0, fontSize: "12.5px", color: isDark ? "#d4c4b6" : "#524239", lineHeight: 1.45 }}>
                 Polígonos com 6 casas decimais de precisão submétrica, compatíveis com a plataforma da União Europeia (EUDR Information System).
               </p>
             </div>
 
-            <div style={{ background: "rgba(18, 9, 8, 0.7)", border: "1px solid rgba(209, 160, 104, 0.25)", borderRadius: "12px", padding: "14px 16px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#10b981", fontWeight: 700, fontSize: "13px", marginBottom: "3px" }}>
+            <div style={{ background: isDark ? "rgba(18, 9, 8, 0.7)" : "rgba(250, 238, 231, 0.6)", border: isDark ? "1px solid rgba(209, 160, 104, 0.25)" : "1px solid rgba(209, 160, 104, 0.35)", borderRadius: "12px", padding: "14px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#16a34a", fontWeight: 700, fontSize: "13px", marginBottom: "3px" }}>
                 <span>✅ Due Diligence Statement (DDS)</span>
               </div>
-              <p style={{ margin: 0, fontSize: "12.5px", color: "#d4c4b6", lineHeight: 1.45 }}>
+              <p style={{ margin: 0, fontSize: "12.5px", color: isDark ? "#d4c4b6" : "#524239", lineHeight: 1.45 }}>
                 Rastreabilidade ponta a ponta desde a fazenda até o lote contratado pelo cliente importador.
               </p>
             </div>
@@ -454,19 +483,21 @@ export default function ExecutiveDashboardView({
       {/* Tabela de Top Produtores e Talhões */}
       <div
         style={{
-          background: "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))",
-          border: "1px solid rgba(209, 160, 104, 0.25)",
+          background: isDark
+            ? "linear-gradient(150deg, rgba(38, 18, 14, 0.9), rgba(20, 10, 8, 0.95))"
+            : "linear-gradient(150deg, rgba(255, 255, 255, 0.98), rgba(253, 248, 242, 0.98))",
+          border: isDark ? "1px solid rgba(209, 160, 104, 0.25)" : "1px solid rgba(209, 160, 104, 0.35)",
           borderRadius: "18px",
           padding: "24px",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
+          boxShadow: isDark ? "0 10px 30px rgba(0,0,0,0.35)" : "0 8px 24px rgba(70, 30, 20, 0.08)",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "18px" }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: "17px", fontWeight: 800, color: "#ffffff" }}>
+            <h3 style={{ margin: 0, fontSize: "17px", fontWeight: 800, color: isDark ? "#ffffff" : "#1a0f0d" }}>
               🏆 Principais Fazendas & Produtores Certificados
             </h3>
-            <span style={{ fontSize: "12.5px", color: "#d4c4b6" }}>
+            <span style={{ fontSize: "12.5px", color: isDark ? "#d4c4b6" : "#5c4d44" }}>
               Exibindo maiores áreas mapeadas por produtor
             </span>
           </div>
@@ -476,10 +507,10 @@ export default function ExecutiveDashboardView({
               value={selectedRegionFilter}
               onChange={(e) => setSelectedRegionFilter(e.target.value)}
               style={{
-                background: "rgba(10, 4, 3, 0.8)",
+                background: isDark ? "rgba(10, 4, 3, 0.8)" : "#ffffff",
                 border: "1px solid rgba(209, 160, 104, 0.35)",
                 borderRadius: "8px",
-                color: "#ffffff",
+                color: isDark ? "#ffffff" : "#1a0f0d",
                 padding: "8px 14px",
                 fontSize: "12px",
                 outline: "none",
@@ -496,14 +527,14 @@ export default function ExecutiveDashboardView({
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
             <thead>
-              <tr style={{ background: "rgba(15, 8, 6, 0.95)", borderBottom: "1px solid rgba(209, 160, 104, 0.3)" }}>
-                <th style={{ padding: "12px 16px", color: "#dfa84a", fontWeight: 800 }}>#</th>
-                <th style={{ padding: "12px 16px", color: "#dfa84a", fontWeight: 800 }}>PRODUTOR</th>
-                <th style={{ padding: "12px 16px", color: "#dfa84a", fontWeight: 800 }}>FAZENDA / SÍTIO</th>
-                <th style={{ padding: "12px 16px", color: "#dfa84a", fontWeight: 800 }}>REGIÃO</th>
-                <th style={{ padding: "12px 16px", color: "#dfa84a", fontWeight: 800, textAlign: "center" }}>TALHÕES</th>
-                <th style={{ padding: "12px 16px", color: "#dfa84a", fontWeight: 800, textAlign: "right" }}>ÁREA TOTAL</th>
-                <th style={{ padding: "12px 16px", color: "#dfa84a", fontWeight: 800, textAlign: "center" }}>STATUS EUDR</th>
+              <tr style={{ background: isDark ? "rgba(15, 8, 6, 0.95)" : "rgba(250, 238, 231, 0.95)", borderBottom: "1px solid rgba(209, 160, 104, 0.3)" }}>
+                <th style={{ padding: "12px 16px", color: isDark ? "#dfa84a" : "#b37e33", fontWeight: 800 }}>#</th>
+                <th style={{ padding: "12px 16px", color: isDark ? "#dfa84a" : "#b37e33", fontWeight: 800 }}>PRODUTOR</th>
+                <th style={{ padding: "12px 16px", color: isDark ? "#dfa84a" : "#b37e33", fontWeight: 800 }}>FAZENDA / SÍTIO</th>
+                <th style={{ padding: "12px 16px", color: isDark ? "#dfa84a" : "#b37e33", fontWeight: 800 }}>REGIÃO</th>
+                <th style={{ padding: "12px 16px", color: isDark ? "#dfa84a" : "#b37e33", fontWeight: 800, textAlign: "center" }}>TALHÕES</th>
+                <th style={{ padding: "12px 16px", color: isDark ? "#dfa84a" : "#b37e33", fontWeight: 800, textAlign: "right" }}>ÁREA TOTAL</th>
+                <th style={{ padding: "12px 16px", color: isDark ? "#dfa84a" : "#b37e33", fontWeight: 800, textAlign: "center" }}>STATUS EUDR</th>
               </tr>
             </thead>
             <tbody>
@@ -511,23 +542,23 @@ export default function ExecutiveDashboardView({
                 <tr
                   key={`${prod.producer}-${prod.farm}`}
                   style={{
-                    background: idx % 2 === 0 ? "transparent" : "rgba(255, 255, 255, 0.02)",
+                    background: idx % 2 === 0 ? "transparent" : (isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(250, 238, 231, 0.4)"),
                     borderBottom: "1px solid rgba(209, 160, 104, 0.1)",
                   }}
                 >
-                  <td style={{ padding: "12px 16px", color: "#dfa84a", fontWeight: 800 }}>{idx + 1}</td>
-                  <td style={{ padding: "12px 16px", fontWeight: 700, color: "#ffffff" }}>{prod.producer}</td>
-                  <td style={{ padding: "12px 16px", color: "#d4c4b6" }}>{prod.farm}</td>
-                  <td style={{ padding: "12px 16px", color: "#dfa84a" }}>{prod.region}</td>
-                  <td style={{ padding: "12px 16px", textAlign: "center", color: "#a3958c" }}>{prod.plotsCount}</td>
-                  <td style={{ padding: "12px 16px", textAlign: "right", fontWeight: 700, color: "#ffffff" }}>
+                  <td style={{ padding: "12px 16px", color: isDark ? "#dfa84a" : "#b37e33", fontWeight: 800 }}>{idx + 1}</td>
+                  <td style={{ padding: "12px 16px", fontWeight: 700, color: isDark ? "#ffffff" : "#1a0f0d" }}>{prod.producer}</td>
+                  <td style={{ padding: "12px 16px", color: isDark ? "#d4c4b6" : "#524239" }}>{prod.farm}</td>
+                  <td style={{ padding: "12px 16px", color: isDark ? "#dfa84a" : "#bd2820", fontWeight: 600 }}>{prod.region}</td>
+                  <td style={{ padding: "12px 16px", textAlign: "center", color: isDark ? "#a3958c" : "#7a6e66" }}>{prod.plotsCount}</td>
+                  <td style={{ padding: "12px 16px", textAlign: "right", fontWeight: 700, color: isDark ? "#ffffff" : "#1a0f0d" }}>
                     {prod.hectares.toFixed(1)} ha
                   </td>
                   <td style={{ padding: "12px 16px", textAlign: "center" }}>
                     <span
                       style={{
                         background: "rgba(16, 185, 129, 0.15)",
-                        color: "#10b981",
+                        color: "#16a34a",
                         border: "1px solid rgba(16, 185, 129, 0.3)",
                         padding: "3px 10px",
                         borderRadius: "999px",
