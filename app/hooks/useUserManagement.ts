@@ -101,21 +101,47 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
   }, []);
 
   useEffect(() => {
-    const auth = sessionStorage.getItem("faf_eudr_auth");
-    if (auth === "true") {
-      setIsAuthenticated(true);
-      const savedName = sessionStorage.getItem("faf_eudr_user_name");
-      const savedKey = sessionStorage.getItem("faf_eudr_user_key");
-      const savedRole = sessionStorage.getItem("faf_eudr_user_role") as "admin" | "user" | "client";
-      const savedClient = sessionStorage.getItem("faf_eudr_client_name");
-      if (savedName && onUserLoggedIn) onUserLoggedIn(savedName);
-      if (savedName) setLoggedUserName(savedName);
-      if (savedKey) setLoggedUserKey(savedKey);
-      if (savedRole) setLoggedUserRole(savedRole);
-      if (savedClient) setLoggedClientName(savedClient);
-    } else {
-      setIsAuthenticated(false);
-    }
+    const checkServerSession = async () => {
+      try {
+        const res = await fetch("/api/auth/me", { credentials: "include" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.authenticated && data.user) {
+            const { userKey, fullName, role, clientName } = data.user;
+            setIsAuthenticated(true);
+            setLoggedUserKey(userKey);
+            setLoggedUserName(fullName);
+            setLoggedUserRole(role);
+            setLoggedClientName(clientName || "");
+            sessionStorage.setItem("faf_eudr_auth", "true");
+            sessionStorage.setItem("faf_eudr_user_name", fullName);
+            sessionStorage.setItem("faf_eudr_user_key", userKey);
+            sessionStorage.setItem("faf_eudr_user_role", role);
+            if (clientName) sessionStorage.setItem("faf_eudr_client_name", clientName);
+            if (onUserLoggedIn) onUserLoggedIn(fullName);
+            return;
+          }
+        }
+      } catch {}
+
+      const auth = sessionStorage.getItem("faf_eudr_auth");
+      if (auth === "true") {
+        setIsAuthenticated(true);
+        const savedName = sessionStorage.getItem("faf_eudr_user_name");
+        const savedKey = sessionStorage.getItem("faf_eudr_user_key");
+        const savedRole = sessionStorage.getItem("faf_eudr_user_role") as "admin" | "user" | "client";
+        const savedClient = sessionStorage.getItem("faf_eudr_client_name");
+        if (savedName && onUserLoggedIn) onUserLoggedIn(savedName);
+        if (savedName) setLoggedUserName(savedName);
+        if (savedKey) setLoggedUserKey(savedKey);
+        if (savedRole) setLoggedUserRole(savedRole);
+        if (savedClient) setLoggedClientName(savedClient);
+      } else {
+        setIsAuthenticated(false);
+      }
+    };
+
+    checkServerSession();
   }, []);
 
   const handleLogin = async (e?: React.FormEvent): Promise<boolean> => {
@@ -124,44 +150,61 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
     }
     const userKey = loginUsername.trim().toLowerCase();
 
-    let currentUsersMap = usersMap;
     try {
-      const res = await fetch("/api/users");
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.users && typeof data.users === "object") currentUsersMap = data.users;
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ username: userKey, password: loginPassword }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data?.success && data?.user) {
+        const { fullName, role, clientName } = data.user;
+        sessionStorage.setItem("faf_eudr_auth", "true");
+        sessionStorage.setItem("faf_eudr_user_name", fullName);
+        sessionStorage.setItem("faf_eudr_user_key", userKey);
+        sessionStorage.setItem("faf_eudr_user_role", role);
+        if (clientName) sessionStorage.setItem("faf_eudr_client_name", clientName);
+        setIsAuthenticated(true);
+        setLoggedUserKey(userKey);
+        setLoggedUserName(fullName);
+        setLoggedUserRole(role);
+        setLoggedClientName(clientName || "");
+        if (onUserLoggedIn) onUserLoggedIn(fullName);
+        setLoginError("");
+
+        recordAuditLog(userKey, fullName, "LOGIN", "ACESSO", `Usuário @${userKey} (${fullName}) realizou login via sessão segura.`);
+        return true;
+      } else {
+        setLoginError(data?.error || "Usuário ou senha incorretos.");
+        return false;
       }
-    } catch {}
-
-    const profile = currentUsersMap[userKey];
-    if (!profile) {
-      setLoginError("Usuário ou senha incorretos.");
-      return false;
-    }
-
-    const passToTest = typeof profile === "string" ? profile : profile.pass;
-    const isMatch = await checkPasswordMatch(loginPassword, passToTest);
-
-    if (isMatch) {
-      const fullName = typeof profile === "string" ? userKey.toUpperCase() : (profile.fullName || userKey);
-      const role = typeof profile === "string" ? "user" : (profile.role || "user");
-      const clientName = typeof profile === "string" ? "" : (profile.clientName || profile.fullName || userKey);
-      sessionStorage.setItem("faf_eudr_auth", "true");
-      sessionStorage.setItem("faf_eudr_user_name", fullName);
-      sessionStorage.setItem("faf_eudr_user_key", userKey);
-      sessionStorage.setItem("faf_eudr_user_role", role);
-      sessionStorage.setItem("faf_eudr_client_name", clientName);
-      setIsAuthenticated(true);
-      setLoggedUserKey(userKey);
-      setLoggedUserName(fullName);
-      setLoggedUserRole(role);
-      setLoggedClientName(clientName);
-      if (onUserLoggedIn) onUserLoggedIn(fullName);
-      setLoginError("");
-
-      recordAuditLog(userKey, fullName, "LOGIN", "ACESSO", `Usuário @${userKey} (${fullName}) realizou login.`);
-      return true;
-    } else {
+    } catch {
+      // Fallback local check if offline
+      const profile = usersMap[userKey];
+      if (profile) {
+        const passToTest = typeof profile === "string" ? profile : profile.pass;
+        const isMatch = await checkPasswordMatch(loginPassword, passToTest);
+        if (isMatch) {
+          const fullName = typeof profile === "string" ? userKey.toUpperCase() : (profile.fullName || userKey);
+          const role = typeof profile === "string" ? "user" : (profile.role || "user");
+          const clientName = typeof profile === "string" ? "" : (profile.clientName || profile.fullName || userKey);
+          sessionStorage.setItem("faf_eudr_auth", "true");
+          sessionStorage.setItem("faf_eudr_user_name", fullName);
+          sessionStorage.setItem("faf_eudr_user_key", userKey);
+          sessionStorage.setItem("faf_eudr_user_role", role);
+          if (clientName) sessionStorage.setItem("faf_eudr_client_name", clientName);
+          setIsAuthenticated(true);
+          setLoggedUserKey(userKey);
+          setLoggedUserName(fullName);
+          setLoggedUserRole(role);
+          setLoggedClientName(clientName);
+          if (onUserLoggedIn) onUserLoggedIn(fullName);
+          setLoginError("");
+          return true;
+        }
+      }
       setLoginError("Usuário ou senha incorretos.");
       return false;
     }
@@ -170,6 +213,9 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
   const handleLogout = () => {
     const currentName = sessionStorage.getItem("faf_eudr_user_name") || loggedUserName || loggedUserKey;
     recordAuditLog(loggedUserKey, currentName, "LOGOUT", "ACESSO", `Usuário @${loggedUserKey} encerrou a sessão.`);
+    try {
+      fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    } catch {}
     sessionStorage.removeItem("faf_eudr_auth");
     sessionStorage.removeItem("faf_eudr_user_name");
     sessionStorage.removeItem("faf_eudr_user_key");
@@ -181,6 +227,7 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
     setLoggedUserRole("user");
     setLoggedClientName("");
   };
+
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();

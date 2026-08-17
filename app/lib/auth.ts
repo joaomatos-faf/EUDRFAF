@@ -130,3 +130,77 @@ export async function checkPasswordMatch(inputPass: string, storedValue: string)
   // Case 3: Plaintext initial match
   return constantTimeEqual(inputPass, storedValue);
 }
+
+export interface SessionPayload {
+  userKey: string;
+  fullName: string;
+  role: "admin" | "user" | "client";
+  clientName?: string;
+  exp: number;
+}
+
+export const SESSION_COOKIE_NAME = "faf_eudr_session";
+const SESSION_SECRET = "FAF_EUDR_HMAC_SESSION_SECRET_2026_PROD_KEY";
+
+/**
+ * Generates an HMAC-SHA256 signed session token for secure HttpOnly cookies
+ */
+export async function createSessionToken(
+  payload: Omit<SessionPayload, "exp">,
+  durationSeconds = 7 * 24 * 60 * 60
+): Promise<string> {
+  const exp = Math.floor(Date.now() / 1000) + durationSeconds;
+  const fullPayload: SessionPayload = { ...payload, exp };
+  const payloadJson = JSON.stringify(fullPayload);
+  const payloadB64 = btoa(unescape(encodeURIComponent(payloadJson)));
+
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(SESSION_SECRET),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(payloadB64));
+  const sigHex = bufferToHex(signature);
+
+  return `${payloadB64}.${sigHex}`;
+}
+
+/**
+ * Verifies an HMAC-SHA256 signed session token and checks expiry
+ */
+export async function verifySessionToken(token: string): Promise<SessionPayload | null> {
+  if (!token || !token.includes(".")) return null;
+  const [payloadB64, sigHex] = token.split(".");
+  if (!payloadB64 || !sigHex) return null;
+
+  try {
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(SESSION_SECRET),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+
+    const expectedSig = await crypto.subtle.sign("HMAC", key, encoder.encode(payloadB64));
+    const expectedSigHex = bufferToHex(expectedSig);
+
+    if (!constantTimeEqual(sigHex, expectedSigHex)) return null;
+
+    const payloadJson = decodeURIComponent(escape(atob(payloadB64)));
+    const payload = JSON.parse(payloadJson) as SessionPayload;
+
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (payload.exp && payload.exp < nowSec) return null;
+
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
