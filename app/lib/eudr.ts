@@ -17,11 +17,94 @@ export type ShapefileAttributes = {
 
 const encoder = new TextEncoder();
 
+/**
+ * Reprojects a UTM (Universal Transverse Mercator) coordinate to WGS84 / SIRGAS 2000 Geographic (EPSG:4326)
+ * Accurate to millimeter level for Brazilian agricultural mapping.
+ */
+export function utmToWgs84(easting: number, northing: number, zoneNumber = 23, isSouth = true): Position {
+  const a = 6378137.0; // WGS84 / GRS80 semi-major axis
+  const f = 1 / 298.257223563; // flattening
+  const e2 = 2 * f - f * f; // first eccentricity squared
+  const ePrime2 = e2 / (1 - e2); // second eccentricity squared
+  const k0 = 0.9996;
+
+  const x = easting - 500000.0;
+  const y = isSouth ? northing - 10000000.0 : northing;
+
+  const m = y / k0;
+  const mu = m / (a * (1 - e2 / 4 - (3 * e2 * e2) / 64 - (5 * e2 * e2 * e2) / 256));
+
+  const e1 = (1 - Math.sqrt(1 - e2)) / (1 + Math.sqrt(1 - e2));
+
+  const phi1Rad =
+    mu +
+    ((3 * e1) / 2 - (27 * Math.pow(e1, 3)) / 32) * Math.sin(2 * mu) +
+    ((21 * e1 * e1) / 16 - (55 * Math.pow(e1, 4)) / 32) * Math.sin(4 * mu) +
+    ((151 * Math.pow(e1, 3)) / 96) * Math.sin(6 * mu) +
+    ((1097 * Math.pow(e1, 4)) / 512) * Math.sin(8 * mu);
+
+  const sinPhi1 = Math.sin(phi1Rad);
+  const cosPhi1 = Math.cos(phi1Rad);
+  const tanPhi1 = Math.tan(phi1Rad);
+
+  const n1 = a / Math.sqrt(1 - e2 * sinPhi1 * sinPhi1);
+  const t1 = tanPhi1 * tanPhi1;
+  const c1 = ePrime2 * cosPhi1 * cosPhi1;
+  const r1 = (a * (1 - e2)) / Math.pow(1 - e2 * sinPhi1 * sinPhi1, 1.5);
+  const d = x / (n1 * k0);
+
+  const latRad =
+    phi1Rad -
+    ((n1 * tanPhi1) / r1) *
+      ((d * d) / 2 -
+        ((5 + 3 * t1 + 10 * c1 - 4 * c1 * c1 - 9 * ePrime2) * Math.pow(d, 4)) / 24 +
+        ((61 + 90 * t1 + 298 * c1 + 45 * t1 * t1 - 252 * ePrime2 - 3 * c1 * c1) * Math.pow(d, 6)) / 720);
+
+  const lonOrigin = (zoneNumber - 1) * 6 - 180 + 3; // Central meridian
+  const lonRad =
+    (d -
+      ((1 + 2 * t1 + c1) * Math.pow(d, 3)) / 6 +
+      ((5 - 2 * c1 + 28 * t1 - 3 * c1 * c1 + 8 * ePrime2 + 24 * t1 * t1) * Math.pow(d, 5)) / 120) /
+    cosPhi1;
+
+  const lat = (latRad * 180) / Math.PI;
+  const lon = lonOrigin + (lonRad * 180) / Math.PI;
+
+  return [Number(lon.toFixed(7)), Number(lat.toFixed(7))];
+}
+
+/**
+ * Normalizes coordinates: If projected UTM is detected (e.g. Brazilian CAR Shapefile),
+ * converts automatically to WGS84 geographic decimal degrees.
+ */
+export function normalizePosition(pos: Position, defaultZone = 23): Position {
+  const [x, y] = pos;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return pos;
+
+  // Standard WGS84 degrees check (-180..180, -90..90)
+  if (x >= -180 && x <= 180 && y >= -90 && y <= 90) {
+    return [Number(x.toFixed(7)), Number(y.toFixed(7))];
+  }
+
+  // Check if coordinates are in UTM South [Easting, Northing]
+  if (x >= 100_000 && x <= 900_000 && y >= 6_000_000 && y <= 10_000_000) {
+    return utmToWgs84(x, y, defaultZone, true);
+  }
+
+  // Check if coordinates were inverted [Northing, Easting]
+  if (y >= 100_000 && y <= 900_000 && x >= 6_000_000 && x <= 10_000_000) {
+    return utmToWgs84(y, x, defaultZone, true);
+  }
+
+  return pos;
+}
+
 function closeRing(ring: Position[]): Position[] {
   if (ring.length < 3) throw new Error("O polígono precisa ter pelo menos três pontos.");
-  const first = ring[0];
-  const last = ring[ring.length - 1];
-  return first[0] === last[0] && first[1] === last[1] ? ring : [...ring, [...first] as Position];
+  const normalizedRing = ring.map((p) => normalizePosition(p));
+  const first = normalizedRing[0];
+  const last = normalizedRing[normalizedRing.length - 1];
+  return first[0] === last[0] && first[1] === last[1] ? normalizedRing : [...normalizedRing, [...first] as Position];
 }
 
 function coordinatesFromText(text: string): Position[] {
@@ -29,7 +112,8 @@ function coordinatesFromText(text: string): Position[] {
     .trim()
     .split(/\s+/)
     .map((item) => item.split(",").slice(0, 2).map(Number) as Position)
-    .filter(([longitude, latitude]) => Number.isFinite(longitude) && Number.isFinite(latitude));
+    .filter(([longitude, latitude]) => Number.isFinite(longitude) && Number.isFinite(latitude))
+    .map((p) => normalizePosition(p));
   return closeRing(points);
 }
 
@@ -63,7 +147,7 @@ function parseGeoJson(text: string): GeometryData {
     if (geometry?.type === "MultiPolygon") polygons.push(...(geometry.coordinates as PolygonCoordinates[]));
   });
   if (!polygons.length) throw new Error("O GeoJSON não contém Polygon ou MultiPolygon.");
-  return { polygons: polygons.map((polygon) => polygon.map((ring) => closeRing(ring.map(([x, y]) => [Number(x), Number(y)])))) };
+  return { polygons: polygons.map((polygon) => polygon.map((ring) => closeRing(ring.map(([x, y]) => normalizePosition([Number(x), Number(y)]))))) };
 }
 
 export async function parseGeometryFile(file: File): Promise<GeometryData> {
@@ -585,17 +669,130 @@ export function downloadBlob(name: string, blob: Blob) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export async function hashPassword(password: string): Promise<string> {
-  const msgUint8 = new TextEncoder().encode("FAF_EUDR_SALT_2026_" + password);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+const PBKDF2_ITERATIONS = 100_000;
+const PBKDF2_HASH_ALGO = "SHA-512";
+const PBKDF2_KEY_LEN_BITS = 256;
+
+function pbkdf2BufferToHex(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
-export async function checkPasswordMatch(inputPass: string, storedValue: string): Promise<boolean> {
-  const inputHash = await hashPassword(inputPass);
-  if (storedValue.length === 64 && /^[0-9a-f]+$/i.test(storedValue)) {
-    return inputHash === storedValue;
+function pbkdf2HexToBuffer(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
   }
-  return inputPass === storedValue;
+  return bytes;
 }
+
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
+/**
+ * Generates a cryptographically secure PBKDF2-HMAC-SHA512 hash with unique 16-byte salt
+ * Output format: pbkdf2:100000:<salt_hex>:<hash_hex>
+ */
+export async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const salt = new Uint8Array(16);
+  crypto.getRandomValues(salt);
+
+  const baseKey = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"]
+  );
+
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      salt: salt as unknown as ArrayBuffer,
+      iterations: PBKDF2_ITERATIONS,
+      hash: PBKDF2_HASH_ALGO,
+    },
+    baseKey,
+    PBKDF2_KEY_LEN_BITS
+  );
+
+  const saltHex = pbkdf2BufferToHex(salt.buffer as ArrayBuffer);
+  const hashHex = pbkdf2BufferToHex(derivedBits);
+
+  return `pbkdf2:${PBKDF2_ITERATIONS}:${saltHex}:${hashHex}`;
+}
+
+/**
+ * Legacy SHA-256 + Salt hashing for backward compatibility
+ */
+export async function hashPasswordLegacy(password: string): Promise<string> {
+  const msgUint8 = new TextEncoder().encode("FAF_EUDR_SALT_2026_" + password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+  return pbkdf2BufferToHex(hashBuffer);
+}
+
+/**
+ * Verifies password match against:
+ * 1. Modern PBKDF2 (pbkdf2:100000:salt:hash)
+ * 2. Legacy SHA-256 (64 hex characters)
+ * 3. Plaintext fallback (if unhashed initial state)
+ */
+export async function checkPasswordMatch(inputPass: string, storedValue: string): Promise<boolean> {
+  if (!storedValue || typeof storedValue !== "string") return false;
+
+  // Case 1: PBKDF2 format
+  if (storedValue.startsWith("pbkdf2:")) {
+    const parts = storedValue.split(":");
+    if (parts.length === 4) {
+      const iterations = parseInt(parts[1], 10) || PBKDF2_ITERATIONS;
+      const saltHex = parts[2];
+      const targetHashHex = parts[3];
+
+      const encoder = new TextEncoder();
+      const salt = pbkdf2HexToBuffer(saltHex);
+
+      const baseKey = await crypto.subtle.importKey(
+        "raw",
+        encoder.encode(inputPass),
+        "PBKDF2",
+        false,
+        ["deriveBits"]
+      );
+
+      const derivedBits = await crypto.subtle.deriveBits(
+        {
+          name: "PBKDF2",
+          salt: salt as unknown as ArrayBuffer,
+          iterations,
+          hash: PBKDF2_HASH_ALGO,
+        },
+        baseKey,
+        PBKDF2_KEY_LEN_BITS
+      );
+
+      const computedHashHex = pbkdf2BufferToHex(derivedBits);
+      return constantTimeEqual(computedHashHex, targetHashHex);
+    }
+  }
+
+  // Case 2: Legacy SHA-256 (64 hex digits)
+  if (storedValue.length === 64 && /^[0-9a-f]+$/i.test(storedValue)) {
+    const legacyHash = await hashPasswordLegacy(inputPass);
+    return constantTimeEqual(legacyHash.toLowerCase(), storedValue.toLowerCase());
+  }
+
+  // Case 3: Plaintext initial match
+  return constantTimeEqual(inputPass, storedValue);
+}
+
+
+

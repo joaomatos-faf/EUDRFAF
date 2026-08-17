@@ -268,15 +268,58 @@ function compareCoverageSeries(result: StatisticsResponse) {
   };
 }
 
+async function getCloudflareEnv() {
+  try {
+    const cf = await import("cloudflare:workers");
+    return cf.env as any;
+  } catch {
+    return {} as any;
+  }
+}
+
+async function computeGeometryHash(geometry: GeometryData): Promise<string> {
+  const coordsStr = geometry.polygons
+    .map((poly) => poly.map((ring) => ring.map(([lon, lat]) => `${lon.toFixed(6)},${lat.toFixed(6)}`).join(";")).join("|"))
+    .join("#");
+  const msgUint8 = new TextEncoder().encode(coordsStr);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+const memoryMapbiomasCache = new Map<string, any>();
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as { geometry?: unknown; details?: unknown };
     const geometry = validateGeometry(body.geometry);
     const { plotId, attributes } = validateDetails(body.details);
+
+    // 1. Check Geometry Cache
+    const geoHash = await computeGeometryHash(geometry);
+    const cacheKey = `mapbiomas_cache:${geoHash}`;
+
+    const cfEnv = await getCloudflareEnv();
+    if (cfEnv?.USERS_KV && typeof cfEnv.USERS_KV.get === "function") {
+      try {
+        const cached = await cfEnv.USERS_KV.get(cacheKey, { type: "json" });
+        if (cached) {
+          return Response.json({ ...cached, fromCache: true });
+        }
+      } catch {}
+    }
+
+    if (memoryMapbiomasCache.has(geoHash)) {
+      return Response.json({ ...memoryMapbiomasCache.get(geoHash), fromCache: true });
+    }
+
+    // 2. Query MapBiomas API
     const { territoryId, categoryId } = await uploadGeometry(geometry, plotId, attributes);
     const statistics = await waitForStatistics(statisticsUrl(territoryId, categoryId));
     const coverage = compareCoverageSeries(statistics);
-    return Response.json({
+
+    const responsePayload = {
       areaHa: coverage.areaHa,
       hasChanges: coverage.changes.length > 0,
       changes: coverage.changes,
@@ -287,9 +330,24 @@ export async function POST(request: Request) {
       collection: "10.1",
       source: "MapBiomas · Série temporal de Cobertura por classe",
       verificationUrl: verificationUrl(territoryId),
-    });
+      geometryHash: geoHash,
+      fromCache: false,
+    };
+
+    // 3. Save to Cache (30 days TTL)
+    memoryMapbiomasCache.set(geoHash, responsePayload);
+    if (cfEnv?.USERS_KV && typeof cfEnv.USERS_KV.put === "function") {
+      try {
+        await cfEnv.USERS_KV.put(cacheKey, JSON.stringify(responsePayload), {
+          expirationTtl: 60 * 60 * 24 * 30,
+        });
+      } catch {}
+    }
+
+    return Response.json(responsePayload);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível consultar o MapBiomas.";
     return responseError(message, 502);
   }
 }
+
