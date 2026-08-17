@@ -11,27 +11,27 @@ export interface UserProfile {
  */
 export const DEFAULT_USERS_DATA: Record<string, UserProfile> = {
   faf: {
-    pass: "pbkdf2:100000:f993c2388804608afbca5ef5ac930a4f:f491489449d5bc89911c1fb7cd4adf30fbda83db994c9864b69114bc07b64bb3",
+    pass: "pbkdf2:100000:4f92ae70a5fa009e5fb24b3b92f96842:646a70655cf6634cd87d0d54193d5ab708f48c50322eb5aab7d1ab0bdc3d262a",
     fullName: "FAF Coffees",
     role: "admin",
   },
   admin: {
-    pass: "pbkdf2:100000:aa717f7ef81cf4e862301cd59a4c5436:0a235a73554dec3eb4e1246bc871442da0ff3c952f0fbc5f84dab270156e417c",
+    pass: "pbkdf2:100000:dbb253f7f4c8130c6559dfb97e8013f5:09df696fd1d2a26d3eeeb62525a940b16489cab67005fab2efd6aea802737a62",
     fullName: "Administrador FAF",
     role: "admin",
   },
   joao: {
-    pass: "pbkdf2:100000:60dbbcde306dae2a4783c889f18a07f1:d77a1ed6b9d4cb351005102f572d0730d5dfdc37922e7c6a68070a412f2ec2a3",
+    pass: "pbkdf2:100000:2de2b239f8083dcca27b518bd54b7043:d33dddddedc1139899e4ef7af3e35d70596f7d3df3174468d7763e8eb1de299f",
     fullName: "João Silva",
     role: "user",
   },
   joaomatos: {
-    pass: "pbkdf2:100000:55c3fe8597c9daa7967b61c88c3f88e3:53b0b7d89229f277a34fd2fe4387b913959dd92e79272ecf6d057c3e143aa592",
+    pass: "pbkdf2:100000:1042ec3fe336cc1b2a422cf382b85669:1b2d6e34f00dd14e3b5996f606a0e2177a58ceaf5919ad1abb90a0fd0454e5ef",
     fullName: "João Matos",
     role: "admin",
   },
   cliente: {
-    pass: "pbkdf2:100000:d2be7ee722945230e02a9a94fb9f2fbc:c32aa4c359586239741a4c522c226f1ac451dafa3ba79a05c9693316bbcf31a1",
+    pass: "pbkdf2:100000:17b497e2fd6e34501391532a22e95743:3601c557d74715739725260ee2d66f7feb8dc383175426ebdc2042c497b60637",
     fullName: "Cliente Demo",
     role: "client",
     clientName: "BELCO",
