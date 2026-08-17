@@ -35,7 +35,7 @@ export async function GET(request: Request) {
       );
     }
 
-    // 1. Authenticate user session
+    // 1. Authenticate user session strictly via Cookie or Authorization Bearer header (NO URL tokens)
     const cookieHeader = request.headers.get("cookie");
     let sessionToken = extractCookieValue(cookieHeader, SESSION_COOKIE_NAME);
 
@@ -43,8 +43,6 @@ export async function GET(request: Request) {
       const authHeader = request.headers.get("authorization");
       if (authHeader && authHeader.toLowerCase().startsWith("bearer ")) {
         sessionToken = authHeader.substring(7).trim();
-      } else if (searchParams.get("token")) {
-        sessionToken = searchParams.get("token")!;
       }
     }
 
@@ -63,8 +61,8 @@ export async function GET(request: Request) {
       );
     }
 
-    // 2. Resource-level Multi-Tenant Access Authorization
-    const authorized = isAuthorizedForStorageKey(session.role, session.clientName, key);
+    // 2. Resource-level Multi-Tenant Access Authorization (segment-based)
+    const authorized = isAuthorizedForStorageKey(session.role, session.clientName, key, "read");
     if (!authorized) {
       return Response.json(
         { error: "Acesso proibido. Você não possui permissão para acessar arquivos deste cliente ou pasta restrita." },

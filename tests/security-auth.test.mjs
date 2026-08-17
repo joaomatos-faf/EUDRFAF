@@ -37,17 +37,26 @@ test("Mantém compatibilidade com hashes legados SHA-256 e REJEITA texto puro", 
   assert.equal(await checkPasswordMatch("123", "123"), false);
 });
 
-test("isAuthorizedForStorageKey isola o acesso entre clientes e garante RBAC multi-inquilino", () => {
-  // Administradores e Staff têm acesso universal
-  assert.equal(isAuthorizedForStorageKey("admin", undefined, "contratos/BELCO/talhao.geojson"), true);
-  assert.equal(isAuthorizedForStorageKey("user", undefined, "contratos/CLIENTE_X/talhao.geojson"), true);
+test("isAuthorizedForStorageKey isola o acesso por segmentos exatos e valida modos READ e WRITE", () => {
+  // Administradores têm acesso universal em leitura e escrita
+  assert.equal(isAuthorizedForStorageKey("admin", undefined, "contratos_clientes/BELCO/talhao.geojson", "read"), true);
+  assert.equal(isAuthorizedForStorageKey("admin", undefined, "contratos_clientes/BELCO/talhao.geojson", "write"), true);
 
-  // Cliente BELCO acessa apenas seus próprios arquivos
-  assert.equal(isAuthorizedForStorageKey("client", "BELCO", "contratos_clientes/BELCO/lote_01.geojson"), true);
-  assert.equal(isAuthorizedForStorageKey("client", "BELCO", "publicados/BELCO/dossie.zip"), true);
+  // Staff (user) tem acesso universal de leitura, e restrição operacional em escrita
+  assert.equal(isAuthorizedForStorageKey("user", undefined, "contratos_clientes/CLIENTE_X/talhao.geojson", "read"), true);
+  assert.equal(isAuthorizedForStorageKey("user", undefined, "uploads/fazenda_01.kml", "write"), true);
+  assert.equal(isAuthorizedForStorageKey("user", undefined, "system_config.json", "write"), false);
 
-  // Cliente BELCO é PROIBIDO de acessar dados de outro cliente
-  assert.equal(isAuthorizedForStorageKey("client", "BELCO", "contratos_clientes/OUTRO_CLIENTE/lote_01.geojson"), false);
-  assert.equal(isAuthorizedForStorageKey("client", "BELCO", "publicados/STARBUCKS/dossie.zip"), false);
-  assert.equal(isAuthorizedForStorageKey("client", "BELCO", "users_mgmt/users_database.json"), false);
+  // Cliente BELCO acessa apenas seus próprios segmentos exatos
+  assert.equal(isAuthorizedForStorageKey("client", "BELCO", "contratos_clientes/BELCO/lote_01.geojson", "read"), true);
+  assert.equal(isAuthorizedForStorageKey("client", "BELCO", "contratos_clientes/BELCO/lote_01.geojson", "write"), true);
+  assert.equal(isAuthorizedForStorageKey("client", "BELCO", "publicados/BELCO/dossie.zip", "read"), true);
+
+  // Cliente BELCO é PROIBIDO de acessar ou gravar em pastas de outro cliente
+  assert.equal(isAuthorizedForStorageKey("client", "BELCO", "contratos_clientes/OUTRO_CLIENTE/lote_01.geojson", "read"), false);
+  assert.equal(isAuthorizedForStorageKey("client", "BELCO", "contratos_clientes/OUTRO_CLIENTE/lote_01.geojson", "write"), false);
+
+  // SEGURANÇA ESTRITA: Bloqueia bypass por prefixo similar (BELCO_OUTRA_EMPRESA)
+  assert.equal(isAuthorizedForStorageKey("client", "BELCO", "contratos_clientes/BELCO_OUTRA_EMPRESA/lote_01.geojson", "read"), false);
+  assert.equal(isAuthorizedForStorageKey("client", "BELCO", "contratos_clientes/BELCO_OUTRA_EMPRESA/lote_01.geojson", "write"), false);
 });

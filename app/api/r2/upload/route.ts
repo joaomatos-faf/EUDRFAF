@@ -1,5 +1,5 @@
 import { uploadToR2 } from "@/app/lib/r2";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/app/lib/auth";
+import { isAuthorizedForStorageKey, SESSION_COOKIE_NAME, verifySessionToken } from "@/app/lib/auth";
 
 const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
 const ALLOWED_EXTENSIONS = new Set([
@@ -24,7 +24,7 @@ function extractCookieValue(cookieHeader: string | null, name: string): string |
 }
 
 /**
- * Validates actual binary content / structure against declared file extension
+ * Validates actual binary content, magic bytes, and geometric structure
  */
 function validateFileContent(buffer: Buffer, ext: string): { valid: boolean; error?: string } {
   if (buffer.length === 0) {
@@ -33,9 +33,16 @@ function validateFileContent(buffer: Buffer, ext: string): { valid: boolean; err
 
   // 1. Image & Binary Magic Bytes
   if (ext === "zip" || ext === "xlsx") {
-    // ZIP / OOXML magic bytes: PK (0x50 0x4B)
+    // ZIP / OOXML magic bytes: PK (0x50 0x4B 0x03 0x04)
     if (buffer.length < 4 || buffer[0] !== 0x50 || buffer[1] !== 0x4b) {
       return { valid: false, error: "Arquivo ZIP/Excel corrompido ou com assinatura inválida." };
+    }
+    if (ext === "xlsx") {
+      // XLSX must contain standard OpenXML file markers
+      const rawStr = buffer.toString("binary");
+      if (!rawStr.includes("[Content_Types].xml") && !rawStr.includes("xl/")) {
+        return { valid: false, error: "Arquivo Excel (.xlsx) não contém a estrutura interna OpenXML válida." };
+      }
     }
   } else if (ext === "pdf") {
     // PDF magic bytes: %PDF (0x25 0x50 0x44 0x46)
@@ -59,26 +66,52 @@ function validateFileContent(buffer: Buffer, ext: string): { valid: boolean; err
       return { valid: false, error: "Arquivo JPEG com cabeçalho binário inválido." };
     }
   } else if (ext === "geojson" || ext === "json") {
-    // JSON / GeoJSON content parsing validation
+    // Deep structural GeoJSON validation
     try {
       const text = buffer.toString("utf8");
       const parsed = JSON.parse(text);
       if (typeof parsed !== "object" || parsed === null) {
         return { valid: false, error: "Estrutura JSON inválida." };
       }
+
       if (ext === "geojson") {
-        if (!parsed.type) {
-          return { valid: false, error: "GeoJSON deve possuir um campo 'type' (FeatureCollection, Feature ou Polygon)." };
+        const validTypes = new Set(["FeatureCollection", "Feature", "Polygon", "MultiPolygon"]);
+        if (!parsed.type || !validTypes.has(parsed.type)) {
+          return {
+            valid: false,
+            error: "GeoJSON inválido: campo 'type' deve ser FeatureCollection, Feature, Polygon ou MultiPolygon.",
+          };
+        }
+
+        // Structural check for coordinates
+        let hasValidCoordinates = false;
+        if (parsed.type === "Polygon" && Array.isArray(parsed.coordinates)) {
+          hasValidCoordinates = parsed.coordinates.length > 0 && Array.isArray(parsed.coordinates[0]);
+        } else if (parsed.type === "MultiPolygon" && Array.isArray(parsed.coordinates)) {
+          hasValidCoordinates = parsed.coordinates.length > 0;
+        } else if (parsed.type === "Feature" && parsed.geometry) {
+          hasValidCoordinates = Array.isArray(parsed.geometry.coordinates);
+        } else if (parsed.type === "FeatureCollection" && Array.isArray(parsed.features)) {
+          hasValidCoordinates = parsed.features.length > 0;
+        }
+
+        if (!hasValidCoordinates) {
+          return { valid: false, error: "GeoJSON não contém coordenadas geométricas válidas." };
         }
       }
     } catch {
-      return { valid: false, error: "Conteúdo não é um JSON válido." };
+      return { valid: false, error: "Conteúdo do arquivo não é um JSON válido." };
     }
   } else if (ext === "kml") {
-    // KML XML validation
+    // Deep KML XML structure validation
     const text = buffer.toString("utf8");
-    if (!text.includes("<") || (!text.includes("kml") && !text.includes("coordinates"))) {
-      return { valid: false, error: "Conteúdo KML/XML inválido." };
+    if (
+      !text.includes("<kml") &&
+      !text.includes("<Document") &&
+      !text.includes("<Placemark") &&
+      !text.includes("<coordinates")
+    ) {
+      return { valid: false, error: "Conteúdo KML não contém tags XML espaciais reconhecidas (<kml, <coordinates)." };
     }
   }
 
@@ -181,7 +214,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // 2. Strict key validation against Path Traversal & invalid characters
+    // 2. Strict key validation against Path Traversal & illegal characters
     if (
       key.includes("..") ||
       key.includes("\\") ||
@@ -192,7 +225,16 @@ export async function POST(request: Request) {
       return Response.json({ error: "Caminho de destino inválido ou suspeito." }, { status: 400 });
     }
 
-    // 3. Validate extension against whitelist
+    // 3. Multi-Tenant RBAC Authorization on WRITE
+    const canWrite = isAuthorizedForStorageKey(session.role, session.clientName, key, "write");
+    if (!canWrite) {
+      return Response.json(
+        { error: "Acesso proibido. Você não possui permissão para gravar arquivos neste diretório ou pasta de outro cliente." },
+        { status: 403 }
+      );
+    }
+
+    // 4. Validate extension against whitelist
     const ext = (key.split(".").pop() || "").toLowerCase();
     if (!ALLOWED_EXTENSIONS.has(ext)) {
       return Response.json(
@@ -205,13 +247,13 @@ export async function POST(request: Request) {
       return Response.json({ error: "Conteúdo do arquivo inválido ou vazio." }, { status: 400 });
     }
 
-    // 4. Real Content / Magic Bytes Inspection
+    // 5. Deep Content / Magic Bytes / Structural Inspection
     const contentValidation = validateFileContent(fileBuffer, ext);
     if (!contentValidation.valid) {
       return Response.json({ error: contentValidation.error }, { status: 400 });
     }
 
-    // 5. Upload to Cloudflare R2
+    // 6. Upload to Cloudflare R2
     const success = await uploadToR2(key, fileBuffer, mimeType);
     if (!success) {
       return Response.json({ error: "Falha ao gravar arquivo no Cloudflare R2." }, { status: 500 });
