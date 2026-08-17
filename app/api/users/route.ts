@@ -76,15 +76,15 @@ function checkRateLimit(ip: string): { allowed: boolean; remaining: number; retr
 export async function GET() {
   try {
     const cfEnv = await getCloudflareEnv();
-    let currentUsers = DEFAULT_USERS_DATA;
+    let currentUsers: Record<string, UserProfile> = { ...DEFAULT_USERS_DATA };
 
     if (cfEnv?.USERS_KV && typeof cfEnv.USERS_KV.get === "function") {
-      const data = await cfEnv.USERS_KV.get("faf_eudr_users", { type: "json" });
+      const data = (await cfEnv.USERS_KV.get("faf_eudr_users", { type: "json" })) as Record<string, UserProfile> | null;
       if (data && typeof data === "object") {
-        currentUsers = data;
+        currentUsers = { ...DEFAULT_USERS_DATA, ...data };
       }
     } else if (memoryUsersStore) {
-      currentUsers = memoryUsersStore;
+      currentUsers = { ...DEFAULT_USERS_DATA, ...memoryUsersStore };
     }
 
     // Security: NEVER return password hashes or plaintext in GET

@@ -30,13 +30,13 @@ export async function POST(request: Request) {
       return Response.json({ error: "Informe usuário e senha." }, { status: 400, headers: corsHeaders });
     }
 
-    // Load users from Cloudflare KV or defaults
-    let users = DEFAULT_USERS_DATA;
+    // Load users from Cloudflare KV merged with default users
+    let users: Record<string, UserProfile> = { ...DEFAULT_USERS_DATA };
     const cfEnv = await getCloudflareEnv();
     if (cfEnv?.USERS_KV && typeof cfEnv.USERS_KV.get === "function") {
-      const data = await cfEnv.USERS_KV.get("faf_eudr_users", { type: "json" });
+      const data = (await cfEnv.USERS_KV.get("faf_eudr_users", { type: "json" })) as Record<string, UserProfile> | null;
       if (data && typeof data === "object") {
-        users = data;
+        users = { ...DEFAULT_USERS_DATA, ...data };
       }
     }
 
