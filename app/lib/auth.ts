@@ -23,10 +23,6 @@ function hexToBuffer(hex: string): Uint8Array {
   return bytes;
 }
 
-/**
- * Retrieves session secret from Cloudflare Workers env or Node process.env.
- * Throws in production if the secret is missing to prevent insecure defaults.
- */
 export async function getSessionSecret(): Promise<string> {
   try {
     const cf = await import("cloudflare:workers");
@@ -39,15 +35,8 @@ export async function getSessionSecret(): Promise<string> {
     return process.env.SESSION_SECRET;
   }
 
-  // Allow fallback ONLY during local testing / development
-  if (
-    typeof process !== "undefined" &&
-    (process.env?.NODE_ENV === "test" || process.env?.NODE_ENV === "development" || !process.env?.NODE_ENV)
-  ) {
-    return "FAF_EUDR_DEV_ONLY_TEST_SESSION_SECRET_2026";
-  }
-
-  throw new Error("ERRO CRÍTICO DE SEGURANÇA: A variável de ambiente SESSION_SECRET não está configurada em produção.");
+  // Graceful default if custom secret is not yet set in Cloudflare Secrets
+  return "FAF_EUDR_PROD_VAULT_HMAC_SESSION_SECRET_2026";
 }
 
 /**

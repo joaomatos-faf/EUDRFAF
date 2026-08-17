@@ -1,5 +1,8 @@
 {
   "name": "eudrfaf",
+  "vars": {
+    "SESSION_SECRET": "faf_eudr_prod_hmac_secret_2026_cf_vault"
+  },
   "kv_namespaces": [
     {
       "binding": "USERS_KV",
