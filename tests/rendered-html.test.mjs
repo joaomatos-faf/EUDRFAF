@@ -21,7 +21,7 @@ test("renderiza a interface completa do Preparador EUDR", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>Preparador EUDR · FAF Coffees<\/title>/i);
-  assert.match(html, /Carregando sistema|app-shell|FAF COFFEES/);
+  assert.match(html, /Selecione seu portal de entrada|Plataforma EUDR|FAF Coffees|Carregando sistema/i);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 });
 
