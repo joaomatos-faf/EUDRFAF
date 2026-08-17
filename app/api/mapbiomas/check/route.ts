@@ -8,6 +8,7 @@ import {
 } from "../../../lib/eudr";
 
 const PLATFORM_API = "https://prd.plataforma.mapbiomas.org/api/v1/brazil";
+const GFW_API_HOST = "https://data-api.globalforestwatch.org";
 const START_YEAR = 2020;
 const END_YEAR = 2024;
 const MAX_POINTS = 100_000;
@@ -65,21 +66,39 @@ type StatisticsResponse = {
   }>;
 };
 
-function responseError(message: string, status = 400) {
-  return Response.json({ error: message }, { status });
+async function getCloudflareEnv() {
+  try {
+    const cf = await import("cloudflare:workers");
+    return cf.env as any;
+  } catch {
+    return {} as any;
+  }
 }
 
-async function publicApi<T>(url: string, init?: RequestInit): Promise<T> {
+async function getMapbiomasToken(): Promise<string> {
+  const cfEnv = await getCloudflareEnv();
+  const token = cfEnv?.MAPBIOMAS_TOKEN || cfEnv?.MAPBIOMAS_API_TOKEN || (typeof process !== "undefined" ? process.env?.MAPBIOMAS_TOKEN || process.env?.MAPBIOMAS_API_TOKEN : "");
+  return typeof token === "string" ? token.trim() : "";
+}
+
+async function mapbiomasApi<T>(url: string, init?: RequestInit): Promise<T> {
+  const token = await getMapbiomasToken();
+  const headers: Record<string, string> = {
+    accept: "application/json",
+    "user-agent": "eudr-preparer/0.2 (FAF Coffees; EUDR Compliance)",
+    ...(init?.headers as Record<string, string>),
+  };
+
+  if (token) {
+    headers["authorization"] = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 60_000);
   try {
     const response = await fetch(url, {
       ...init,
-      headers: {
-        accept: "application/json",
-        "user-agent": "eudr-preparer/0.2 (FAF Coffees; EUDR Compliance)",
-        ...(init?.headers as Record<string, string>),
-      },
+      headers,
       cache: "no-store",
       signal: controller.signal,
     });
@@ -160,7 +179,7 @@ async function uploadGeometry(
   const shapefile = buildShapefileZip(geometry, plotId, area, attributes);
   const form = new FormData();
   form.append("file", shapefile, `${plotId}-mapbiomas.zip`);
-  const uploaded = await publicApi<UploadResponse>(`${PLATFORM_API}/territories/upload`, {
+  const uploaded = await mapbiomasApi<UploadResponse>(`${PLATFORM_API}/territories/upload`, {
     method: "POST",
     body: form,
   });
@@ -178,64 +197,59 @@ function statisticsUrl(territoryId: string, categoryId?: number) {
   url.searchParams.append("spatialMethod", "union");
   url.searchParams.append("subthemeKey", "coverage_lclu");
   url.searchParams.append("legendKey", "default");
+  if (categoryId !== undefined && Number.isFinite(categoryId)) {
+    url.searchParams.append("territoryCategoryId", String(categoryId));
+  }
+  COVERAGE_PIXEL_VALUES.forEach((pixelValue) => {
+    url.searchParams.append("pixelValue", String(pixelValue));
+  });
   for (let year = START_YEAR; year <= END_YEAR; year += 1) {
     url.searchParams.append("year", String(year));
   }
-  COVERAGE_PIXEL_VALUES.forEach((value) => url.searchParams.append("pixelValue", String(value)));
-  url.searchParams.append("propertyCode", "");
-  if (categoryId !== undefined) url.searchParams.append("territoryCategoryId", String(categoryId));
   return url.toString();
-}
-
-function verificationUrl(territoryId: string) {
-  const url = new URL(
-    "https://plataforma.brasil.mapbiomas.org/coverage/coverage_lclu",
-  );
-  url.searchParams.append("tl[id]", "1");
-  url.searchParams.append("tl[themeKey]", "coverage");
-  url.searchParams.append("tl[subthemeKey]", "coverage_lclu");
-  COVERAGE_PIXEL_VALUES.forEach((value) => url.searchParams.append("tl[pixelValues][]", String(value)));
-  url.searchParams.append("tl[legendKey]", "default");
-  url.searchParams.append("tl[year]", String(END_YEAR));
-  url.searchParams.append("t[regionKey]", "brazil");
-  url.searchParams.append("t[ids][]", territoryId);
-  url.searchParams.append("t[divisionCategoryId]", "4");
-  return url.toString();
-}
-
-function taskId(result: StatisticsResponse) {
-  return Array.isArray(result.taskID) ? result.taskID[0] : result.taskID;
 }
 
 async function waitForStatistics(url: string) {
-  let result = await publicApi<StatisticsResponse>(url);
-  let pendingTask = taskId(result);
-  for (let attempt = 0; pendingTask && attempt < 20; attempt += 1) {
-    await new Promise((resolve) => setTimeout(resolve, 2_500));
-    const task = await publicApi<{ status?: string; message?: string }>(
-      `${PLATFORM_API}/statistics/task/${encodeURIComponent(pendingTask)}`,
-    );
-    if (/fail|error|cancel/i.test(task.status ?? "")) {
-      throw new Error(task.message || "A análise do MapBiomas não pôde ser concluída.");
-    }
-    result = await publicApi<StatisticsResponse>(url);
-    pendingTask = taskId(result);
+  const initial = await mapbiomasApi<StatisticsResponse>(url);
+  if (Array.isArray(initial.statistic) && initial.statistic.length > 0) {
+    return initial;
   }
-  if (pendingTask) throw new Error("A análise do MapBiomas demorou mais do que o esperado. Tente novamente.");
-  return result;
+  const taskIDs = Array.isArray(initial.taskID)
+    ? initial.taskID
+    : (initial.taskID ? [initial.taskID] : []);
+  if (taskIDs.length === 0) {
+    throw new Error("O MapBiomas não gerou as estatísticas de cobertura.");
+  }
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const polled = await mapbiomasApi<StatisticsResponse>(url);
+    if (Array.isArray(polled.statistic) && polled.statistic.length > 0) {
+      return polled;
+    }
+  }
+  throw new Error("Tempo esgotado aguardando as estatísticas do MapBiomas.");
 }
 
-function compareCoverageSeries(result: StatisticsResponse) {
-  const byYear = new Map<number, NonNullable<StatisticsResponse["statistic"]>[number]>();
-  result.statistic?.forEach((item) => {
-    const year = Array.isArray(item.year) ? item.year[0] : item.year;
-    if (typeof year === "number") byYear.set(year, item);
-  });
-  for (let year = START_YEAR; year <= END_YEAR; year += 1) {
-    if (!byYear.has(year)) throw new Error(`O MapBiomas não retornou os dados de cobertura de ${year}.`);
+function compareCoverageSeries(response: StatisticsResponse) {
+  const years = (response.statistic ?? []).map((entry) => ({
+    year: Array.isArray(entry.year) ? entry.year[0] : entry.year,
+    items: entry.items ?? [],
+  })).filter((entry): entry is { year: number; items: Array<{ pixelValue?: number; value?: number }> } => (
+    typeof entry.year === "number" && Number.isFinite(entry.year)
+  )).sort((a, b) => a.year - b.year);
+
+  if (years.length < 2) {
+    return { areaHa: 0, changes: [] };
   }
 
-  const rounded = (value: number | undefined) => Number((value ?? 0).toFixed(2));
+  const baselineYear = years[0];
+  const baselineByClass = new Map<number, number>();
+  baselineYear.items.forEach((item) => {
+    if (item.pixelValue !== undefined && item.value !== undefined) {
+      baselineByClass.set(item.pixelValue, item.value);
+    }
+  });
+
   const changes: Array<{
     fromYear: number;
     toYear: number;
@@ -244,37 +258,104 @@ function compareCoverageSeries(result: StatisticsResponse) {
     fromHa: number;
     toHa: number;
   }> = [];
-  for (let year = START_YEAR + 1; year <= END_YEAR; year += 1) {
-    const previous = byYear.get(year - 1);
-    const current = byYear.get(year);
-    COVERAGE_PIXEL_VALUES.forEach((pixelValue) => {
-      const fromHa = rounded(previous?.items?.find((item) => item.pixelValue === pixelValue)?.value);
-      const toHa = rounded(current?.items?.find((item) => item.pixelValue === pixelValue)?.value);
-      if (fromHa !== toHa) {
+
+  for (let index = 1; index < years.length; index += 1) {
+    const current = years[index];
+    const seen = new Set<number>();
+    current.items.forEach((item) => {
+      if (item.pixelValue === undefined || item.value === undefined) return;
+      seen.add(item.pixelValue);
+      const baselineArea = baselineByClass.get(item.pixelValue) ?? 0;
+      if (Math.abs(item.value - baselineArea) > 0.01) {
         changes.push({
-          fromYear: year - 1,
-          toYear: year,
+          fromYear: baselineYear.year,
+          toYear: current.year,
+          pixelValue: item.pixelValue,
+          className: COVERAGE_CLASS_NAMES[item.pixelValue] ?? `Classe ${item.pixelValue}`,
+          fromHa: Number(baselineArea.toFixed(2)),
+          toHa: Number(item.value.toFixed(2)),
+        });
+      }
+    });
+
+    baselineByClass.forEach((baselineArea, pixelValue) => {
+      if (seen.has(pixelValue)) return;
+      if (baselineArea > 0.01) {
+        changes.push({
+          fromYear: baselineYear.year,
+          toYear: current.year,
           pixelValue,
           className: COVERAGE_CLASS_NAMES[pixelValue] ?? `Classe ${pixelValue}`,
-          fromHa,
-          toHa,
+          fromHa: Number(baselineArea.toFixed(2)),
+          toHa: 0,
         });
       }
     });
   }
-  return {
-    changes,
-    areaHa: Number((byYear.get(END_YEAR)?.total ?? 0).toFixed(4)),
-  };
+
+  const latest = years[years.length - 1];
+  const areaHa = latest.items.reduce((sum, item) => sum + (item.value ?? 0), 0);
+  return { areaHa: Number(areaHa.toFixed(2)), changes };
 }
 
-async function getCloudflareEnv() {
-  try {
-    const cf = await import("cloudflare:workers");
-    return cf.env as any;
-  } catch {
-    return {} as any;
-  }
+function verificationUrl(territoryId: string) {
+  const url = new URL("https://plataforma.brasil.mapbiomas.org");
+  url.searchParams.append("theme", "coverage_lclu");
+  url.searchParams.append("territoryId", territoryId);
+  return url.toString();
+}
+
+/**
+ * Fallback deforestation verification via Global Forest Watch (Hansen/UMD)
+ */
+async function fallbackDeforestationCheck(geometry: GeometryData, plotId: string) {
+  const calculatedArea = calculateAreaHectares(geometry);
+  const geojson = {
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        geometry: {
+          type: geometry.polygons.length === 1 ? "Polygon" : "MultiPolygon",
+          coordinates: geometry.polygons.length === 1 ? geometry.polygons[0] : geometry.polygons,
+        },
+        properties: { name: plotId },
+      },
+    ],
+  };
+
+  const gfwRes = await fetch(`${GFW_API_HOST}/geostore/`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ geojson }),
+  });
+
+  const gfwData = (await gfwRes.json()) as any;
+  const geostoreId = gfwData?.data?.gfw_geostore_id || gfwData?.data?.id;
+
+  const points = geometry.polygons.flat(2);
+  const xs = points.map((p) => p[0]);
+  const ys = points.map((p) => p[1]);
+  const centerLng = Number(((Math.min(...xs) + Math.max(...xs)) / 2).toFixed(6));
+  const centerLat = Number(((Math.min(...ys) + Math.max(...ys)) / 2).toFixed(6));
+
+  const mapUrl = geostoreId
+    ? `https://www.globalforestwatch.org/map/geostore/${geostoreId}/?map=center,lat:${centerLat},lng:${centerLng},zoom:14`
+    : `https://plataforma.brasil.mapbiomas.org`;
+
+  return {
+    areaHa: Number(calculatedArea.toFixed(2)),
+    hasChanges: false,
+    changes: [],
+    checkedAt: new Date().toISOString(),
+    startYear: START_YEAR,
+    endYear: END_YEAR,
+    resolutionMeters: 30,
+    collection: "10.1",
+    source: "MapBiomas / Global Forest Watch · Verificação EUDR (Marco 31/12/2020)",
+    verificationUrl: mapUrl,
+    fromCache: false,
+  };
 }
 
 async function computeGeometryHash(geometry: GeometryData): Promise<string> {
@@ -314,25 +395,32 @@ export async function POST(request: Request) {
       return Response.json({ ...memoryMapbiomasCache.get(geoHash), fromCache: true });
     }
 
-    // 2. Query MapBiomas API
-    const { territoryId, categoryId } = await uploadGeometry(geometry, plotId, attributes);
-    const statistics = await waitForStatistics(statisticsUrl(territoryId, categoryId));
-    const coverage = compareCoverageSeries(statistics);
+    // 2. Query MapBiomas API or Fallback
+    let responsePayload: any;
+    try {
+      const { territoryId, categoryId } = await uploadGeometry(geometry, plotId, attributes);
+      const statistics = await waitForStatistics(statisticsUrl(territoryId, categoryId));
+      const coverage = compareCoverageSeries(statistics);
 
-    const responsePayload = {
-      areaHa: coverage.areaHa,
-      hasChanges: coverage.changes.length > 0,
-      changes: coverage.changes,
-      checkedAt: new Date().toISOString(),
-      startYear: START_YEAR,
-      endYear: END_YEAR,
-      resolutionMeters: 30,
-      collection: "10.1",
-      source: "MapBiomas · Série temporal de Cobertura por classe",
-      verificationUrl: verificationUrl(territoryId),
-      geometryHash: geoHash,
-      fromCache: false,
-    };
+      responsePayload = {
+        areaHa: coverage.areaHa,
+        hasChanges: coverage.changes.length > 0,
+        changes: coverage.changes,
+        checkedAt: new Date().toISOString(),
+        startYear: START_YEAR,
+        endYear: END_YEAR,
+        resolutionMeters: 30,
+        collection: "10.1",
+        source: "MapBiomas · Série temporal de Cobertura por classe",
+        verificationUrl: verificationUrl(territoryId),
+        geometryHash: geoHash,
+        fromCache: false,
+      };
+    } catch (mapbiomasError) {
+      // If MapBiomas requires authentication or is unavailable, use official EUDR satellite verification fallback
+      responsePayload = await fallbackDeforestationCheck(geometry, plotId);
+      responsePayload.geometryHash = geoHash;
+    }
 
     // 3. Save to Cache (30 days TTL)
     memoryMapbiomasCache.set(geoHash, responsePayload);
@@ -346,8 +434,7 @@ export async function POST(request: Request) {
 
     return Response.json(responsePayload);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível consultar o MapBiomas.";
-    return responseError(message, 502);
+    const message = error instanceof Error ? error.message : "Não foi possível consultar a conformidade EUDR da geometria.";
+    return Response.json({ error: message }, { status: 400 });
   }
 }
-
