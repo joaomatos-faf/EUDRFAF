@@ -538,7 +538,15 @@ export default function Home() {
     );
   };
 
-  const [activeView, setActiveView] = useState<"landing" | "app" | "portal" | "contratos" | "dashboard">("landing");
+  const [activeView, setActiveViewState] = useState<"landing" | "app" | "portal" | "contratos" | "dashboard">("app");
+
+  const setActiveView = (view: "landing" | "app" | "portal" | "contratos" | "dashboard") => {
+    setActiveViewState(view);
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("faf_eudr_active_view", view);
+    }
+  };
+
   const [contractIdToPublish, setContractIdToPublish] = useState("2026-C001");
   const [isPublishingR2, setIsPublishingR2] = useState(false);
   const [lastPublishedR2Key, setLastPublishedR2Key] = useState<string | null>(null);
@@ -548,33 +556,37 @@ export default function Home() {
       const host = window.location.hostname.toLowerCase();
       const search = window.location.search.toLowerCase();
       const hash = window.location.hash.toLowerCase();
+      const savedView = sessionStorage.getItem("faf_eudr_active_view") as any;
 
       if (
         host.startsWith("dashboard.") ||
         search.includes("view=dashboard") ||
         hash.includes("dashboard")
       ) {
-        setActiveView("dashboard");
+        setActiveViewState("dashboard");
       } else if (
         host.startsWith("contratos.") ||
         search.includes("view=contratos") ||
         hash.includes("contratos")
       ) {
-        setActiveView("contratos");
+        setActiveViewState("contratos");
       } else if (
         host.startsWith("portal.") ||
         host.startsWith("cliente.") ||
         search.includes("view=portal") ||
         hash.includes("portal")
       ) {
-        setActiveView("portal");
+        setActiveViewState("portal");
       } else if (
-        host.startsWith("app.") ||
-        host.startsWith("faf.") ||
-        search.includes("view=app") ||
-        hash.includes("app")
+        host.startsWith("landing.") ||
+        search.includes("view=landing") ||
+        hash.includes("landing")
       ) {
-        setActiveView("app");
+        setActiveViewState("landing");
+      } else if (savedView) {
+        setActiveViewState(savedView);
+      } else {
+        setActiveViewState("app");
       }
     }
   }, []);
