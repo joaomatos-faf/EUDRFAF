@@ -159,7 +159,9 @@ export async function parseGeometryFile(file: File): Promise<GeometryData> {
 }
 
 function ringArea(ring: Position[]): number {
-  const radius = 6378137;
+  if (ring.length < 3) return 0;
+  // WGS-84 authalic mean radius for sub-0.1% geodesic area accuracy worldwide
+  const radius = 6371007.2;
   let total = 0;
   for (let index = 0; index < ring.length - 1; index += 1) {
     const current = ring[index];
@@ -216,7 +218,12 @@ export function douglasPeucker(points: Position[], tolerance: number): Position[
   return [points[0], points[end]];
 }
 
-export function simplifyGeometry(data: GeometryData, maxPoints = 50000, tolerance = 0.00005): GeometryData {
+export function simplifyGeometry(
+  data: GeometryData,
+  maxPoints = 50000,
+  tolerance = 0.00005,
+  toleranceMeters?: number
+): GeometryData {
   let totalPoints = 0;
   data.polygons.forEach((p) => p.forEach((r) => (totalPoints += r.length)));
   if (totalPoints <= maxPoints) return data;
@@ -224,7 +231,11 @@ export function simplifyGeometry(data: GeometryData, maxPoints = 50000, toleranc
   const simplifiedPolygons = data.polygons.map((polygon) =>
     polygon.map((ring) => {
       if (ring.length <= 4) return ring;
-      let currentTol = tolerance;
+      const latRad = ((ring[0]?.[1] || -20) * Math.PI) / 180;
+      const effectiveTolerance = toleranceMeters
+        ? toleranceMeters / (111320 * Math.max(0.1, Math.cos(latRad)))
+        : tolerance;
+      let currentTol = effectiveTolerance;
       let simplified = douglasPeucker(ring, currentTol);
       let attempts = 0;
       while (simplified.length < 4 && currentTol > 1e-9 && attempts < 10) {
