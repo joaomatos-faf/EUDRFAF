@@ -5,15 +5,17 @@ import { ThemeToggle } from "./ThemeToggle";
 import { useTheme } from "@/app/hooks/useTheme";
 
 interface LandingPageProps {
-  onOpenFafApp?: () => void;
-  onOpenClientPortal?: () => void;
+  onOpenFafApp: () => void;
+  onOpenClientPortal: () => void;
   onOpenDashboard?: () => void;
+  onOpenCloud?: () => void;
 }
 
 export function LandingPage({
   onOpenFafApp,
   onOpenClientPortal,
   onOpenDashboard,
+  onOpenCloud,
 }: LandingPageProps) {
   const { isDark } = useTheme();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -23,25 +25,22 @@ export function LandingPage({
       id: "01",
       tag: "Equipe & Agrônomos",
       title: "Preparar e Auditar Talhões",
-      desc: "Mapeamento poligonal, desenho de áreas e validação temporal MapBiomas / EUDR.",
-      href: "https://app.fafeu.online",
+      desc: "Mapeamento poligonal, desenho de áreas, validação temporal MapBiomas / EUDR e exportação de pacotes.",
       action: onOpenFafApp,
     },
     {
       id: "02",
       tag: "Importadores & Torrefações",
       title: "Contratos e Arquivos GeoJSON",
-      desc: "Consulta de lotes e download direto de pacotes auditados para desembaraço na UE.",
-      href: "https://portal.fafeu.online",
+      desc: "Consulta de lotes e download direto de pacotes auditados para desembaraço na União Europeia.",
       action: onOpenClientPortal,
     },
     {
       id: "03",
       tag: "Infraestrutura Cloud",
       title: "Repositório Cloudflare R2",
-      desc: "Armazenamento e gestão de arquivos brutos das 13 regiões cafeeiras.",
-      href: "https://cloud.fafeu.online",
-      action: undefined,
+      desc: "Armazenamento seguro e gestão de geometrias e auditorias das 13 regiões cafeeiras.",
+      action: onOpenCloud || (() => { window.location.href = "/cloud"; }),
     },
   ];
 
@@ -59,7 +58,7 @@ export function LandingPage({
         transition: "background-color 0.3s ease, color 0.3s ease",
       }}
     >
-      {/* Top Floating Branding */}
+      {/* Top Floating Header */}
       <header
         style={{
           display: "flex",
@@ -70,7 +69,7 @@ export function LandingPage({
           margin: "0 auto",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px", cursor: "pointer" }} onClick={onOpenFafApp}>
           <img
             src="/faf-logo-transparent.png"
             alt="FAF Coffees"
@@ -94,7 +93,7 @@ export function LandingPage({
           </span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           {onOpenDashboard && (
             <button
               onClick={onOpenDashboard}
@@ -102,20 +101,39 @@ export function LandingPage({
                 fontSize: "13px",
                 fontWeight: 600,
                 color: "var(--text-secondary)",
-                transition: "color 0.2s ease",
+                padding: "8px 14px",
+                borderRadius: "999px",
+                background: "var(--bg-subtle)",
+                transition: "all 0.2s ease",
                 cursor: "pointer",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}
             >
-              Dashboard
+              📊 Dashboard
             </button>
           )}
+
+          <button
+            onClick={onOpenFafApp}
+            style={{
+              fontSize: "13px",
+              fontWeight: 700,
+              color: "#ffffff",
+              background: "var(--brand-crimson)",
+              padding: "8px 18px",
+              borderRadius: "999px",
+              boxShadow: "var(--shadow-button)",
+              cursor: "pointer",
+              transition: "transform 0.15s ease",
+            }}
+          >
+            Acessar Sistema ›
+          </button>
+
           <ThemeToggle />
         </div>
       </header>
 
-      {/* Main Interactive Typographic Gateway (No Boxes, Pure Flow) */}
+      {/* Main Interactive Typographic Gateway */}
       <main
         style={{
           width: "100%",
@@ -156,19 +174,11 @@ export function LandingPage({
           {gateways.map((item, index) => {
             const isHovered = hoveredIndex === index;
             return (
-              <a
+              <div
                 key={item.id}
-                href={item.href}
                 onClick={(e) => {
-                  if (
-                    item.action &&
-                    typeof window !== "undefined" &&
-                    (window.location.hostname === "localhost" ||
-                      window.location.hostname === "127.0.0.1")
-                  ) {
-                    e.preventDefault();
-                    item.action();
-                  }
+                  e.preventDefault();
+                  item.action();
                 }}
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
@@ -180,7 +190,6 @@ export function LandingPage({
                   padding: "36px 0",
                   borderTop: "1px solid var(--border-hairline)",
                   borderBottom: index === gateways.length - 1 ? "1px solid var(--border-hairline)" : "none",
-                  textDecoration: "none",
                   cursor: "pointer",
                   transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
                   opacity: hoveredIndex !== null && !isHovered ? 0.4 : 1,
@@ -259,7 +268,7 @@ export function LandingPage({
                 >
                   →
                 </div>
-              </a>
+              </div>
             );
           })}
         </div>

@@ -8,7 +8,8 @@ interface EudrHeaderProps {
   isAuthenticated: boolean;
   loggedUserRole: "admin" | "user" | "client";
   loggedUserKey: string;
-  activeView?: "app" | "portal" | "contratos" | "dashboard";
+  activeView?: "landing" | "app" | "portal" | "contratos" | "dashboard";
+  onOpenLanding?: () => void;
   onOpenPreparer?: () => void;
   onOpenDashboard?: () => void;
   onOpenContracts?: () => void;
@@ -24,6 +25,7 @@ export function EudrHeader({
   loggedUserRole,
   loggedUserKey,
   activeView = "app",
+  onOpenLanding,
   onOpenPreparer,
   onOpenDashboard,
   onOpenContracts,
@@ -37,7 +39,12 @@ export function EudrHeader({
 
   return (
     <header className="topbar">
-      <div className="brand-lockup" style={{ cursor: "pointer" }} onClick={onOpenPreparer}>
+      <div
+        className="brand-lockup"
+        style={{ cursor: "pointer" }}
+        onClick={onOpenLanding || onOpenPreparer}
+        title="Voltar à Página Inicial"
+      >
         <img
           src="/faf-logo-transparent.png"
           alt="FAF Coffees"
@@ -61,6 +68,22 @@ export function EudrHeader({
 
       <div className="topbar-actions">
         <ThemeToggle />
+
+        {onOpenLanding && (
+          <button
+            onClick={onOpenLanding}
+            style={{
+              color: "var(--text-secondary)",
+              fontSize: "12.5px",
+              fontWeight: 550,
+              padding: "6px 12px",
+              borderRadius: "999px",
+              transition: "all 0.15s ease",
+            }}
+          >
+            🏠 Início
+          </button>
+        )}
 
         {isAuthenticated && loggedUserRole !== "client" && (
           <>
