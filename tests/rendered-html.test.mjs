@@ -25,20 +25,17 @@ test("renderiza a interface completa do Preparador EUDR", async () => {
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape/i);
 });
 
-test("mantém o tema desktop e a correção de estilos no Windows", async () => {
-  const [css, script, packageJson, builder] = await Promise.all([
+test("mantém a integridade de estilos e configuração web", async () => {
+  const [css, packageJson] = await Promise.all([
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
-    readFile(new URL("../scripts/start-local.mjs", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
-    readFile(new URL("../electron-builder.yml", import.meta.url), "utf8"),
   ]);
 
   assert.match(css, /\.topbar\s*\{/);
   assert.match(css, /\.workspace-grid\s*\{/);
   assert.match(css, /\.status-summary\s*\{/);
   assert.match(css, /@media \(max-width: 760px\)/);
-  assert.match(script, /vinext/);
-  assert.match(packageJson, /"start": "node scripts\/start-local\.mjs"/);
-  assert.match(builder, /extraResources:/);
-  assert.match(builder, /from: dist/);
+  assert.match(packageJson, /"dev": "vinext dev"/);
+  assert.match(packageJson, /"deploy": "wrangler deploy"/);
 });
+
