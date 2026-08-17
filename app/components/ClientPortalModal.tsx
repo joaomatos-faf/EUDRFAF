@@ -227,20 +227,12 @@ export function ClientPortalModal({
     );
   }
 
-  const getRootUrl = () => {
-    if (typeof window !== "undefined" && window.location.hostname.includes("fafeu.online")) {
-      return "https://fafeu.online";
-    }
-    return "/";
-  };
-
   const handleHomeClick = (e: React.MouseEvent) => {
     if (typeof window !== "undefined") {
       const host = window.location.hostname.toLowerCase();
       if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev")) {
         e.preventDefault();
         onClose?.();
-        return;
       }
     }
   };
@@ -277,7 +269,7 @@ export function ClientPortalModal({
         }}
       >
         <a
-          href={getRootUrl()}
+          href="https://fafeu.online"
           onClick={handleHomeClick}
           style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none", cursor: "pointer" }}
         >
@@ -317,7 +309,7 @@ export function ClientPortalModal({
           </span>
 
           <a
-            href={getRootUrl()}
+            href="https://fafeu.online"
             onClick={handleHomeClick}
             style={{
               background: "var(--brand-crimson)",
