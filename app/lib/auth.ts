@@ -1,9 +1,10 @@
 /**
  * Secure PBKDF2 Password Hashing & Verification (WebCrypto API)
+ * & HMAC-SHA256 Multi-Tenant Session Management
  * 100% Native to Edge Runtimes (Cloudflare Workers / Browser / Node.js)
  */
 
-const ITERATIONS = 100_000;
+const DEFAULT_ITERATIONS = 100_000;
 const HASH_ALGO = "SHA-512";
 const KEY_LEN_BITS = 256;
 
@@ -23,10 +24,29 @@ function hexToBuffer(hex: string): Uint8Array {
 }
 
 /**
+ * Retrieves session secret from Cloudflare Workers env or Node process.env.
+ */
+export async function getSessionSecret(): Promise<string> {
+  try {
+    const cf = await import("cloudflare:workers");
+    if (cf?.env?.SESSION_SECRET && typeof cf.env.SESSION_SECRET === "string") {
+      return cf.env.SESSION_SECRET;
+    }
+  } catch {}
+
+  if (typeof process !== "undefined" && process.env?.SESSION_SECRET) {
+    return process.env.SESSION_SECRET;
+  }
+
+  // Development/Test fallback secret (warn in production)
+  return "FAF_EUDR_FALLBACK_SESSION_KEY_OVERRIDE_IN_CLOUDFLARE_SECRETS_2026";
+}
+
+/**
  * Generates a cryptographically secure PBKDF2-HMAC-SHA512 hash with unique 16-byte salt
  * Output format: pbkdf2:100000:<salt_hex>:<hash_hex>
  */
-export async function hashPassword(password: string): Promise<string> {
+export async function hashPassword(password: string, iterations = DEFAULT_ITERATIONS): Promise<string> {
   const encoder = new TextEncoder();
   const salt = new Uint8Array(16);
   crypto.getRandomValues(salt);
@@ -43,7 +63,7 @@ export async function hashPassword(password: string): Promise<string> {
     {
       name: "PBKDF2",
       salt: salt as unknown as ArrayBuffer,
-      iterations: ITERATIONS,
+      iterations,
       hash: HASH_ALGO,
     },
     baseKey,
@@ -53,7 +73,7 @@ export async function hashPassword(password: string): Promise<string> {
   const saltHex = bufferToHex(salt.buffer as ArrayBuffer);
   const hashHex = bufferToHex(derivedBits);
 
-  return `pbkdf2:${ITERATIONS}:${saltHex}:${hashHex}`;
+  return `pbkdf2:${iterations}:${saltHex}:${hashHex}`;
 }
 
 /**
@@ -66,9 +86,9 @@ export async function hashPasswordLegacy(password: string): Promise<string> {
 }
 
 /**
- * Constant-time comparison between two strings
+ * Constant-time comparison between two strings to prevent timing attacks
  */
-function constantTimeEqual(a: string, b: string): boolean {
+export function constantTimeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let result = 0;
   for (let i = 0; i < a.length; i++) {
@@ -79,18 +99,18 @@ function constantTimeEqual(a: string, b: string): boolean {
 
 /**
  * Verifies password match against:
- * 1. Modern PBKDF2 (pbkdf2:100000:salt:hash)
+ * 1. Modern PBKDF2 (pbkdf2:<iterations>:salt:hash)
  * 2. Legacy SHA-256 (64 hex characters)
- * 3. Plaintext fallback (if unhashed initial state)
+ * STRICT: NEVER accepts plaintext fallback
  */
 export async function checkPasswordMatch(inputPass: string, storedValue: string): Promise<boolean> {
-  if (!storedValue || typeof storedValue !== "string") return false;
+  if (!storedValue || typeof storedValue !== "string" || !inputPass) return false;
 
   // Case 1: PBKDF2 format
   if (storedValue.startsWith("pbkdf2:")) {
     const parts = storedValue.split(":");
     if (parts.length === 4) {
-      const iterations = parseInt(parts[1], 10) || ITERATIONS;
+      const iterations = parseInt(parts[1], 10) || DEFAULT_ITERATIONS;
       const saltHex = parts[2];
       const targetHashHex = parts[3];
 
@@ -127,8 +147,8 @@ export async function checkPasswordMatch(inputPass: string, storedValue: string)
     return constantTimeEqual(legacyHash.toLowerCase(), storedValue.toLowerCase());
   }
 
-  // Case 3: Plaintext initial match
-  return constantTimeEqual(inputPass, storedValue);
+  // Strict: Reject any unhashed or plaintext format
+  return false;
 }
 
 export interface SessionPayload {
@@ -140,7 +160,6 @@ export interface SessionPayload {
 }
 
 export const SESSION_COOKIE_NAME = "faf_eudr_session";
-const SESSION_SECRET = "FAF_EUDR_HMAC_SESSION_SECRET_2026_PROD_KEY";
 
 /**
  * Generates an HMAC-SHA256 signed session token for secure HttpOnly cookies
@@ -154,10 +173,11 @@ export async function createSessionToken(
   const payloadJson = JSON.stringify(fullPayload);
   const payloadB64 = btoa(unescape(encodeURIComponent(payloadJson)));
 
+  const secret = await getSessionSecret();
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw",
-    encoder.encode(SESSION_SECRET),
+    encoder.encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"]
@@ -178,10 +198,11 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
   if (!payloadB64 || !sigHex) return null;
 
   try {
+    const secret = await getSessionSecret();
     const encoder = new TextEncoder();
     const key = await crypto.subtle.importKey(
       "raw",
-      encoder.encode(SESSION_SECRET),
+      encoder.encode(secret),
       { name: "HMAC", hash: "SHA-256" },
       false,
       ["sign"]
@@ -204,3 +225,30 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
   }
 }
 
+/**
+ * Multi-Tenant & RBAC Storage Access Control
+ * - Admins and Internal Staff can access any file.
+ * - Client users can ONLY access resources belonging to their assigned client organization.
+ */
+export function isAuthorizedForStorageKey(
+  userRole: "admin" | "user" | "client",
+  userClientName: string | undefined,
+  targetKey: string
+): boolean {
+  if (userRole === "admin" || userRole === "user") return true;
+
+  if (userRole === "client") {
+    if (!userClientName) return false;
+    const cleanClient = userClientName.trim().toUpperCase();
+    const upperKey = targetKey.toUpperCase();
+
+    // Allow access to public client indices or specific client folders/files
+    if (upperKey === "CONTRATOS_CLIENTES/PUBLISHED_PLOTS_INDEX.JSON") return true;
+    if (upperKey.includes(`/${cleanClient}/`) || upperKey.includes(`_${cleanClient}_`) || upperKey.startsWith(`${cleanClient}/`)) return true;
+    if (upperKey.includes(`CONTRATOS_CLIENTES/${cleanClient}`) || upperKey.includes(`PUBLICADOS/${cleanClient}`)) return true;
+
+    return false;
+  }
+
+  return false;
+}
