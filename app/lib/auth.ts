@@ -25,26 +25,34 @@ function hexToBuffer(hex: string): Uint8Array {
 
 /**
  * Retrieves session secret from Cloudflare Workers env or Node process.env.
+ * Throws in production if the secret is missing to prevent insecure defaults.
  */
 export async function getSessionSecret(): Promise<string> {
   try {
     const cf = await import("cloudflare:workers");
-    if (cf?.env?.SESSION_SECRET && typeof cf.env.SESSION_SECRET === "string") {
+    if (cf?.env?.SESSION_SECRET && typeof cf.env.SESSION_SECRET === "string" && cf.env.SESSION_SECRET.trim().length > 0) {
       return cf.env.SESSION_SECRET;
     }
   } catch {}
 
-  if (typeof process !== "undefined" && process.env?.SESSION_SECRET) {
+  if (typeof process !== "undefined" && process.env?.SESSION_SECRET && process.env.SESSION_SECRET.trim().length > 0) {
     return process.env.SESSION_SECRET;
   }
 
-  // Development/Test fallback secret (warn in production)
-  return "FAF_EUDR_FALLBACK_SESSION_KEY_OVERRIDE_IN_CLOUDFLARE_SECRETS_2026";
+  // Allow fallback ONLY during local testing / development
+  if (
+    typeof process !== "undefined" &&
+    (process.env?.NODE_ENV === "test" || process.env?.NODE_ENV === "development" || !process.env?.NODE_ENV)
+  ) {
+    return "FAF_EUDR_DEV_ONLY_TEST_SESSION_SECRET_2026";
+  }
+
+  throw new Error("ERRO CRÍTICO DE SEGURANÇA: A variável de ambiente SESSION_SECRET não está configurada em produção.");
 }
 
 /**
  * Generates a cryptographically secure PBKDF2-HMAC-SHA512 hash with unique 16-byte salt
- * Output format: pbkdf2:100000:<salt_hex>:<hash_hex>
+ * Output format: pbkdf2:<iterations>:<salt_hex>:<hash_hex>
  */
 export async function hashPassword(password: string, iterations = DEFAULT_ITERATIONS): Promise<string> {
   const encoder = new TextEncoder();
@@ -226,26 +234,50 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
 }
 
 /**
- * Multi-Tenant & RBAC Storage Access Control
- * - Admins and Internal Staff can access any file.
- * - Client users can ONLY access resources belonging to their assigned client organization.
+ * Multi-Tenant & RBAC Storage Access Control with Segment-Based Validation
+ * - mode: "read" | "write"
+ * - Admins can read & write anywhere.
+ * - Staff ('user') can read anywhere and write to operational folders (uploads, talhoes, contratos_clientes, publicados).
+ * - Clients can ONLY read/write inside their own exact directory segments:
+ *   e.g. `contratos_clientes/BELCO/file.geojson` or `publicados/BELCO/file.zip`.
+ *   Strictly rejects partial substring matches like `contratos_clientes/BELCO_OTHER/`.
  */
 export function isAuthorizedForStorageKey(
   userRole: "admin" | "user" | "client",
   userClientName: string | undefined,
-  targetKey: string
+  targetKey: string,
+  mode: "read" | "write" = "read"
 ): boolean {
-  if (userRole === "admin" || userRole === "user") return true;
+  if (userRole === "admin") return true;
+
+  const normalizedKey = targetKey.replace(/\\/g, "/").replace(/^\/+/, "");
+  const segments = normalizedKey.split("/").map((s) => s.trim().toUpperCase());
+
+  if (userRole === "user") {
+    if (mode === "read") return true;
+    // Staff write restrictions: cannot overwrite system root indexes directly
+    const allowedRoots = new Set(["UPLOADS", "TALHOES", "CONTRATOS_CLIENTES", "PUBLICADOS", "DOSSIES"]);
+    return segments.length > 1 && allowedRoots.has(segments[0]);
+  }
 
   if (userRole === "client") {
-    if (!userClientName) return false;
+    if (!userClientName || !userClientName.trim()) return false;
     const cleanClient = userClientName.trim().toUpperCase();
-    const upperKey = targetKey.toUpperCase();
 
-    // Allow access to public client indices or specific client folders/files
-    if (upperKey === "CONTRATOS_CLIENTES/PUBLISHED_PLOTS_INDEX.JSON") return true;
-    if (upperKey.includes(`/${cleanClient}/`) || upperKey.includes(`_${cleanClient}_`) || upperKey.startsWith(`${cleanClient}/`)) return true;
-    if (upperKey.includes(`CONTRATOS_CLIENTES/${cleanClient}`) || upperKey.includes(`PUBLICADOS/${cleanClient}`)) return true;
+    // Client public published plot index (read only)
+    if (mode === "read" && normalizedKey.toUpperCase() === "CONTRATOS_CLIENTES/PUBLISHED_PLOTS_INDEX.JSON") {
+      return true;
+    }
+
+    // Segment-based isolation: must be in CONTRATOS_CLIENTES/<CLIENT_NAME>/... or PUBLICADOS/<CLIENT_NAME>/...
+    if (segments.length >= 2) {
+      const root = segments[0];
+      const clientFolder = segments[1];
+
+      if ((root === "CONTRATOS_CLIENTES" || root === "PUBLICADOS") && clientFolder === cleanClient) {
+        return true;
+      }
+    }
 
     return false;
   }
