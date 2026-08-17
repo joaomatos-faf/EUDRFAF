@@ -1,7 +1,7 @@
 {
   "name": "faf-eudr-preparador",
   "version": "0.2.1",
-  "description": "Aplicativo desktop para preparar e validar dossiês EUDR da FAF Coffees.",
+  "description": "Plataforma web para preparar, validar e gerenciar dossiês EUDR da FAF Coffees.",
   "author": "FAF Coffees",
   "private": true,
   "engines": {
@@ -10,7 +10,8 @@
   "scripts": {
     "dev": "vinext dev",
     "build": "vinext build",
-    "start": "node scripts/start-local.mjs",
+    "start": "vinext start",
+    "deploy": "wrangler deploy",
     "test": "node --test tests/*.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"

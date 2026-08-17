@@ -1,12 +1,12 @@
 # 🌿 Preparador EUDR — FAF Coffees
 
-> Aplicativo desktop e web para preparação automatizada de dossiês de conformidade do **Regulamento Europeu de Desmatamento (EUDR)**.
+> Plataforma web para preparação, validação e gestão automatizada de dossiês de conformidade do **Regulamento Europeu de Desmatamento (EUDR)**.
 
 ---
 
 ## 📌 Visão Geral
 
-O **Preparador EUDR** permite transformar geometrias de propriedades agrícolas (formatos **KML, GeoJSON ou JSON**) em pacotes auditáveis completos para o ecossistema EUDR, integrando validação de série temporal de uso do solo com o **MapBiomas (Coleção 10.1, 2020–2024)** e dados oficiais do **IBGE**.
+O **Preparador EUDR** permite transformar geometrias de propriedades agrícolas (formatos **KML, GeoJSON ou JSON**) em pacotes auditáveis completos para o ecossistema EUDR, integrando validação de série temporal de uso do solo com o **MapBiomas (Coleção 10.1, 2020–2024)**, dados oficiais do **IBGE**, repositório de nuvem **Cloudflare R2** e portal do cliente para importadores.
 
 ---
 
@@ -14,19 +14,23 @@ O **Preparador EUDR** permite transformar geometrias de propriedades agrícolas 
 
 ```mermaid
 graph TD
-    Client["💻 Client (Browser / Electron Desktop App)"]
+    Client["🌐 Client (Navegador Web / Mobile)"]
     API_Users["🔐 API Serverless /api/users"]
     API_IBGE["🏛️ API Serverless /api/locations/municipalities"]
     API_MapBiomas["🛰️ API Serverless /api/mapbiomas/check"]
+    API_R2["☁️ API Cloudflare R2 /api/r2/*"]
     CloudflareKV[("☁️ Cloudflare Workers KV (EUDR_USERS_KV)")]
+    R2_Bucket[("📦 Cloudflare R2 Object Storage")]
     IBGE_Service["🌐 IBGE Localidades (Serviço Oficial)"]
     MapBiomas_Service["🌐 MapBiomas Alerta (Coleção 10.1)"]
 
     Client -->|Autenticação & Perfis| API_Users
     Client -->|Autocompletar Municípios| API_IBGE
     Client -->|Checagem Geometria| API_MapBiomas
+    Client -->|Upload / Download GeoJSON| API_R2
 
     API_Users <-->|Sincronização Global| CloudflareKV
+    API_R2 <-->|Armazenamento Seguro| R2_Bucket
     API_IBGE <-->|Cache 24h| IBGE_Service
     API_MapBiomas <-->|Análise Temporal 2020-2024| MapBiomas_Service
 ```
@@ -39,10 +43,11 @@ graph TD
 sequenceDiagram
     autonumber
     actor Usuário
-    participant App as Preparador EUDR
+    participant App as Preparador EUDR (Web)
     participant RDP as Algoritmo Douglas-Peucker
     participant IBGE as IBGE API
     participant MB as MapBiomas API
+    participant R2 as Cloudflare R2
 
     Usuário->>App: 1. Login com Credenciais Seguras (SHA-256)
     Usuário->>App: 2. Importa Geometria (KML / GeoJSON)
@@ -53,7 +58,8 @@ sequenceDiagram
     App->>MB: 5. Envia Shapefile Temporário para Consulta Temporal (2020-2024)
     MB-->>App: Tabela de Cobertura por Classe & Link de Verificação
     App->>Usuário: 6. Exibe Resultado da Conformidade
-    Usuário->>App: 7. Solicita Pacote EUDR Final
+    Usuário->>App: 7. Solicita Pacote EUDR Final ou Publicação Cloud
+    App->>R2: Envia GeoJSON indexado por contrato
     App-->>Usuário: Download do ZIP (GeoJSON + Shapefile + Planilha CSV)
 ```
 
@@ -66,8 +72,9 @@ sequenceDiagram
 - 🪄 **Simplificação Geométrica Inteligente**: Algoritmo **Ramer-Douglas-Peucker** integrado em `app/lib/eudr.ts` para reduzir automaticamente polígonos gigantescos mantendo a fidelidade espacial.
 - 🏛️ **Autocompletar IBGE**: Busca inteligente por municípios com preenchimento automático de Estado e Região.
 - 🛰️ **Validação MapBiomas**: Consulta automática da série temporal de cobertura vegetal classe a classe (2020 a 2024) via Coleção 10.1 (resolução 30m).
-- 🔐 **Autenticação Global & Cloudflare KV**: Sincronização Serverless de credenciais e permissões (ADM / Usuário Padrão) via Cloudflare Workers KV em tempo real.
-- 📦 **Exportação em Lote**: Geração com 1 clique de pacote ZIP contendo **GeoJSON**, **Shapefile (.shp, .shx, .dbf, .prj, .cpg)** e **Planilha CSV de Cadastro**.
+- 🔐 **Autenticação Global & Cloudflare KV**: Sincronização Serverless de credenciais e permissões (ADM / Usuário Padrão / Cliente) via Cloudflare Workers KV em tempo real.
+- ☁️ **Integração Cloudflare R2**: Armazenamento e download de GeoJSONs organizados por contratos e lotes.
+- 📦 **Exportação em Lote**: Geração com 1 clique de pacote ZIP contendo **GeoJSON**, **Shapefile (.shp, .shx, .dbf, .prj, .cpg)** e **Planilha Excel/CSV de Cadastro**.
 
 ---
 
@@ -75,20 +82,21 @@ sequenceDiagram
 
 ```
 ├── app/
-│   ├── api/                 # Endpoints Serverless (MapBiomas, IBGE, Users Cloudflare KV)
+│   ├── api/                 # Endpoints Serverless (MapBiomas, IBGE, R2, Users KV, Logs)
 │   ├── components/          # Componentes visuais modulares
-│   │   ├── admin/           # Subcomponentes do painel ADM (UserForm, UserTable, UserEditRow)
+│   │   ├── admin/           # Subcomponentes do painel ADM
+│   │   ├── LandingPage.tsx  # Portal de entrada tipográfico
+│   │   ├── ContractManagerView.tsx # Gestão de contratos e lotes
+│   │   ├── ClientPortalModal.tsx   # Portal do cliente e importadores
+│   │   ├── ExecutiveDashboardView.tsx # Dashboard analítico
 │   │   ├── EudrHeader.tsx
 │   │   ├── EudrStepsNav.tsx
-│   │   ├── LoginScreen.tsx
-│   │   └── AdminUserModal.tsx
-│   ├── hooks/               # Custom Hooks (useUserManagement)
-│   ├── lib/                 # Biblioteca de Geometria, Algoritmos, Configurações e Exportação (eudr.ts, config.ts)
+│   │   └── LoginScreen.tsx
+│   ├── hooks/               # Custom Hooks (useUserManagement, useTheme)
+│   ├── lib/                 # Biblioteca de Geometria, Algoritmos, R2 e Configurações (eudr.ts, r2.ts, config.ts)
 │   └── page.tsx             # Aplicação principal
-├── desktop/                 # Runtime de integração Electron / Windows
-├── scripts/                 # Scripts de automação local
 ├── tests/                   # Suíte de testes automatizados com Node.js Test Runner
-└── wrangler.json            # Configuração de bindings do Cloudflare Workers KV
+└── wrangler.json            # Configuração de bindings do Cloudflare Workers & KV
 ```
 
 ---
@@ -98,42 +106,36 @@ sequenceDiagram
 ### Requisitos
 
 - **Node.js**: v22 ou superior
-- **Gerenciador de Pacotes**: `pnpm` (v10+)
+- **Gerenciador de Pacotes**: `pnpm` ou `npm`
 
 ### Instalação
 
 ```bash
-pnpm install
+npm install
 ```
 
 ### Executar em Modo de Desenvolvimento
 
 ```bash
-pnpm run dev
+npm run dev
 ```
 
 ### Executar Suíte de Testes Automatizados
 
 ```bash
-pnpm run test
+npm run test
 ```
 
-### Compilar para Produção (Web Serverless / Cloudflare Pages)
+### Compilar para Produção
 
 ```bash
-pnpm run build
+npm run build
 ```
 
-### Deploy no Cloudflare Pages
+### Deploy no Cloudflare Workers
 
 ```bash
-npx wrangler pages deploy dist/client --project-name eudrfaf
-```
-
-### Gerar Instalador Desktop para Windows (.exe)
-
-```bash
-pnpm run desktop:dist
+npm run deploy
 ```
 
 ---
