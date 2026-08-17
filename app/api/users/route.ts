@@ -1,25 +1,11 @@
 import { hashPassword, SESSION_COOKIE_NAME, verifySessionToken } from "@/app/lib/auth";
-
-interface UserProfile {
-  pass: string;
-  fullName: string;
-  role: "admin" | "user" | "client";
-  clientName?: string;
-}
+import { DEFAULT_USERS_DATA, type UserProfile } from "@/app/lib/defaultUsers";
 
 interface PublicUserProfile {
   fullName: string;
   role: "admin" | "user" | "client";
   clientName?: string;
 }
-
-const DEFAULT_USERS_DATA: Record<string, UserProfile> = {
-  faf: { pass: "eudr2026", fullName: "FAF Coffees", role: "admin" },
-  admin: { pass: "faf2026", fullName: "Administrador FAF", role: "admin" },
-  joao: { pass: "faf1234", fullName: "João Silva", role: "user" },
-  joaomatos: { pass: "123", fullName: "João Matos", role: "admin" },
-  cliente: { pass: "cliente123", fullName: "Cliente Demo", role: "client", clientName: "BELCO" },
-};
 
 let memoryUsersStore: Record<string, UserProfile> | null = null;
 

@@ -23,16 +23,92 @@ function extractCookieValue(cookieHeader: string | null, name: string): string |
   return match ? match[2] : null;
 }
 
+/**
+ * Validates actual binary content / structure against declared file extension
+ */
+function validateFileContent(buffer: Buffer, ext: string): { valid: boolean; error?: string } {
+  if (buffer.length === 0) {
+    return { valid: false, error: "Arquivo vazio (0 bytes)." };
+  }
+
+  // 1. Image & Binary Magic Bytes
+  if (ext === "zip" || ext === "xlsx") {
+    // ZIP / OOXML magic bytes: PK (0x50 0x4B)
+    if (buffer.length < 4 || buffer[0] !== 0x50 || buffer[1] !== 0x4b) {
+      return { valid: false, error: "Arquivo ZIP/Excel corrompido ou com assinatura inválida." };
+    }
+  } else if (ext === "pdf") {
+    // PDF magic bytes: %PDF (0x25 0x50 0x44 0x46)
+    if (buffer.length < 4 || buffer.toString("utf8", 0, 4) !== "%PDF") {
+      return { valid: false, error: "Arquivo PDF com assinatura binária inválida." };
+    }
+  } else if (ext === "png") {
+    // PNG magic bytes: \x89PNG
+    if (
+      buffer.length < 8 ||
+      buffer[0] !== 0x89 ||
+      buffer[1] !== 0x50 ||
+      buffer[2] !== 0x4e ||
+      buffer[3] !== 0x47
+    ) {
+      return { valid: false, error: "Arquivo PNG com cabeçalho binário inválido." };
+    }
+  } else if (ext === "jpg" || ext === "jpeg") {
+    // JPEG magic bytes: FF D8 FF
+    if (buffer.length < 3 || buffer[0] !== 0xff || buffer[1] !== 0xd8 || buffer[2] !== 0xff) {
+      return { valid: false, error: "Arquivo JPEG com cabeçalho binário inválido." };
+    }
+  } else if (ext === "geojson" || ext === "json") {
+    // JSON / GeoJSON content parsing validation
+    try {
+      const text = buffer.toString("utf8");
+      const parsed = JSON.parse(text);
+      if (typeof parsed !== "object" || parsed === null) {
+        return { valid: false, error: "Estrutura JSON inválida." };
+      }
+      if (ext === "geojson") {
+        if (!parsed.type) {
+          return { valid: false, error: "GeoJSON deve possuir um campo 'type' (FeatureCollection, Feature ou Polygon)." };
+        }
+      }
+    } catch {
+      return { valid: false, error: "Conteúdo não é um JSON válido." };
+    }
+  } else if (ext === "kml") {
+    // KML XML validation
+    const text = buffer.toString("utf8");
+    if (!text.includes("<") || (!text.includes("kml") && !text.includes("coordinates"))) {
+      return { valid: false, error: "Conteúdo KML/XML inválido." };
+    }
+  }
+
+  return { valid: true };
+}
+
 export async function POST(request: Request) {
   try {
     // 1. Authenticate user session
     const cookieHeader = request.headers.get("cookie");
-    const sessionToken = extractCookieValue(cookieHeader, SESSION_COOKIE_NAME);
-    const session = sessionToken ? await verifySessionToken(sessionToken) : null;
+    let sessionToken = extractCookieValue(cookieHeader, SESSION_COOKIE_NAME);
 
-    if (!session) {
+    if (!sessionToken) {
+      const authHeader = request.headers.get("authorization");
+      if (authHeader && authHeader.toLowerCase().startsWith("bearer ")) {
+        sessionToken = authHeader.substring(7).trim();
+      }
+    }
+
+    if (!sessionToken) {
       return Response.json(
         { error: "Acesso negado. Autenticação obrigatória para upload de arquivos." },
+        { status: 401 }
+      );
+    }
+
+    const session = await verifySessionToken(sessionToken);
+    if (!session) {
+      return Response.json(
+        { error: "Sessão expirada ou inválida. Faça login novamente." },
         { status: 401 }
       );
     }
@@ -105,10 +181,15 @@ export async function POST(request: Request) {
       }
     }
 
-    // 2. Sanitize key against Path Traversal
-    key = key.replace(/\\/g, "/").replace(/\.\.+/g, "").replace(/^\/+/, "");
-    if (!key || key.includes("..")) {
-      return Response.json({ error: "Caminho de destino inválido." }, { status: 400 });
+    // 2. Strict key validation against Path Traversal & invalid characters
+    if (
+      key.includes("..") ||
+      key.includes("\\") ||
+      key.includes("\0") ||
+      key.startsWith("/") ||
+      key.split("/").some((segment) => segment === "." || segment === ".." || !segment.trim())
+    ) {
+      return Response.json({ error: "Caminho de destino inválido ou suspeito." }, { status: 400 });
     }
 
     // 3. Validate extension against whitelist
@@ -124,7 +205,13 @@ export async function POST(request: Request) {
       return Response.json({ error: "Conteúdo do arquivo inválido ou vazio." }, { status: 400 });
     }
 
-    // 4. Upload to Cloudflare R2
+    // 4. Real Content / Magic Bytes Inspection
+    const contentValidation = validateFileContent(fileBuffer, ext);
+    if (!contentValidation.valid) {
+      return Response.json({ error: contentValidation.error }, { status: 400 });
+    }
+
+    // 5. Upload to Cloudflare R2
     const success = await uploadToR2(key, fileBuffer, mimeType);
     if (!success) {
       return Response.json({ error: "Falha ao gravar arquivo no Cloudflare R2." }, { status: 500 });
@@ -135,7 +222,7 @@ export async function POST(request: Request) {
       key,
       size: fileBuffer.length,
       uploadedBy: session.userKey,
-      message: "Arquivo enviado e validado com sucesso para a nuvem R2.",
+      message: "Arquivo validado e armazenado com sucesso no Cloudflare R2.",
       downloadUrl: `/api/r2/download?key=${encodeURIComponent(key)}`,
     });
   } catch (error) {

@@ -1,5 +1,5 @@
 import { getObjectFromR2 } from "@/app/lib/r2";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/app/lib/auth";
+import { isAuthorizedForStorageKey, SESSION_COOKIE_NAME, verifySessionToken } from "@/app/lib/auth";
 
 function extractCookieValue(cookieHeader: string | null, name: string): string | null {
   if (!cookieHeader) return null;
@@ -21,13 +21,58 @@ export async function GET(request: Request) {
       key = decodeURIComponent(rawKey);
     } catch {}
 
-    // Security: sanitize key against path traversal
-    key = key.replace(/\\/g, "/").replace(/\.\.+/g, "").replace(/^\/+/, "");
-    if (!key || key.includes("..")) {
-      return Response.json({ error: "Caminho de arquivo inválido." }, { status: 400 });
+    // Security: Strict validation against Path Traversal and illegal characters
+    if (
+      key.includes("..") ||
+      key.includes("\\") ||
+      key.includes("\0") ||
+      key.startsWith("/") ||
+      key.split("/").some((segment) => segment === "." || segment === ".." || !segment.trim())
+    ) {
+      return Response.json(
+        { error: "Caminho de arquivo inválido ou suspeito." },
+        { status: 400 }
+      );
     }
 
-    // Fetch exclusively from Cloudflare R2 Object Storage
+    // 1. Authenticate user session
+    const cookieHeader = request.headers.get("cookie");
+    let sessionToken = extractCookieValue(cookieHeader, SESSION_COOKIE_NAME);
+
+    if (!sessionToken) {
+      const authHeader = request.headers.get("authorization");
+      if (authHeader && authHeader.toLowerCase().startsWith("bearer ")) {
+        sessionToken = authHeader.substring(7).trim();
+      } else if (searchParams.get("token")) {
+        sessionToken = searchParams.get("token")!;
+      }
+    }
+
+    if (!sessionToken) {
+      return Response.json(
+        { error: "Acesso negado. Autenticação obrigatória para download de arquivos." },
+        { status: 401 }
+      );
+    }
+
+    const session = await verifySessionToken(sessionToken);
+    if (!session) {
+      return Response.json(
+        { error: "Sessão expirada ou inválida. Faça login novamente." },
+        { status: 401 }
+      );
+    }
+
+    // 2. Resource-level Multi-Tenant Access Authorization
+    const authorized = isAuthorizedForStorageKey(session.role, session.clientName, key);
+    if (!authorized) {
+      return Response.json(
+        { error: "Acesso proibido. Você não possui permissão para acessar arquivos deste cliente ou pasta restrita." },
+        { status: 403 }
+      );
+    }
+
+    // 3. Fetch exclusively from Cloudflare R2 Object Storage
     const fileBuffer = await getObjectFromR2(key);
 
     if (!fileBuffer) {
@@ -60,7 +105,7 @@ export async function GET(request: Request) {
       headers: {
         "Content-Type": contentType,
         "Content-Disposition": disposition,
-        "Cache-Control": "no-store, max-age=0",
+        "Cache-Control": "private, no-store, max-age=0",
       },
     });
   } catch (error) {
