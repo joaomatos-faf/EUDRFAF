@@ -230,14 +230,13 @@ export function ClientPortalModal({
   const { isDark } = useTheme();
 
   const handleHomeClick = () => {
-    if (typeof window !== "undefined") {
-      const host = window.location.hostname.toLowerCase();
-      if (host.startsWith("portal.") || host.startsWith("cliente.") || host.startsWith("contratos.") || host.includes("fafeu.online")) {
-        window.location.href = "https://fafeu.online";
-        return;
-      }
+    if (onClose) {
+      onClose();
+      return;
     }
-    onClose();
+    if (typeof window !== "undefined") {
+      window.location.href = "/";
+    }
   };
 
   return (

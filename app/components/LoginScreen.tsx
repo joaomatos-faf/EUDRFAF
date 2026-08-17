@@ -44,21 +44,13 @@ export function LoginScreen({
   const { isDark } = useTheme();
 
   const handleBack = () => {
-    if (typeof window !== "undefined") {
-      const host = window.location.hostname.toLowerCase();
-      if (
-        host.startsWith("contratos.") ||
-        host.startsWith("portal.") ||
-        host.startsWith("cliente.") ||
-        host.startsWith("cloud.") ||
-        host.startsWith("app.") ||
-        host.includes("fafeu.online")
-      ) {
-        window.location.href = "https://fafeu.online";
-        return;
-      }
+    if (onBackToLanding) {
+      onBackToLanding();
+      return;
     }
-    onBackToLanding?.();
+    if (typeof window !== "undefined") {
+      window.location.href = "/";
+    }
   };
 
   return (
