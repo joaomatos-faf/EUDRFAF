@@ -20,12 +20,23 @@ export function LandingPage({
   const { isDark } = useTheme();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
+  const getSubdomainUrl = (subdomain: string, fallbackPath: string) => {
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname.toLowerCase();
+      if (host.includes("fafeu.online")) {
+        return `https://${subdomain}.fafeu.online`;
+      }
+    }
+    return fallbackPath;
+  };
+
   const gateways = [
     {
       id: "01",
       tag: "Equipe & Agrônomos",
       title: "Preparar e Auditar Talhões",
       desc: "Mapeamento poligonal, desenho de áreas, validação temporal MapBiomas / EUDR e exportação de pacotes.",
+      href: getSubdomainUrl("app", "?view=app"),
       action: onOpenFafApp,
     },
     {
@@ -33,6 +44,7 @@ export function LandingPage({
       tag: "Importadores & Torrefações",
       title: "Contratos e Arquivos GeoJSON",
       desc: "Consulta de lotes e download direto de pacotes auditados para desembaraço na União Europeia.",
+      href: getSubdomainUrl("portal", "?view=portal"),
       action: onOpenClientPortal,
     },
     {
@@ -40,9 +52,22 @@ export function LandingPage({
       tag: "Infraestrutura Cloud",
       title: "Repositório Cloudflare R2",
       desc: "Armazenamento seguro e gestão de geometrias e auditorias das 13 regiões cafeeiras.",
-      action: onOpenCloud || (() => { window.location.href = "/cloud"; }),
+      href: getSubdomainUrl("cloud", "/cloud"),
+      action: onOpenCloud || (() => { window.location.href = getSubdomainUrl("cloud", "/cloud"); }),
     },
   ];
+
+  const handleNavClick = (e: React.MouseEvent, href: string, action?: () => void) => {
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname.toLowerCase();
+      // If local dev or workers.dev, perform in-app state switch
+      if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev")) {
+        e.preventDefault();
+        action?.();
+        return;
+      }
+    }
+  };
 
   return (
     <div
@@ -69,7 +94,11 @@ export function LandingPage({
           margin: "0 auto",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "16px", cursor: "pointer" }} onClick={onOpenFafApp}>
+        <a
+          href={getSubdomainUrl("app", "?view=app")}
+          onClick={(e) => handleNavClick(e, getSubdomainUrl("app", "?view=app"), onOpenFafApp)}
+          style={{ display: "flex", alignItems: "center", gap: "16px", textDecoration: "none", cursor: "pointer" }}
+        >
           <img
             src="/faf-logo-transparent.png"
             alt="FAF Coffees"
@@ -91,12 +120,13 @@ export function LandingPage({
           >
             Plataforma EUDR
           </span>
-        </div>
+        </a>
 
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           {onOpenDashboard && (
-            <button
-              onClick={onOpenDashboard}
+            <a
+              href={getSubdomainUrl("dashboard", "?view=dashboard")}
+              onClick={(e) => handleNavClick(e, getSubdomainUrl("dashboard", "?view=dashboard"), onOpenDashboard)}
               style={{
                 fontSize: "13px",
                 fontWeight: 600,
@@ -104,16 +134,18 @@ export function LandingPage({
                 padding: "8px 14px",
                 borderRadius: "999px",
                 background: "var(--bg-subtle)",
+                textDecoration: "none",
                 transition: "all 0.2s ease",
                 cursor: "pointer",
               }}
             >
               📊 Dashboard
-            </button>
+            </a>
           )}
 
-          <button
-            onClick={onOpenFafApp}
+          <a
+            href={getSubdomainUrl("app", "?view=app")}
+            onClick={(e) => handleNavClick(e, getSubdomainUrl("app", "?view=app"), onOpenFafApp)}
             style={{
               fontSize: "13px",
               fontWeight: 700,
@@ -122,12 +154,13 @@ export function LandingPage({
               padding: "8px 18px",
               borderRadius: "999px",
               boxShadow: "var(--shadow-button)",
+              textDecoration: "none",
               cursor: "pointer",
               transition: "transform 0.15s ease",
             }}
           >
             Acessar Sistema ›
-          </button>
+          </a>
 
           <ThemeToggle />
         </div>
@@ -174,12 +207,10 @@ export function LandingPage({
           {gateways.map((item, index) => {
             const isHovered = hoveredIndex === index;
             return (
-              <div
+              <a
                 key={item.id}
-                onClick={(e) => {
-                  e.preventDefault();
-                  item.action();
-                }}
+                href={item.href}
+                onClick={(e) => handleNavClick(e, item.href, item.action)}
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
                 style={{
@@ -190,6 +221,7 @@ export function LandingPage({
                   padding: "36px 0",
                   borderTop: "1px solid var(--border-hairline)",
                   borderBottom: index === gateways.length - 1 ? "1px solid var(--border-hairline)" : "none",
+                  textDecoration: "none",
                   cursor: "pointer",
                   transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
                   opacity: hoveredIndex !== null && !isHovered ? 0.4 : 1,
@@ -268,7 +300,7 @@ export function LandingPage({
                 >
                   →
                 </div>
-              </div>
+              </a>
             );
           })}
         </div>

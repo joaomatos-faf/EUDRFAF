@@ -227,15 +227,21 @@ export function ClientPortalModal({
     );
   }
 
-  const { isDark } = useTheme();
-
-  const handleHomeClick = () => {
-    if (onClose) {
-      onClose();
-      return;
+  const getRootUrl = () => {
+    if (typeof window !== "undefined" && window.location.hostname.includes("fafeu.online")) {
+      return "https://fafeu.online";
     }
+    return "/";
+  };
+
+  const handleHomeClick = (e: React.MouseEvent) => {
     if (typeof window !== "undefined") {
-      window.location.href = "/";
+      const host = window.location.hostname.toLowerCase();
+      if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev")) {
+        e.preventDefault();
+        onClose?.();
+        return;
+      }
     }
   };
 
@@ -270,7 +276,11 @@ export function ClientPortalModal({
           justifyContent: "space-between",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <a
+          href={getRootUrl()}
+          onClick={handleHomeClick}
+          style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none", cursor: "pointer" }}
+        >
           <img
             src="/faf-logo-transparent.png"
             alt="FAF Coffees"
@@ -291,7 +301,7 @@ export function ClientPortalModal({
           >
             Portal do Cliente
           </span>
-        </div>
+        </a>
 
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <ThemeToggle />
@@ -306,7 +316,8 @@ export function ClientPortalModal({
             {displayName}
           </span>
 
-          <button
+          <a
+            href={getRootUrl()}
             onClick={handleHomeClick}
             style={{
               background: "var(--brand-crimson)",
@@ -316,13 +327,14 @@ export function ClientPortalModal({
               borderRadius: "999px",
               fontSize: "12px",
               fontWeight: 600,
+              textDecoration: "none",
               cursor: "pointer",
               boxShadow: "var(--shadow-button)",
               transition: "all 0.15s ease",
             }}
           >
             Início
-          </button>
+          </a>
           {onLogout && (
             <button
               onClick={onLogout}

@@ -43,13 +43,21 @@ export function LoginScreen({
 }: LoginScreenProps) {
   const { isDark } = useTheme();
 
-  const handleBack = () => {
-    if (onBackToLanding) {
-      onBackToLanding();
-      return;
+  const getRootUrl = () => {
+    if (typeof window !== "undefined" && window.location.hostname.includes("fafeu.online")) {
+      return "https://fafeu.online";
     }
+    return "/";
+  };
+
+  const handleBack = (e: React.MouseEvent) => {
     if (typeof window !== "undefined") {
-      window.location.href = "/";
+      const host = window.location.hostname.toLowerCase();
+      if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev")) {
+        e.preventDefault();
+        onBackToLanding?.();
+        return;
+      }
     }
   };
 
@@ -80,7 +88,8 @@ export function LoginScreen({
         }}
       >
         {onBackToLanding && (
-          <button
+          <a
+            href={getRootUrl()}
             onClick={handleBack}
             style={{
               color: "var(--brand-crimson)",
@@ -90,10 +99,12 @@ export function LoginScreen({
               alignItems: "center",
               marginBottom: "24px",
               padding: 0,
+              textDecoration: "none",
+              cursor: "pointer",
             }}
           >
             {backText}
-          </button>
+          </a>
         )}
 
         <div style={{ textAlign: "center", marginBottom: "28px" }}>

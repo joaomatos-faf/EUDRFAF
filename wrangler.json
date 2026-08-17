@@ -1,5 +1,13 @@
 {
   "name": "eudrfaf",
+  "routes": [
+    { "pattern": "fafeu.online", "custom_domain": true },
+    { "pattern": "app.fafeu.online", "custom_domain": true },
+    { "pattern": "portal.fafeu.online", "custom_domain": true },
+    { "pattern": "contratos.fafeu.online", "custom_domain": true },
+    { "pattern": "dashboard.fafeu.online", "custom_domain": true },
+    { "pattern": "cloud.fafeu.online", "custom_domain": true }
+  ],
   "vars": {
     "SESSION_SECRET": "faf_eudr_prod_hmac_secret_2026_cf_vault"
   },

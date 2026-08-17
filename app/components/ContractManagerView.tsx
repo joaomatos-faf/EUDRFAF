@@ -697,13 +697,27 @@ export function ContractManagerView({
 
   const { isDark } = useTheme();
 
-  const handleGoHome = () => {
-    if (onOpenLanding) {
-      onOpenLanding();
-      return;
-    }
+  const getSubdomainUrl = (subdomain: string, fallbackPath: string) => {
     if (typeof window !== "undefined") {
-      window.location.href = "/";
+      const host = window.location.hostname.toLowerCase();
+      if (host.includes("fafeu.online")) {
+        if (subdomain === "landing" || subdomain === "root") {
+          return "https://fafeu.online";
+        }
+        return `https://${subdomain}.fafeu.online`;
+      }
+    }
+    return fallbackPath;
+  };
+
+  const handleNavClick = (e: React.MouseEvent, href: string, action?: () => void) => {
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname.toLowerCase();
+      if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev")) {
+        e.preventDefault();
+        action?.();
+        return;
+      }
     }
   };
 
@@ -733,7 +747,11 @@ export function ContractManagerView({
           justifyContent: "space-between",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <a
+          href={getSubdomainUrl("landing", "/")}
+          onClick={(e) => handleNavClick(e, getSubdomainUrl("landing", "/"), onOpenLanding)}
+          style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none", cursor: "pointer" }}
+        >
           <img
             src="/faf-logo-transparent.png"
             alt="FAF Coffees"
@@ -754,7 +772,7 @@ export function ContractManagerView({
           >
             Gestão de Contratos
           </span>
-        </div>
+        </a>
 
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <ThemeToggle />
@@ -770,24 +788,27 @@ export function ContractManagerView({
           </span>
 
           {onOpenDashboard && (
-            <button
-              onClick={onOpenDashboard}
+            <a
+              href={getSubdomainUrl("dashboard", "?view=dashboard")}
+              onClick={(e) => handleNavClick(e, getSubdomainUrl("dashboard", "?view=dashboard"), onOpenDashboard)}
               style={{
                 background: "transparent",
                 border: "none",
                 color: "var(--text-secondary)",
                 fontSize: "12.5px",
                 fontWeight: 550,
+                textDecoration: "none",
                 cursor: "pointer",
                 transition: "color 0.15s ease",
               }}
             >
               Dashboard
-            </button>
+            </a>
           )}
 
-          <button
-            onClick={handleGoHome}
+          <a
+            href={getSubdomainUrl("landing", "/")}
+            onClick={(e) => handleNavClick(e, getSubdomainUrl("landing", "/"), onOpenLanding)}
             title="Voltar para a página principal (fafeu.online)"
             style={{
               background: "var(--brand-crimson)",
@@ -797,13 +818,14 @@ export function ContractManagerView({
               borderRadius: "999px",
               fontSize: "12px",
               fontWeight: 600,
+              textDecoration: "none",
               cursor: "pointer",
               boxShadow: "var(--shadow-button)",
               transition: "all 0.15s ease",
             }}
           >
             Início
-          </button>
+          </a>
         </div>
       </header>
 

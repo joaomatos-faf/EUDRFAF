@@ -547,6 +547,29 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const host = window.location.hostname.toLowerCase();
+    const search = new URLSearchParams(window.location.search);
+    const viewParam = search.get("view")?.toLowerCase();
+
+    if (host.startsWith("app.") || host.startsWith("preparador.") || viewParam === "app") {
+      setActiveViewState("app");
+    } else if (host.startsWith("portal.") || host.startsWith("cliente.") || viewParam === "portal") {
+      setActiveViewState("portal");
+    } else if (host.startsWith("contratos.") || viewParam === "contratos") {
+      setActiveViewState("contratos");
+    } else if (host.startsWith("dashboard.") || viewParam === "dashboard") {
+      setActiveViewState("dashboard");
+    } else if (host.startsWith("cloud.") || viewParam === "cloud") {
+      if (window.location.pathname !== "/cloud") {
+        window.location.href = "/cloud";
+      }
+    } else if (viewParam === "landing") {
+      setActiveViewState("landing");
+    }
+  }, []);
+
   const [contractIdToPublish, setContractIdToPublish] = useState("2026-C001");
   const [isPublishingR2, setIsPublishingR2] = useState(false);
   const [lastPublishedR2Key, setLastPublishedR2Key] = useState<string | null>(null);
@@ -812,6 +835,32 @@ export default function Home() {
 
   // 2. Executive Dashboard View
   if (activeView === "dashboard") {
+    if (userMgmt.isAuthenticated === false) {
+      return (
+        <LoginScreen
+          loginUsername={userMgmt.loginUsername}
+          setLoginUsername={userMgmt.setLoginUsername}
+          loginPassword={userMgmt.loginPassword}
+          setLoginPassword={userMgmt.setLoginPassword}
+          loginError={userMgmt.loginError}
+          title="Dashboard Executivo EUDR"
+          eyebrow="FAF Coffees • Business Intelligence"
+          subtitle="Informe suas credenciais para visualizar métricas, mapas e auditorias em tempo real."
+          buttonText="Visualizar Dashboard ➔"
+          userLabel="Usuário"
+          passLabel="Senha"
+          userPlaceholder="ex: admin"
+          passPlaceholder="••••••••"
+          backText="‹ Voltar ao Início"
+          onLogin={async (e) => {
+            if (e && typeof e.preventDefault === "function") e.preventDefault();
+            const success = await userMgmt.handleLogin(e);
+            if (success) setActiveView("dashboard");
+          }}
+          onBackToLanding={() => setActiveView("landing")}
+        />
+      );
+    }
     return (
       <div style={{ minHeight: "100vh", background: "radial-gradient(ellipse at 50% 0%, #102a20 0%, #081611 60%, #040c09 100%)" }}>
         <EudrHeader
@@ -854,6 +903,15 @@ export default function Home() {
           loginPassword={userMgmt.loginPassword}
           setLoginPassword={userMgmt.setLoginPassword}
           loginError={userMgmt.loginError}
+          title="Gestão de Contratos e Lotes"
+          eyebrow="FAF Coffees • EUDR R2"
+          subtitle="Informe suas credenciais de administrador ou operador para gerenciar contratos."
+          buttonText="Acessar Contratos ➔"
+          userLabel="Usuário"
+          passLabel="Senha"
+          userPlaceholder="ex: admin"
+          passPlaceholder="••••••••"
+          backText="‹ Voltar ao Início"
           onLogin={async (e) => {
             if (e && typeof e.preventDefault === "function") e.preventDefault();
             const success = await userMgmt.handleLogin(e);
