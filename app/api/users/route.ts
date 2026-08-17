@@ -1,5 +1,13 @@
+import { hashPassword, SESSION_COOKIE_NAME, verifySessionToken } from "@/app/lib/auth";
+
 interface UserProfile {
   pass: string;
+  fullName: string;
+  role: "admin" | "user" | "client";
+  clientName?: string;
+}
+
+interface PublicUserProfile {
   fullName: string;
   role: "admin" | "user" | "client";
   clientName?: string;
@@ -24,34 +32,27 @@ async function getCloudflareEnv() {
   }
 }
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-};
-
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders });
+function extractCookieValue(cookieHeader: string | null, name: string): string | null {
+  if (!cookieHeader) return null;
+  const match = cookieHeader.match(new RegExp(`(^|;\\s*)${name}=([^;]+)`));
+  return match ? match[2] : null;
 }
 
-export async function GET() {
-  try {
-    const cfEnv = await getCloudflareEnv();
-    if (cfEnv?.USERS_KV && typeof cfEnv.USERS_KV.get === "function") {
-      const data = await cfEnv.USERS_KV.get("faf_eudr_users", { type: "json" });
-      if (data) {
-        return Response.json({ success: true, users: data }, { headers: corsHeaders });
-      }
+/**
+ * Sanitizes user records so that passwords are NEVER returned in GET responses
+ */
+function sanitizeUsersForPublic(users: Record<string, UserProfile>): Record<string, PublicUserProfile> {
+  const sanitized: Record<string, PublicUserProfile> = {};
+  for (const [key, profile] of Object.entries(users)) {
+    if (typeof profile === "object" && profile !== null) {
+      sanitized[key] = {
+        fullName: profile.fullName || key.toUpperCase(),
+        role: profile.role || "user",
+        clientName: profile.clientName,
+      };
     }
-
-    if (memoryUsersStore) {
-      return Response.json({ success: true, users: memoryUsersStore }, { headers: corsHeaders });
-    }
-
-    return Response.json({ success: true, users: DEFAULT_USERS_DATA }, { headers: corsHeaders });
-  } catch {
-    return Response.json({ success: true, users: memoryUsersStore || DEFAULT_USERS_DATA }, { headers: corsHeaders });
   }
+  return sanitized;
 }
 
 interface RateLimitRecord {
@@ -86,8 +87,32 @@ function checkRateLimit(ip: string): { allowed: boolean; remaining: number; retr
   return { allowed: true, remaining: RATE_LIMIT_MAX - record.count, retryAfter: 0 };
 }
 
+export async function GET() {
+  try {
+    const cfEnv = await getCloudflareEnv();
+    let currentUsers = DEFAULT_USERS_DATA;
+
+    if (cfEnv?.USERS_KV && typeof cfEnv.USERS_KV.get === "function") {
+      const data = await cfEnv.USERS_KV.get("faf_eudr_users", { type: "json" });
+      if (data && typeof data === "object") {
+        currentUsers = data;
+      }
+    } else if (memoryUsersStore) {
+      currentUsers = memoryUsersStore;
+    }
+
+    // Security: NEVER return password hashes or plaintext in GET
+    const publicUsers = sanitizeUsersForPublic(currentUsers);
+    return Response.json({ success: true, users: publicUsers });
+  } catch {
+    const publicUsers = sanitizeUsersForPublic(memoryUsersStore || DEFAULT_USERS_DATA);
+    return Response.json({ success: true, users: publicUsers });
+  }
+}
+
 export async function POST(request: Request) {
   try {
+    // 1. Rate Limiting Protection
     const clientIp =
       request.headers.get("cf-connecting-ip") ||
       request.headers.get("x-real-ip") ||
@@ -101,7 +126,6 @@ export async function POST(request: Request) {
         {
           status: 429,
           headers: {
-            ...corsHeaders,
             "Retry-After": String(rateLimit.retryAfter),
             "X-RateLimit-Limit": String(RATE_LIMIT_MAX),
             "X-RateLimit-Remaining": "0",
@@ -110,24 +134,53 @@ export async function POST(request: Request) {
       );
     }
 
-    const payload = (await request.json()) as { users?: Record<string, UserProfile> };
-    if (!payload?.users || typeof payload.users !== "object") {
-      return Response.json({ error: "Dados de usuários inválidos." }, { status: 400, headers: corsHeaders });
+    // 2. Security: Verify Administrator Session
+    const cookieHeader = request.headers.get("cookie");
+    const sessionToken = extractCookieValue(cookieHeader, SESSION_COOKIE_NAME);
+    const session = sessionToken ? await verifySessionToken(sessionToken) : null;
+
+    if (!session || session.role !== "admin") {
+      return Response.json(
+        { error: "Acesso negado. Apenas administradores autenticados podem gerenciar usuários." },
+        { status: 403 }
+      );
     }
 
-    const newUsers = payload.users;
-    memoryUsersStore = newUsers;
+    // 3. Process and Hash Any Plaintext Passwords with PBKDF2
+    const payload = (await request.json()) as { users?: Record<string, UserProfile> };
+    if (!payload?.users || typeof payload.users !== "object") {
+      return Response.json({ error: "Dados de usuários inválidos." }, { status: 400 });
+    }
+
+    const processedUsers: Record<string, UserProfile> = {};
+    for (const [username, profile] of Object.entries(payload.users)) {
+      if (typeof profile === "object" && profile !== null) {
+        let pass = profile.pass || "";
+        // If password is not yet hashed with PBKDF2 or legacy SHA-256, hash it with PBKDF2
+        if (pass && !pass.startsWith("pbkdf2:") && pass.length !== 64) {
+          pass = await hashPassword(pass);
+        }
+        processedUsers[username] = {
+          pass,
+          fullName: profile.fullName || username.toUpperCase(),
+          role: profile.role || "user",
+          clientName: profile.clientName,
+        };
+      }
+    }
+
+    memoryUsersStore = processedUsers;
 
     const cfEnv = await getCloudflareEnv();
     if (cfEnv?.USERS_KV && typeof cfEnv.USERS_KV.put === "function") {
-      await cfEnv.USERS_KV.put("faf_eudr_users", JSON.stringify(newUsers));
+      await cfEnv.USERS_KV.put("faf_eudr_users", JSON.stringify(processedUsers));
     }
 
+    const publicUsers = sanitizeUsersForPublic(processedUsers);
     return Response.json(
-      { success: true, users: newUsers },
+      { success: true, users: publicUsers },
       {
         headers: {
-          ...corsHeaders,
           "X-RateLimit-Limit": String(RATE_LIMIT_MAX),
           "X-RateLimit-Remaining": String(rateLimit.remaining),
         },
@@ -135,7 +188,6 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro ao salvar usuários no servidor.";
-    return Response.json({ error: message }, { status: 500, headers: corsHeaders });
+    return Response.json({ error: message }, { status: 500 });
   }
 }
-
