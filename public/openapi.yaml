@@ -1,0 +1,267 @@
+openapi: 3.1.0
+info:
+  title: FAF EUDR Preparador & Cloud API
+  version: 0.2.1
+  description: >
+    API REST para processamento e validação de geometrias agrícolas em conformidade
+    com o Regulamento Europeu EUDR (Regulamento UE 2023/1115), verificação geoespacial
+    com MapBiomas e Global Forest Watch, gestão de pacotes de auditoria em Cloudflare R2
+    e controle de acesso corporativo com autenticação segura via Cookies HttpOnly e PBKDF2.
+  contact:
+    name: FAF Coffees Tech Team
+    url: https://fafeu.online
+
+servers:
+  - url: https://fafeu.online
+    description: Servidor de Produção (Cloudflare Workers)
+  - url: http://localhost:3000
+    description: Ambiente de Desenvolvimento Local
+
+paths:
+  /api/auth/login:
+    post:
+      summary: Realiza login e emite Cookie HttpOnly de Sessão
+      tags:
+        - Autenticação
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: joao
+                password:
+                  type: string
+                  example: faf1234
+      responses:
+        "200":
+          description: Login efetuado com sucesso e Cookie HttpOnly Setado
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: faf_eudr_session=eyJ1c2VyS2V5Ijo...; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=604800
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  user:
+                    type: object
+                    properties:
+                      userKey:
+                        type: string
+                      fullName:
+                        type: string
+                      role:
+                        type: string
+                        enum: [admin, user, client]
+                      clientName:
+                        type: string
+        "401":
+          description: Credenciais inválidas
+
+  /api/auth/logout:
+    post:
+      summary: Encerra a sessão e expira o Cookie HttpOnly
+      tags:
+        - Autenticação
+      responses:
+        "200":
+          description: Sessão encerrada com sucesso
+
+  /api/auth/me:
+    get:
+      summary: Verifica a validade da sessão ativa do usuário através do Cookie HttpOnly
+      tags:
+        - Autenticação
+      responses:
+        "200":
+          description: Status da sessão
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authenticated:
+                    type: boolean
+                  user:
+                    type: object
+
+  /api/users:
+    get:
+      summary: Lista usuários e perfis cadastrados
+      tags:
+        - Usuários
+      responses:
+        "200":
+          description: Mapa de usuários cadastrados
+    post:
+      summary: Atualiza ou cria perfis de usuários com hash seguro PBKDF2
+      tags:
+        - Usuários
+      responses:
+        "200":
+          description: Usuários persistidos no Cloudflare KV
+        "429":
+          description: Rate limit atingido
+
+  /api/mapbiomas/check:
+    post:
+      summary: Análise temporal de cobertura e desmatamento pós-2020 via MapBiomas
+      tags:
+        - Geoespacial & Compliance
+      description: >
+        Realiza consulta geoespacial na API oficial do MapBiomas.
+        Possui cache determinístico baseado em hash SHA-256 da geometria no Cloudflare KV com TTL de 30 dias.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - geometry
+                - details
+              properties:
+                geometry:
+                  type: object
+                  properties:
+                    polygons:
+                      type: array
+                      items:
+                        type: array
+                        items:
+                          type: array
+                          items:
+                            type: number
+                details:
+                  type: object
+                  properties:
+                    plotId:
+                      type: string
+                      example: FAF01SUL001
+                    producerName:
+                      type: string
+                    municipality:
+                      type: string
+      responses:
+        "200":
+          description: Resultado da análise MapBiomas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  areaHa:
+                    type: number
+                  hasChanges:
+                    type: boolean
+                  changes:
+                    type: array
+                    items:
+                      type: object
+                  fromCache:
+                    type: boolean
+                  geometryHash:
+                    type: string
+
+  /api/gfw/check:
+    post:
+      summary: Consulta integrada ao Global Forest Watch (GFW) para perda de cobertura florestal
+      tags:
+        - Geoespacial & Compliance
+      responses:
+        "200":
+          description: Resultado da análise GFW
+
+  /api/locations/municipalities:
+    get:
+      summary: Consulta municípios brasileiros e códigos IBGE com ordenação por relevância cafeeira
+      tags:
+        - Dados Mestres
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Termo de busca (ex. Mococa, Caconde, Varginha)
+      responses:
+        "200":
+          description: Lista de municípios encontrados
+
+  /api/r2/upload:
+    post:
+      summary: Upload multipart/form-data de arquivos de talhões para o Cloudflare R2
+      tags:
+        - Cloud Storage (R2)
+      responses:
+        "200":
+          description: Arquivo armazenado com sucesso
+
+  /api/r2/download:
+    get:
+      summary: Download de arquivo ou pacote ZIP do Cloudflare R2
+      tags:
+        - Cloud Storage (R2)
+      parameters:
+        - in: query
+          name: key
+          required: true
+          schema:
+            type: string
+          description: Caminho/Chave do objeto no R2
+      responses:
+        "200":
+          description: Fluxo binário do arquivo solicitado
+
+  /api/r2/publish:
+    post:
+      summary: Publica pacote de contrato EUDR finalizado para a pasta de clientes
+      tags:
+        - Cloud Storage (R2)
+      responses:
+        "200":
+          description: Contrato publicado com sucesso
+
+  /api/r2/list:
+    get:
+      summary: Lista arquivos de um contrato ou cliente específico
+      tags:
+        - Cloud Storage (R2)
+      responses:
+        "200":
+          description: Lista de arquivos
+
+  /api/r2/all-files:
+    get:
+      summary: Lista todos os arquivos e pastas da nuvem FAF
+      tags:
+        - Cloud Storage (R2)
+      responses:
+        "200":
+          description: Estrutura completa de arquivos
+
+  /api/logs:
+    get:
+      summary: Obtém os logs de auditoria e conformidade do sistema
+      tags:
+        - Auditoria
+      responses:
+        "200":
+          description: Lista de registros de auditoria
+    post:
+      summary: Registra um novo evento de auditoria no Cloudflare KV
+      tags:
+        - Auditoria
+      responses:
+        "200":
+          description: Evento registrado
