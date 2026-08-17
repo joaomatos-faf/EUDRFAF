@@ -20,23 +20,13 @@ export function LandingPage({
   const { isDark } = useTheme();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  const getSubdomainUrl = (subdomain: string, fallbackPath: string) => {
-    if (typeof window !== "undefined") {
-      const host = window.location.hostname.toLowerCase();
-      if (host.includes("fafeu.online")) {
-        return `https://${subdomain}.fafeu.online`;
-      }
-    }
-    return fallbackPath;
-  };
-
   const gateways = [
     {
       id: "01",
       tag: "Equipe & Agrônomos",
       title: "Preparar e Auditar Talhões",
       desc: "Mapeamento poligonal, desenho de áreas, validação temporal MapBiomas / EUDR e exportação de pacotes.",
-      href: getSubdomainUrl("app", "?view=app"),
+      href: "https://app.fafeu.online",
       action: onOpenFafApp,
     },
     {
@@ -44,7 +34,7 @@ export function LandingPage({
       tag: "Importadores & Torrefações",
       title: "Contratos e Arquivos GeoJSON",
       desc: "Consulta de lotes e download direto de pacotes auditados para desembaraço na União Europeia.",
-      href: getSubdomainUrl("portal", "?view=portal"),
+      href: "https://portal.fafeu.online",
       action: onOpenClientPortal,
     },
     {
@@ -52,20 +42,20 @@ export function LandingPage({
       tag: "Infraestrutura Cloud",
       title: "Repositório Cloudflare R2",
       desc: "Armazenamento seguro e gestão de geometrias e auditorias das 13 regiões cafeeiras.",
-      href: getSubdomainUrl("cloud", "/cloud"),
-      action: onOpenCloud || (() => { window.location.href = getSubdomainUrl("cloud", "/cloud"); }),
+      href: "https://cloud.fafeu.online",
+      action: onOpenCloud || (() => { window.location.href = "https://cloud.fafeu.online"; }),
     },
   ];
 
-  const handleNavClick = (e: React.MouseEvent, href: string, action?: () => void) => {
+  const handleNavClick = (e: React.MouseEvent, action?: () => void) => {
     if (typeof window !== "undefined") {
       const host = window.location.hostname.toLowerCase();
-      // If local dev or workers.dev, perform in-app state switch
+      // If in local development (localhost / 127.0.0.1 / workers.dev), intercept and use local SPA state
       if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev")) {
         e.preventDefault();
         action?.();
-        return;
       }
+      // Otherwise, on production (fafeu.online or any subdomain), let the native browser navigation go to the real subdomain href!
     }
   };
 
@@ -95,8 +85,8 @@ export function LandingPage({
         }}
       >
         <a
-          href={getSubdomainUrl("app", "?view=app")}
-          onClick={(e) => handleNavClick(e, getSubdomainUrl("app", "?view=app"), onOpenFafApp)}
+          href="https://fafeu.online"
+          onClick={(e) => handleNavClick(e)}
           style={{ display: "flex", alignItems: "center", gap: "16px", textDecoration: "none", cursor: "pointer" }}
         >
           <img
@@ -125,8 +115,8 @@ export function LandingPage({
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           {onOpenDashboard && (
             <a
-              href={getSubdomainUrl("dashboard", "?view=dashboard")}
-              onClick={(e) => handleNavClick(e, getSubdomainUrl("dashboard", "?view=dashboard"), onOpenDashboard)}
+              href="https://dashboard.fafeu.online"
+              onClick={(e) => handleNavClick(e, onOpenDashboard)}
               style={{
                 fontSize: "13px",
                 fontWeight: 600,
@@ -144,8 +134,8 @@ export function LandingPage({
           )}
 
           <a
-            href={getSubdomainUrl("app", "?view=app")}
-            onClick={(e) => handleNavClick(e, getSubdomainUrl("app", "?view=app"), onOpenFafApp)}
+            href="https://app.fafeu.online"
+            onClick={(e) => handleNavClick(e, onOpenFafApp)}
             style={{
               fontSize: "13px",
               fontWeight: 700,
@@ -210,7 +200,7 @@ export function LandingPage({
               <a
                 key={item.id}
                 href={item.href}
-                onClick={(e) => handleNavClick(e, item.href, item.action)}
+                onClick={(e) => handleNavClick(e, item.action)}
                 onMouseEnter={() => setHoveredIndex(index)}
                 onMouseLeave={() => setHoveredIndex(null)}
                 style={{

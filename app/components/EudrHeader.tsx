@@ -37,28 +37,15 @@ export function EudrHeader({
 }: EudrHeaderProps) {
   const { isDark } = useTheme();
 
-  const getSubdomainUrl = (subdomain: string, fallbackPath: string) => {
-    if (typeof window !== "undefined") {
-      const host = window.location.hostname.toLowerCase();
-      if (host.includes("fafeu.online")) {
-        if (subdomain === "landing" || subdomain === "root") {
-          return "https://fafeu.online";
-        }
-        return `https://${subdomain}.fafeu.online`;
-      }
-    }
-    return fallbackPath;
-  };
-
-  const handleNavClick = (e: React.MouseEvent, href: string, action?: () => void) => {
+  const handleNavClick = (e: React.MouseEvent, action?: () => void) => {
     if (typeof window !== "undefined") {
       const host = window.location.hostname.toLowerCase();
       // If local dev or workers.dev, perform in-app state switch
       if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev")) {
         e.preventDefault();
         action?.();
-        return;
       }
+      // On production, let standard browser navigation navigate directly to the subdomain!
     }
   };
 
@@ -66,8 +53,8 @@ export function EudrHeader({
     <header className="topbar">
       <a
         className="brand-lockup"
-        href={getSubdomainUrl("landing", "/")}
-        onClick={(e) => handleNavClick(e, getSubdomainUrl("landing", "/"), onOpenLanding)}
+        href="https://fafeu.online"
+        onClick={(e) => handleNavClick(e, onOpenLanding)}
         style={{ cursor: "pointer", textDecoration: "none" }}
         title="Voltar à Página Inicial"
       >
@@ -97,8 +84,8 @@ export function EudrHeader({
 
         {onOpenLanding && (
           <a
-            href={getSubdomainUrl("landing", "/")}
-            onClick={(e) => handleNavClick(e, getSubdomainUrl("landing", "/"), onOpenLanding)}
+            href="https://fafeu.online"
+            onClick={(e) => handleNavClick(e, onOpenLanding)}
             style={{
               color: "var(--text-secondary)",
               fontSize: "12.5px",
@@ -118,8 +105,8 @@ export function EudrHeader({
           <>
             {onOpenPreparer && activeView !== "app" && (
               <a
-                href={getSubdomainUrl("app", "?view=app")}
-                onClick={(e) => handleNavClick(e, getSubdomainUrl("app", "?view=app"), onOpenPreparer)}
+                href="https://app.fafeu.online"
+                onClick={(e) => handleNavClick(e, onOpenPreparer)}
                 style={{
                   color: "var(--text-secondary)",
                   fontSize: "12.5px",
@@ -137,8 +124,8 @@ export function EudrHeader({
 
             {onOpenDashboard && activeView !== "dashboard" && (
               <a
-                href={getSubdomainUrl("dashboard", "?view=dashboard")}
-                onClick={(e) => handleNavClick(e, getSubdomainUrl("dashboard", "?view=dashboard"), onOpenDashboard)}
+                href="https://dashboard.fafeu.online"
+                onClick={(e) => handleNavClick(e, onOpenDashboard)}
                 style={{
                   color: "var(--text-secondary)",
                   fontSize: "12.5px",
@@ -156,8 +143,8 @@ export function EudrHeader({
 
             {onOpenContracts && activeView !== "contratos" && (
               <a
-                href={getSubdomainUrl("contratos", "?view=contratos")}
-                onClick={(e) => handleNavClick(e, getSubdomainUrl("contratos", "?view=contratos"), onOpenContracts)}
+                href="https://contratos.fafeu.online"
+                onClick={(e) => handleNavClick(e, onOpenContracts)}
                 style={{
                   color: "var(--text-secondary)",
                   fontSize: "12.5px",
@@ -175,8 +162,8 @@ export function EudrHeader({
 
             {onOpenCloudExplorer && (
               <a
-                href={getSubdomainUrl("cloud", "/cloud")}
-                onClick={(e) => handleNavClick(e, getSubdomainUrl("cloud", "/cloud"), onOpenCloudExplorer)}
+                href="https://cloud.fafeu.online"
+                onClick={(e) => handleNavClick(e, onOpenCloudExplorer)}
                 style={{
                   color: "var(--text-secondary)",
                   fontSize: "12.5px",

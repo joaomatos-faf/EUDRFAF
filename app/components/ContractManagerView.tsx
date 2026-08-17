@@ -697,26 +697,12 @@ export function ContractManagerView({
 
   const { isDark } = useTheme();
 
-  const getSubdomainUrl = (subdomain: string, fallbackPath: string) => {
-    if (typeof window !== "undefined") {
-      const host = window.location.hostname.toLowerCase();
-      if (host.includes("fafeu.online")) {
-        if (subdomain === "landing" || subdomain === "root") {
-          return "https://fafeu.online";
-        }
-        return `https://${subdomain}.fafeu.online`;
-      }
-    }
-    return fallbackPath;
-  };
-
-  const handleNavClick = (e: React.MouseEvent, href: string, action?: () => void) => {
+  const handleNavClick = (e: React.MouseEvent, action?: () => void) => {
     if (typeof window !== "undefined") {
       const host = window.location.hostname.toLowerCase();
       if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev")) {
         e.preventDefault();
         action?.();
-        return;
       }
     }
   };
@@ -748,8 +734,8 @@ export function ContractManagerView({
         }}
       >
         <a
-          href={getSubdomainUrl("landing", "/")}
-          onClick={(e) => handleNavClick(e, getSubdomainUrl("landing", "/"), onOpenLanding)}
+          href="https://fafeu.online"
+          onClick={(e) => handleNavClick(e, onOpenLanding)}
           style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none", cursor: "pointer" }}
         >
           <img
@@ -789,8 +775,8 @@ export function ContractManagerView({
 
           {onOpenDashboard && (
             <a
-              href={getSubdomainUrl("dashboard", "?view=dashboard")}
-              onClick={(e) => handleNavClick(e, getSubdomainUrl("dashboard", "?view=dashboard"), onOpenDashboard)}
+              href="https://dashboard.fafeu.online"
+              onClick={(e) => handleNavClick(e, onOpenDashboard)}
               style={{
                 background: "transparent",
                 border: "none",
@@ -807,8 +793,8 @@ export function ContractManagerView({
           )}
 
           <a
-            href={getSubdomainUrl("landing", "/")}
-            onClick={(e) => handleNavClick(e, getSubdomainUrl("landing", "/"), onOpenLanding)}
+            href="https://fafeu.online"
+            onClick={(e) => handleNavClick(e, onOpenLanding)}
             title="Voltar para a página principal (fafeu.online)"
             style={{
               background: "var(--brand-crimson)",
