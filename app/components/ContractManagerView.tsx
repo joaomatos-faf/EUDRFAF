@@ -698,14 +698,13 @@ export function ContractManagerView({
   const { isDark } = useTheme();
 
   const handleGoHome = () => {
-    if (typeof window !== "undefined") {
-      const host = window.location.hostname.toLowerCase();
-      if (host.startsWith("contratos.") || host.includes("fafeu.online")) {
-        window.location.href = "https://fafeu.online";
-        return;
-      }
+    if (onOpenLanding) {
+      onOpenLanding();
+      return;
     }
-    onOpenLanding();
+    if (typeof window !== "undefined") {
+      window.location.href = "/";
+    }
   };
 
   return (
