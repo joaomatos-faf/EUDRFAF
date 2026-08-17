@@ -8,34 +8,36 @@ interface EudrHeaderProps {
   isAuthenticated: boolean;
   loggedUserRole: "admin" | "user" | "client";
   loggedUserKey: string;
-  onOpenAdminModal: () => void;
+  activeView?: "app" | "portal" | "contratos" | "dashboard";
+  onOpenPreparer?: () => void;
+  onOpenDashboard?: () => void;
+  onOpenContracts?: () => void;
+  onOpenAdminModal?: () => void;
   onLogout: () => void;
   onNewProcess?: () => void;
   onOpenLogsModal?: () => void;
-  onOpenClientPortal?: () => void;
   onOpenCloudExplorer?: () => void;
-  onOpenLanding?: () => void;
-  onOpenDashboard?: () => void;
 }
 
 export function EudrHeader({
   isAuthenticated,
   loggedUserRole,
   loggedUserKey,
+  activeView = "app",
+  onOpenPreparer,
+  onOpenDashboard,
+  onOpenContracts,
   onOpenAdminModal,
   onLogout,
   onNewProcess,
   onOpenLogsModal,
-  onOpenClientPortal,
   onOpenCloudExplorer,
-  onOpenLanding,
-  onOpenDashboard,
 }: EudrHeaderProps) {
   const { isDark } = useTheme();
 
   return (
     <header className="topbar">
-      <div className="brand-lockup">
+      <div className="brand-lockup" style={{ cursor: "pointer" }} onClick={onOpenPreparer}>
         <img
           src="/faf-logo-transparent.png"
           alt="FAF Coffees"
@@ -60,41 +62,73 @@ export function EudrHeader({
       <div className="topbar-actions">
         <ThemeToggle />
 
-        {onOpenLanding && (
-          <button
-            onClick={onOpenLanding}
-            style={{
-              color: "var(--text-secondary)",
-              fontSize: "12.5px",
-              fontWeight: 550,
-              padding: "6px 12px",
-              borderRadius: "999px",
-              transition: "all 0.15s ease",
-            }}
-          >
-            Início
-          </button>
-        )}
-
-        {onOpenDashboard && (
-          <button
-            onClick={onOpenDashboard}
-            style={{
-              color: "var(--text-secondary)",
-              fontSize: "12.5px",
-              fontWeight: 550,
-              padding: "6px 12px",
-              borderRadius: "999px",
-              transition: "all 0.15s ease",
-            }}
-          >
-            Dashboard
-          </button>
-        )}
-
-        {isAuthenticated && (
+        {isAuthenticated && loggedUserRole !== "client" && (
           <>
-            {loggedUserRole !== "client" && onNewProcess && (
+            {onOpenPreparer && activeView !== "app" && (
+              <button
+                onClick={onOpenPreparer}
+                style={{
+                  color: "var(--text-secondary)",
+                  fontSize: "12.5px",
+                  fontWeight: 550,
+                  padding: "6px 12px",
+                  borderRadius: "999px",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                🗺️ Preparador
+              </button>
+            )}
+
+            {onOpenDashboard && activeView !== "dashboard" && (
+              <button
+                onClick={onOpenDashboard}
+                style={{
+                  color: "var(--text-secondary)",
+                  fontSize: "12.5px",
+                  fontWeight: 550,
+                  padding: "6px 12px",
+                  borderRadius: "999px",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                📊 Dashboard
+              </button>
+            )}
+
+            {onOpenContracts && activeView !== "contratos" && (
+              <button
+                onClick={onOpenContracts}
+                style={{
+                  color: "var(--text-secondary)",
+                  fontSize: "12.5px",
+                  fontWeight: 550,
+                  padding: "6px 12px",
+                  borderRadius: "999px",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                📑 Contratos
+              </button>
+            )}
+
+            {onOpenCloudExplorer && (
+              <button
+                onClick={onOpenCloudExplorer}
+                style={{
+                  color: "var(--text-secondary)",
+                  fontSize: "12.5px",
+                  fontWeight: 550,
+                  padding: "6px 12px",
+                  borderRadius: "999px",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                ☁️ Nuvem R2
+              </button>
+            )}
+
+            {onNewProcess && activeView === "app" && (
               <button
                 onClick={onNewProcess}
                 style={{
@@ -112,7 +146,7 @@ export function EudrHeader({
               </button>
             )}
 
-            {loggedUserRole !== "client" && onOpenLogsModal && (
+            {onOpenLogsModal && (
               <button
                 onClick={onOpenLogsModal}
                 style={{
@@ -128,7 +162,7 @@ export function EudrHeader({
               </button>
             )}
 
-            {loggedUserRole === "admin" && (
+            {loggedUserRole === "admin" && onOpenAdminModal && (
               <button
                 onClick={onOpenAdminModal}
                 style={{

@@ -7,7 +7,6 @@ import L from "leaflet";
 import { EudrHeader } from "./components/EudrHeader";
 import { EudrStepsNav } from "./components/EudrStepsNav";
 import { LoginScreen } from "./components/LoginScreen";
-import { LandingPage } from "./components/LandingPage";
 import { ContractManagerView } from "./components/ContractManagerView";
 import { AdminUserModal } from "./components/AdminUserModal";
 import { AuditLogModal } from "./components/AuditLogModal";
@@ -538,9 +537,9 @@ export default function Home() {
     );
   };
 
-  const [activeView, setActiveViewState] = useState<"landing" | "app" | "portal" | "contratos" | "dashboard">("app");
+  const [activeView, setActiveViewState] = useState<"app" | "portal" | "contratos" | "dashboard">("app");
 
-  const setActiveView = (view: "landing" | "app" | "portal" | "contratos" | "dashboard") => {
+  const setActiveView = (view: "app" | "portal" | "contratos" | "dashboard") => {
     setActiveViewState(view);
     if (typeof window !== "undefined") {
       sessionStorage.setItem("faf_eudr_active_view", view);
@@ -577,13 +576,7 @@ export default function Home() {
         hash.includes("portal")
       ) {
         setActiveViewState("portal");
-      } else if (
-        host.startsWith("landing.") ||
-        search.includes("view=landing") ||
-        hash.includes("landing")
-      ) {
-        setActiveViewState("landing");
-      } else if (savedView) {
+      } else if (savedView && ["app", "portal", "contratos", "dashboard"].includes(savedView)) {
         setActiveViewState(savedView);
       } else {
         setActiveViewState("app");
@@ -788,114 +781,7 @@ export default function Home() {
     }
   }, [userMgmt.loggedUserRole, activeView]);
 
-  if (activeView === "landing") {
-    return (
-      <LandingPage
-        onOpenFafApp={() => setActiveView("app")}
-        onOpenClientPortal={() => setActiveView("portal")}
-        onOpenDashboard={() => setActiveView("dashboard")}
-      />
-    );
-  }
-
-  if (activeView === "dashboard") {
-    return (
-      <div style={{ minHeight: "100vh", background: "radial-gradient(ellipse at 50% 0%, #102a20 0%, #081611 60%, #040c09 100%)" }}>
-        <EudrHeader
-          isAuthenticated={userMgmt.isAuthenticated || false}
-          loggedUserRole={userMgmt.loggedUserRole}
-          loggedUserKey={userMgmt.loggedUserKey}
-          onOpenAdminModal={() => userMgmt.setShowAdminModal(true)}
-          onLogout={userMgmt.handleLogout}
-          onNewProcess={handleNewProcessClick}
-          onOpenLogsModal={() => setShowLogsModal(true)}
-          onOpenClientPortal={() => setActiveView("portal")}
-          onOpenCloudExplorer={() => setShowCloudExplorer(true)}
-          onOpenLanding={() => setActiveView("landing")}
-          onOpenDashboard={() => setActiveView("dashboard")}
-        />
-        <ExecutiveDashboardView
-          onNavigateToContracts={() => setActiveView("contratos")}
-          onNavigateToPreparer={() => setActiveView("app")}
-          onNavigateToCloud={() => {
-            if (typeof window !== "undefined") {
-              window.location.href = "/cloud";
-            }
-          }}
-          userRole={userMgmt.loggedUserRole}
-          userName={userMgmt.loggedUserName || userMgmt.loggedUserKey}
-        />
-      </div>
-    );
-  }
-
-  if (activeView === "contratos") {
-    if (userMgmt.isAuthenticated === false) {
-      return (
-        <LoginScreen
-          loginUsername={userMgmt.loginUsername}
-          setLoginUsername={userMgmt.setLoginUsername}
-          loginPassword={userMgmt.loginPassword}
-          setLoginPassword={userMgmt.setLoginPassword}
-          loginError={userMgmt.loginError}
-          onLogin={userMgmt.handleLogin}
-          onBackToLanding={() => setActiveView("landing")}
-        />
-      );
-    }
-    return (
-      <ContractManagerView
-        onOpenLanding={() => setActiveView("landing")}
-        onOpenDashboard={() => setActiveView("dashboard")}
-        loggedUserKey={userMgmt.loggedUserKey}
-      />
-    );
-  }
-
-  if (activeView === "portal") {
-    if (userMgmt.isAuthenticated === false) {
-      return (
-        <LoginScreen
-          loginUsername={userMgmt.loginUsername}
-          setLoginUsername={userMgmt.setLoginUsername}
-          loginPassword={userMgmt.loginPassword}
-          setLoginPassword={userMgmt.setLoginPassword}
-          loginError={userMgmt.loginError}
-          title="Client & Importer Portal"
-          eyebrow="FAF Coffees • EUDR R2 Storage"
-          subtitle="Enter your authorized credentials to access your lots and download verified EUDR GeoJSON files."
-          buttonText="Enter Client Portal ➔"
-          userLabel="Username"
-          passLabel="Password"
-          userPlaceholder="Enter your username"
-          passPlaceholder="Enter your password"
-          backText="← Back to Home"
-          onLogin={async (e) => {
-            if (e && typeof e.preventDefault === "function") e.preventDefault();
-            const success = await userMgmt.handleLogin(e);
-            if (success) {
-              setActiveView("portal");
-            }
-          }}
-          onBackToLanding={() => setActiveView("landing")}
-        />
-      );
-    }
-
-    const currentFullName = userMgmt.loggedUserName || (userMgmt.loggedUserKey ? userMgmt.usersMap[userMgmt.loggedUserKey]?.fullName : "") || userMgmt.loggedUserKey;
-
-    return (
-      <ClientPortalModal
-        isOpen={true}
-        onClose={() => setActiveView("landing")}
-        userName={currentFullName}
-        loggedUserRole={userMgmt.loggedUserRole}
-        loggedClientName={userMgmt.loggedClientName}
-        onLogout={userMgmt.handleLogout}
-      />
-    );
-  }
-
+  // 1. Loading state while verifying authentication
   if (userMgmt.isAuthenticated === null) {
     return (
       <div style={{ minHeight: "100vh", background: "radial-gradient(ellipse at 50% 0%, #102a20 0%, #081611 60%, #040c09 100%)", display: "grid", placeItems: "center" }}>
@@ -904,6 +790,7 @@ export default function Home() {
     );
   }
 
+  // 2. Unauthenticated: Render LoginScreen directly (Zero landing page)
   if (userMgmt.isAuthenticated === false) {
     return (
       <LoginScreen
@@ -924,34 +811,102 @@ export default function Home() {
             }
           }
         }}
-        onBackToLanding={() => setActiveView("landing")}
       />
     );
   }
 
+  // 3. Authenticated: Client Portal View for Importers
+  if (activeView === "portal" || userMgmt.loggedUserRole === "client") {
+    const currentFullName = userMgmt.loggedUserName || (userMgmt.loggedUserKey ? userMgmt.usersMap[userMgmt.loggedUserKey]?.fullName : "") || userMgmt.loggedUserKey;
+
+    return (
+      <ClientPortalModal
+        isOpen={true}
+        onClose={userMgmt.handleLogout}
+        userName={currentFullName}
+        loggedUserRole={userMgmt.loggedUserRole}
+        loggedClientName={userMgmt.loggedClientName}
+        onLogout={userMgmt.handleLogout}
+      />
+    );
+  }
+
+  // 4. Authenticated: Executive Dashboard View
+  if (activeView === "dashboard") {
+    return (
+      <div style={{ minHeight: "100vh", background: "radial-gradient(ellipse at 50% 0%, #102a20 0%, #081611 60%, #040c09 100%)" }}>
+        <EudrHeader
+          isAuthenticated={true}
+          loggedUserRole={userMgmt.loggedUserRole}
+          loggedUserKey={userMgmt.loggedUserKey}
+          activeView="dashboard"
+          onOpenPreparer={() => setActiveView("app")}
+          onOpenDashboard={() => setActiveView("dashboard")}
+          onOpenContracts={() => setActiveView("contratos")}
+          onOpenAdminModal={() => userMgmt.setShowAdminModal(true)}
+          onLogout={userMgmt.handleLogout}
+          onNewProcess={handleNewProcessClick}
+          onOpenLogsModal={() => setShowLogsModal(true)}
+          onOpenCloudExplorer={() => setShowCloudExplorer(true)}
+        />
+        <ExecutiveDashboardView
+          onNavigateToContracts={() => setActiveView("contratos")}
+          onNavigateToPreparer={() => setActiveView("app")}
+          onNavigateToCloud={() => {
+            if (typeof window !== "undefined") {
+              window.location.href = "/cloud";
+            }
+          }}
+          userRole={userMgmt.loggedUserRole}
+          userName={userMgmt.loggedUserName || userMgmt.loggedUserKey}
+        />
+      </div>
+    );
+  }
+
+  // 5. Authenticated: Contract & Client Traceability View
+  if (activeView === "contratos") {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--bg-canvas)" }}>
+        <EudrHeader
+          isAuthenticated={true}
+          loggedUserRole={userMgmt.loggedUserRole}
+          loggedUserKey={userMgmt.loggedUserKey}
+          activeView="contratos"
+          onOpenPreparer={() => setActiveView("app")}
+          onOpenDashboard={() => setActiveView("dashboard")}
+          onOpenContracts={() => setActiveView("contratos")}
+          onOpenAdminModal={() => userMgmt.setShowAdminModal(true)}
+          onLogout={userMgmt.handleLogout}
+          onNewProcess={handleNewProcessClick}
+          onOpenLogsModal={() => setShowLogsModal(true)}
+          onOpenCloudExplorer={() => setShowCloudExplorer(true)}
+        />
+        <ContractManagerView
+          onOpenLanding={() => setActiveView("app")}
+          onOpenDashboard={() => setActiveView("dashboard")}
+          loggedUserKey={userMgmt.loggedUserKey}
+        />
+      </div>
+    );
+  }
+
+  // 6. Authenticated: Main EUDR Preparer Workspace
   return (
     <main className="app-shell">
       <EudrHeader
         isAuthenticated={true}
         loggedUserRole={userMgmt.loggedUserRole}
         loggedUserKey={userMgmt.loggedUserKey}
+        activeView="app"
+        onOpenPreparer={() => setActiveView("app")}
+        onOpenDashboard={() => setActiveView("dashboard")}
+        onOpenContracts={() => setActiveView("contratos")}
         onOpenAdminModal={() => userMgmt.setShowAdminModal(true)}
         onLogout={userMgmt.handleLogout}
         onNewProcess={handleNewProcessClick}
         onOpenLogsModal={() => setShowLogsModal(true)}
-        onOpenClientPortal={() => setActiveView("portal")}
         onOpenCloudExplorer={() => setShowCloudExplorer(true)}
-        onOpenLanding={() => {
-          if (typeof window !== "undefined") {
-            const host = window.location.hostname.toLowerCase();
-            if (host.startsWith("app.") || host.startsWith("preparador.") || host.startsWith("contratos.") || host.startsWith("portal.") || host.startsWith("cliente.") || host.includes("fafeu.online")) {
-              window.location.href = "https://fafeu.online";
-              return;
-            }
-          }
-          setActiveView("landing");
-        }}
-        onOpenDashboard={() => setActiveView("dashboard")}
       />
 
       <section className="dashboard-head">
