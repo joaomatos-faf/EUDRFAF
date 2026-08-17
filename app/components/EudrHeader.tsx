@@ -37,12 +37,38 @@ export function EudrHeader({
 }: EudrHeaderProps) {
   const { isDark } = useTheme();
 
+  const getSubdomainUrl = (subdomain: string, fallbackPath: string) => {
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname.toLowerCase();
+      if (host.includes("fafeu.online")) {
+        if (subdomain === "landing" || subdomain === "root") {
+          return "https://fafeu.online";
+        }
+        return `https://${subdomain}.fafeu.online`;
+      }
+    }
+    return fallbackPath;
+  };
+
+  const handleNavClick = (e: React.MouseEvent, href: string, action?: () => void) => {
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname.toLowerCase();
+      // If local dev or workers.dev, perform in-app state switch
+      if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev")) {
+        e.preventDefault();
+        action?.();
+        return;
+      }
+    }
+  };
+
   return (
     <header className="topbar">
-      <div
+      <a
         className="brand-lockup"
-        style={{ cursor: "pointer" }}
-        onClick={onOpenLanding || onOpenPreparer}
+        href={getSubdomainUrl("landing", "/")}
+        onClick={(e) => handleNavClick(e, getSubdomainUrl("landing", "/"), onOpenLanding)}
+        style={{ cursor: "pointer", textDecoration: "none" }}
         title="Voltar à Página Inicial"
       >
         <img
@@ -64,91 +90,106 @@ export function EudrHeader({
             WGS84
           </span>
         </div>
-      </div>
+      </a>
 
       <div className="topbar-actions">
         <ThemeToggle />
 
         {onOpenLanding && (
-          <button
-            onClick={onOpenLanding}
+          <a
+            href={getSubdomainUrl("landing", "/")}
+            onClick={(e) => handleNavClick(e, getSubdomainUrl("landing", "/"), onOpenLanding)}
             style={{
               color: "var(--text-secondary)",
               fontSize: "12.5px",
               fontWeight: 550,
               padding: "6px 12px",
               borderRadius: "999px",
+              textDecoration: "none",
               transition: "all 0.15s ease",
+              cursor: "pointer",
             }}
           >
             🏠 Início
-          </button>
+          </a>
         )}
 
         {isAuthenticated && loggedUserRole !== "client" && (
           <>
             {onOpenPreparer && activeView !== "app" && (
-              <button
-                onClick={onOpenPreparer}
+              <a
+                href={getSubdomainUrl("app", "?view=app")}
+                onClick={(e) => handleNavClick(e, getSubdomainUrl("app", "?view=app"), onOpenPreparer)}
                 style={{
                   color: "var(--text-secondary)",
                   fontSize: "12.5px",
                   fontWeight: 550,
                   padding: "6px 12px",
                   borderRadius: "999px",
+                  textDecoration: "none",
                   transition: "all 0.15s ease",
+                  cursor: "pointer",
                 }}
               >
                 🗺️ Preparador
-              </button>
+              </a>
             )}
 
             {onOpenDashboard && activeView !== "dashboard" && (
-              <button
-                onClick={onOpenDashboard}
+              <a
+                href={getSubdomainUrl("dashboard", "?view=dashboard")}
+                onClick={(e) => handleNavClick(e, getSubdomainUrl("dashboard", "?view=dashboard"), onOpenDashboard)}
                 style={{
                   color: "var(--text-secondary)",
                   fontSize: "12.5px",
                   fontWeight: 550,
                   padding: "6px 12px",
                   borderRadius: "999px",
+                  textDecoration: "none",
                   transition: "all 0.15s ease",
+                  cursor: "pointer",
                 }}
               >
                 📊 Dashboard
-              </button>
+              </a>
             )}
 
             {onOpenContracts && activeView !== "contratos" && (
-              <button
-                onClick={onOpenContracts}
+              <a
+                href={getSubdomainUrl("contratos", "?view=contratos")}
+                onClick={(e) => handleNavClick(e, getSubdomainUrl("contratos", "?view=contratos"), onOpenContracts)}
                 style={{
                   color: "var(--text-secondary)",
                   fontSize: "12.5px",
                   fontWeight: 550,
                   padding: "6px 12px",
                   borderRadius: "999px",
+                  textDecoration: "none",
                   transition: "all 0.15s ease",
+                  cursor: "pointer",
                 }}
               >
                 📑 Contratos
-              </button>
+              </a>
             )}
 
             {onOpenCloudExplorer && (
-              <button
-                onClick={onOpenCloudExplorer}
+              <a
+                href={getSubdomainUrl("cloud", "/cloud")}
+                onClick={(e) => handleNavClick(e, getSubdomainUrl("cloud", "/cloud"), onOpenCloudExplorer)}
                 style={{
                   color: "var(--text-secondary)",
                   fontSize: "12.5px",
                   fontWeight: 550,
                   padding: "6px 12px",
                   borderRadius: "999px",
+                  textDecoration: "none",
                   transition: "all 0.15s ease",
+                  cursor: "pointer",
                 }}
               >
                 ☁️ Nuvem R2
-              </button>
+              </a>
             )}
 
             {onNewProcess && activeView === "app" && (
@@ -163,6 +204,7 @@ export function EudrHeader({
                   fontWeight: 600,
                   boxShadow: "var(--shadow-button)",
                   transition: "all 0.15s ease",
+                  cursor: "pointer",
                 }}
               >
                 + Novo Processo
@@ -179,6 +221,7 @@ export function EudrHeader({
                   padding: "6px 10px",
                   borderRadius: "999px",
                   transition: "all 0.15s ease",
+                  cursor: "pointer",
                 }}
               >
                 Auditoria
@@ -195,6 +238,7 @@ export function EudrHeader({
                   padding: "6px 10px",
                   borderRadius: "999px",
                   transition: "all 0.15s ease",
+                  cursor: "pointer",
                 }}
               >
                 Usuários
@@ -224,6 +268,7 @@ export function EudrHeader({
                   fontWeight: 700,
                   fontSize: "11px",
                   padding: "0 2px",
+                  cursor: "pointer",
                 }}
               >
                 Sair
