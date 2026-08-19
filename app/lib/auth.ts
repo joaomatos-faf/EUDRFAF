@@ -35,8 +35,12 @@ export async function getSessionSecret(): Promise<string> {
     return process.env.SESSION_SECRET;
   }
 
-  // Graceful default if custom secret is not yet set in Cloudflare Secrets
-  return "FAF_EUDR_PROD_VAULT_HMAC_SESSION_SECRET_2026";
+  // Em ambiente local de desenvolvimento ou testes automatizados onde o secret não foi fornecido
+  if (typeof process !== "undefined" && (process.env?.NODE_ENV === "test" || process.env?.NODE_ENV === "development" || !process.env?.NODE_ENV)) {
+    return "test_session_secret_for_local_environment_only";
+  }
+
+  throw new Error("SESSION_SECRET não configurado no ambiente.");
 }
 
 /**
