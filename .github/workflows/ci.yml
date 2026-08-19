@@ -22,22 +22,27 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v4
 
-      - name: Configurar Node.js
+      - name: Configurar pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Configurar Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Instalar dependências
-        run: npm ci || npm install
+        run: pnpm install --frozen-lockfile
 
       - name: Checagem estática de tipos (TypeScript)
-        run: npm run typecheck
+        run: pnpm run typecheck
 
       - name: Execução dos testes automatizados (Node Test Runner)
-        run: npm test
+        run: pnpm test
 
       - name: Build de produção (Vinext / Next.js)
-        run: npm run build
+        run: pnpm run build
         env:
           NODE_ENV: production
