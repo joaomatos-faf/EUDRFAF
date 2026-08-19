@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 import { LanguageToggle } from "./ui/LanguageToggle";
 import { useTheme } from "@/app/hooks/useTheme";
-import { useTranslation } from "@/app/hooks/useTranslation";
+import { useTranslation, getSubdomainUrl } from "@/app/hooks/useTranslation";
 
 interface LandingPageProps {
   onOpenFafApp: () => void;
@@ -20,7 +20,7 @@ export function LandingPage({
   onOpenCloud,
 }: LandingPageProps) {
   const { isDark } = useTheme();
-  const { t } = useTranslation();
+  const { locale, t } = useTranslation();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const gateways = [
@@ -29,7 +29,7 @@ export function LandingPage({
       tag: t("landing.g1.tag"),
       title: t("landing.g1.title"),
       desc: t("landing.g1.desc"),
-      href: "https://app.fafeu.online",
+      href: getSubdomainUrl("https://app.fafeu.online", locale),
       action: onOpenFafApp,
     },
     {
@@ -37,7 +37,7 @@ export function LandingPage({
       tag: t("landing.g2.tag"),
       title: t("landing.g2.title"),
       desc: t("landing.g2.desc"),
-      href: "https://portal.fafeu.online",
+      href: getSubdomainUrl("https://portal.fafeu.online", locale),
       action: onOpenClientPortal,
     },
     {
@@ -45,8 +45,8 @@ export function LandingPage({
       tag: t("landing.g3.tag"),
       title: t("landing.g3.title"),
       desc: t("landing.g3.desc"),
-      href: "https://cloud.fafeu.online",
-      action: onOpenCloud || (() => { window.location.href = "https://cloud.fafeu.online"; }),
+      href: getSubdomainUrl("https://cloud.fafeu.online", locale),
+      action: onOpenCloud || (() => { window.location.href = getSubdomainUrl("https://cloud.fafeu.online", locale); }),
     },
   ];
 
