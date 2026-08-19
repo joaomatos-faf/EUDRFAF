@@ -35,8 +35,20 @@ export async function getSessionSecret(): Promise<string> {
     return process.env.SESSION_SECRET;
   }
 
-  // Graceful default if custom secret is not yet set in Cloudflare Secrets
-  return "FAF_EUDR_PROD_VAULT_HMAC_SESSION_SECRET_2026";
+  // Throw error in production if no secret is configured
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "SESSION_SECRET não configurado. Defina a variável de ambiente SESSION_SECRET com um valor seguro (mínimo 32 caracteres)."
+    );
+  }
+
+  // Development fallback only - NEVER use in production
+  console.warn(
+    "⚠️  SESSION_SECRET não definido. Usando valor padrão apenas para desenvolvimento.\n" +
+    "   Gere um segredo seguro: openssl rand -hex 32\n" +
+    "   Ou defina a variável de ambiente SESSION_SECRET."
+  );
+  return "dev_secret_change_in_production_" + Math.random().toString(36).slice(2);
 }
 
 /**
