@@ -103,15 +103,12 @@ function validateFileContent(buffer: Buffer, ext: string): { valid: boolean; err
       return { valid: false, error: "Conteúdo do arquivo não é um JSON válido." };
     }
   } else if (ext === "kml") {
-    // Deep KML XML structure validation
+    // XML structure validation
     const text = buffer.toString("utf8");
-    if (
-      !text.includes("<kml") &&
-      !text.includes("<Document") &&
-      !text.includes("<Placemark") &&
-      !text.includes("<coordinates")
-    ) {
-      return { valid: false, error: "Conteúdo KML não contém tags XML espaciais reconhecidas (<kml, <coordinates)." };
+    const hasKmlTag = /<kml[\s>]/i.test(text);
+    const hasCoordinates = /<coordinates[\s>]/i.test(text);
+    if (!hasKmlTag && !hasCoordinates) {
+      return { valid: false, error: "Conteúdo KML não contém tags XML espaciais válidas (<kml ou <coordinates)." };
     }
   }
 

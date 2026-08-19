@@ -18,8 +18,14 @@ export type ShapefileAttributes = {
 const encoder = new TextEncoder();
 
 /**
- * Reprojects a UTM (Universal Transverse Mercator) coordinate to WGS84 / SIRGAS 2000 Geographic (EPSG:4326)
- * Accurate to millimeter level for Brazilian agricultural mapping.
+ * Conversão de coordenadas métricas UTM (Universal Transverse Mercator) para coordenadas geográficas WGS 84 (EPSG:4326).
+ * Utiliza a formulação Transversa de Mercator baseada no elipsoide WGS84 / GRS80.
+ *
+ * Distinção de Sistemas de Coordenadas de Referência (CRS):
+ * - EPSG:4326: WGS 84 Geográfico (graus decimais, formato obrigatório para submissões EUDR / TRACES)
+ * - EPSG:4674: SIRGAS 2000 Geográfico (sistema geodésico oficial brasileiro do IBGE/CAR)
+ * - EPSG:31981 a 31985: SIRGAS 2000 / UTM Zonas 21S a 25S (projetado métrico)
+ * - EPSG:32721 a 32725: WGS 84 / UTM Zonas 21S a 25S (projetado métrico)
  */
 export function utmToWgs84(easting: number, northing: number, zoneNumber = 23, isSouth = true): Position {
   const a = 6378137.0; // WGS84 / GRS80 semi-major axis
@@ -74,8 +80,9 @@ export function utmToWgs84(easting: number, northing: number, zoneNumber = 23, i
 }
 
 /**
- * Normalizes coordinates: If projected UTM is detected (e.g. Brazilian CAR Shapefile),
- * converts automatically to WGS84 geographic decimal degrees.
+ * Normaliza coordenadas: Caso sejam detectadas coordenadas projetadas UTM (ex: Shapefile CAR com CRS omitido),
+ * converte automaticamente para graus decimais geográficos WGS84.
+ * Nota: Caso o fuso UTM não seja informado explicitamente, utiliza o fuso padrão parametrizado (ex: Zona 23S).
  */
 export function normalizePosition(pos: Position, defaultZone = 23): Position {
   const [x, y] = pos;
@@ -218,6 +225,31 @@ export function douglasPeucker(points: Position[], tolerance: number): Position[
   return [points[0], points[end]];
 }
 
+/**
+ * Helper to test if a 2D point [x, y] is inside a polygon ring (Ray-casting algorithm)
+ */
+export function isPointInPolygon(point: Position, ring: Position[]): boolean {
+  const [x, y] = point;
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    const intersect = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+/**
+ * Helper to test if two 2D line segments [p1, p2] and [p3, p4] intersect strictly
+ */
+export function doSegmentsIntersect(p1: Position, p2: Position, p3: Position, p4: Position): boolean {
+  const ccw = (a: Position, b: Position, c: Position) => {
+    return (c[1] - a[1]) * (b[0] - a[0]) > (b[1] - a[1]) * (c[0] - a[0]);
+  };
+  return ccw(p1, p3, p4) !== ccw(p2, p3, p4) && ccw(p1, p2, p3) !== ccw(p1, p2, p4);
+}
+
 export function simplifyGeometry(
   data: GeometryData,
   maxPoints = 50000,
@@ -244,22 +276,15 @@ export function simplifyGeometry(
         attempts += 1;
       }
       if (simplified.length >= 4 && simplified.length < ring.length) {
-        return closeRing(simplified);
+        const candidate = closeRing(simplified);
+        // Garante que a simplificação não corrompeu a validade topológica
+        const check = validatePolygonTopology({ polygons: [[candidate]] });
+        if (check.valid) return candidate;
       }
       return ring;
     })
   );
   return { polygons: simplifiedPolygons };
-}
-
-/**
- * Helper to test if two 2D line segments [p1, p2] and [p3, p4] intersect strictly
- */
-function doSegmentsIntersect(p1: Position, p2: Position, p3: Position, p4: Position): boolean {
-  const ccw = (a: Position, b: Position, c: Position) => {
-    return (c[1] - a[1]) * (b[0] - a[0]) > (b[1] - a[1]) * (c[0] - a[0]);
-  };
-  return ccw(p1, p3, p4) !== ccw(p2, p3, p4) && ccw(p1, p2, p3) !== ccw(p1, p2, p4);
 }
 
 export interface TopologyValidationResult {
@@ -276,7 +301,12 @@ export interface TopologyValidationResult {
 }
 
 /**
- * Validates topological correctness of EUDR polygons (closed rings, WGS84 coordinates, self-intersections)
+ * Validates topological correctness of EUDR polygons:
+ * - Closed rings & minimum 4 coordinates
+ * - Valid WGS84 range
+ * - Self-intersections (bowtie) on outer & inner rings
+ * - Hole containment & intersection with outer boundary
+ * - Multi-polygon overlap detection
  */
 export function validatePolygonTopology(geometry: GeometryData | null): TopologyValidationResult {
   const result: TopologyValidationResult = {
@@ -308,6 +338,8 @@ export function validatePolygonTopology(geometry: GeometryData | null): Topology
   result.stats.polygonCount = geometry.polygons.length;
   result.stats.areaHa = calculateAreaHectares(geometry);
 
+  const polygonBBoxes: Array<[number, number, number, number]> = [];
+
   for (let pIdx = 0; pIdx < geometry.polygons.length; pIdx++) {
     const polygon = geometry.polygons[pIdx];
     if (!polygon || polygon.length === 0) {
@@ -317,6 +349,8 @@ export function validatePolygonTopology(geometry: GeometryData | null): Topology
     }
 
     ringCount += polygon.length;
+    const outerRing = polygon[0];
+    let pMinX = Infinity, pMinY = Infinity, pMaxX = -Infinity, pMaxY = -Infinity;
 
     for (let rIdx = 0; rIdx < polygon.length; rIdx++) {
       const ring = polygon[rIdx];
@@ -333,7 +367,7 @@ export function validatePolygonTopology(geometry: GeometryData | null): Topology
       const first = ring[0];
       const last = ring[ring.length - 1];
       if (Math.abs(first[0] - last[0]) > 1e-7 || Math.abs(first[1] - last[1]) > 1e-7) {
-        result.warnings.push(`${ringName} não estava explicitamente fechado (fechamento automático aplicado).`);
+        result.warnings.push(`${ringName} não está explicitamente fechado no arquivo original; deve ser normalizado antes da exportação.`);
       }
 
       // Check coordinates bounds & coordinate inversion
@@ -361,6 +395,13 @@ export function validatePolygonTopology(geometry: GeometryData | null): Topology
         maxLng = Math.max(maxLng, lng);
         minLat = Math.min(minLat, lat);
         maxLat = Math.max(maxLat, lat);
+
+        if (isOuter) {
+          pMinX = Math.min(pMinX, lng);
+          pMaxX = Math.max(pMaxX, lng);
+          pMinY = Math.min(pMinY, lat);
+          pMaxY = Math.max(pMaxY, lat);
+        }
       }
 
       // Check self-intersection (bowtie polygon) on rings with reasonable point counts
@@ -379,6 +420,94 @@ export function validatePolygonTopology(geometry: GeometryData | null): Topology
         if (hasSelfIntersection) {
           result.valid = false;
           result.errors.push(`${ringName} possui auto-interseção (linhas cruzadas em formato de gravata/laço).`);
+        }
+      }
+
+      // Validação de Furos (Inner Rings)
+      if (!isOuter && outerRing && outerRing.length >= 4) {
+        // 1. Furo deve estar contido dentro do anel externo
+        const isHoleInside = ring.some((pt) => isPointInPolygon(pt, outerRing));
+        if (!isHoleInside) {
+          result.valid = false;
+          result.errors.push(`Furo #${rIdx} do Polígono #${pIdx + 1} está localizado fora do anel externo.`);
+        }
+
+        // 2. Furo não pode cruzar os limites do anel externo
+        if (ring.length <= 500 && outerRing.length <= 500) {
+          let crossesOuter = false;
+          for (let i = 0; i < ring.length - 1; i++) {
+            for (let j = 0; j < outerRing.length - 1; j++) {
+              if (doSegmentsIntersect(ring[i], ring[i + 1], outerRing[j], outerRing[j + 1])) {
+                crossesOuter = true;
+                break;
+              }
+            }
+            if (crossesOuter) break;
+          }
+          if (crossesOuter) {
+            result.valid = false;
+            result.errors.push(`Furo #${rIdx} do Polígono #${pIdx + 1} cruza os limites do anel externo.`);
+          }
+        }
+
+        // 3. Furos não podem se interceptar entre si
+        for (let h2 = rIdx + 1; h2 < polygon.length; h2++) {
+          const ring2 = polygon[h2];
+          if (ring.length <= 300 && ring2.length <= 300) {
+            let intersectOtherHole = false;
+            for (let i = 0; i < ring.length - 1; i++) {
+              for (let j = 0; j < ring2.length - 1; j++) {
+                if (doSegmentsIntersect(ring[i], ring[i + 1], ring2[j], ring2[j + 1])) {
+                  intersectOtherHole = true;
+                  break;
+                }
+              }
+              if (intersectOtherHole) break;
+            }
+            if (intersectOtherHole) {
+              result.valid = false;
+              result.errors.push(`Furo #${rIdx} e Furo #${h2} do Polígono #${pIdx + 1} se sobrepõem.`);
+            }
+          }
+        }
+      }
+    }
+
+    polygonBBoxes.push([pMinX, pMinY, pMaxX, pMaxY]);
+  }
+
+  // Validação de Sobreposição entre Polígonos Diferentes (MultiPolygons)
+  if (geometry.polygons.length > 1) {
+    for (let i = 0; i < geometry.polygons.length; i++) {
+      for (let j = i + 1; j < geometry.polygons.length; j++) {
+        const bbox1 = polygonBBoxes[i];
+        const bbox2 = polygonBBoxes[j];
+        if (!bbox1 || !bbox2) continue;
+
+        // Bounding Box overlap check
+        const overlapX = bbox1[0] <= bbox2[2] && bbox1[2] >= bbox2[0];
+        const overlapY = bbox1[1] <= bbox2[3] && bbox1[3] >= bbox2[1];
+
+        if (overlapX && overlapY) {
+          const poly1Outer = geometry.polygons[i][0];
+          const poly2Outer = geometry.polygons[j][0];
+          let edgesOverlap = false;
+
+          if (poly1Outer && poly2Outer && poly1Outer.length <= 500 && poly2Outer.length <= 500) {
+            for (let e1 = 0; e1 < poly1Outer.length - 1; e1++) {
+              for (let e2 = 0; e2 < poly2Outer.length - 1; e2++) {
+                if (doSegmentsIntersect(poly1Outer[e1], poly1Outer[e1 + 1], poly2Outer[e2], poly2Outer[e2 + 1])) {
+                  edgesOverlap = true;
+                  break;
+                }
+              }
+              if (edgesOverlap) break;
+            }
+          }
+
+          if (edgesOverlap) {
+            result.warnings.push(`Sobreposição de limites detectada entre Polígono #${i + 1} e Polígono #${j + 1}. Verifique se os talhões são contíguos ou duplicados.`);
+          }
         }
       }
     }
@@ -401,6 +530,30 @@ export function validatePolygonTopology(geometry: GeometryData | null): Topology
   }
 
   return result;
+}
+
+/**
+ * Registra auditoria de preservação de área geométrica (Original vs Simplificada)
+ */
+export function calculateAreaAudit(
+  originalGeometry: GeometryData,
+  exportedGeometry: GeometryData
+): {
+  originalAreaHa: number;
+  exportedAreaHa: number;
+  differenceHa: number;
+  differencePercent: number;
+} {
+  const originalAreaHa = calculateAreaHectares(originalGeometry);
+  const exportedAreaHa = calculateAreaHectares(exportedGeometry);
+  const differenceHa = Math.abs(exportedAreaHa - originalAreaHa);
+  const differencePercent = originalAreaHa > 0 ? (differenceHa / originalAreaHa) * 100 : 0;
+  return {
+    originalAreaHa: Number(originalAreaHa.toFixed(2)),
+    exportedAreaHa: Number(exportedAreaHa.toFixed(2)),
+    differenceHa: Number(differenceHa.toFixed(4)),
+    differencePercent: Number(differencePercent.toFixed(4)),
+  };
 }
 
 export function sanitizePlotId(value: string): string {
