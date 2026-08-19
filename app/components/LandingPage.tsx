@@ -2,7 +2,9 @@
 
 import React, { useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
+import { LanguageToggle } from "./ui/LanguageToggle";
 import { useTheme } from "@/app/hooks/useTheme";
+import { useTranslation } from "@/app/hooks/useTranslation";
 
 interface LandingPageProps {
   onOpenFafApp: () => void;
@@ -18,30 +20,31 @@ export function LandingPage({
   onOpenCloud,
 }: LandingPageProps) {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const gateways = [
     {
       id: "01",
-      tag: "Equipe & Agrônomos",
-      title: "Preparar e Auditar Talhões",
-      desc: "Mapeamento poligonal, desenho de áreas, validação temporal MapBiomas / EUDR e exportação de pacotes.",
+      tag: t("landing.g1.tag"),
+      title: t("landing.g1.title"),
+      desc: t("landing.g1.desc"),
       href: "https://app.fafeu.online",
       action: onOpenFafApp,
     },
     {
       id: "02",
-      tag: "Importadores & Torrefações",
-      title: "Contratos e Arquivos GeoJSON",
-      desc: "Consulta de lotes e download direto de pacotes auditados para desembaraço na União Europeia.",
+      tag: t("landing.g2.tag"),
+      title: t("landing.g2.title"),
+      desc: t("landing.g2.desc"),
       href: "https://portal.fafeu.online",
       action: onOpenClientPortal,
     },
     {
       id: "03",
-      tag: "Infraestrutura Cloud",
-      title: "Repositório Cloudflare R2",
-      desc: "Armazenamento seguro e gestão de geometrias e auditorias das 13 regiões cafeeiras.",
+      tag: t("landing.g3.tag"),
+      title: t("landing.g3.title"),
+      desc: t("landing.g3.desc"),
       href: "https://cloud.fafeu.online",
       action: onOpenCloud || (() => { window.location.href = "https://cloud.fafeu.online"; }),
     },
@@ -149,9 +152,10 @@ export function LandingPage({
               transition: "transform 0.15s ease",
             }}
           >
-            Acessar Sistema ›
+            {t("nav.accessSystem")}
           </a>
 
+          <LanguageToggle />
           <ThemeToggle />
         </div>
       </header>
@@ -176,7 +180,7 @@ export function LandingPage({
               letterSpacing: "0.02em",
             }}
           >
-            Fazenda Ambiental Fortaleza · Acesso Seguro
+            {t("landing.tagline")}
           </span>
           <h1
             style={{
@@ -188,7 +192,7 @@ export function LandingPage({
               color: "var(--text-primary)",
             }}
           >
-            Selecione seu portal de entrada.
+            {t("landing.heading")}
           </h1>
         </div>
 

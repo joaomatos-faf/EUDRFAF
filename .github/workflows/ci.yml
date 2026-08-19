@@ -1,0 +1,43 @@
+name: CI - Integridade e Testes EUDR
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Validar Tipos, Testes e Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'npm'
+
+      - name: Instalar dependências
+        run: npm ci || npm install
+
+      - name: Checagem estática de tipos (TypeScript)
+        run: npm run typecheck
+
+      - name: Execução dos testes automatizados (Node Test Runner)
+        run: npm test
+
+      - name: Build de produção (Vinext / Next.js)
+        run: npm run build
+        env:
+          NODE_ENV: production

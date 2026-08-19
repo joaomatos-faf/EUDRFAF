@@ -18,6 +18,8 @@ export interface PublishedPlotRecord {
   updatedAt?: string;
 }
 
+import { LanguageToggle } from "./ui/LanguageToggle";
+
 interface ClientPortalModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -296,6 +298,7 @@ export function ClientPortalModal({
         </a>
 
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <LanguageToggle />
           <ThemeToggle />
 
           <span
