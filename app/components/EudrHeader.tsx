@@ -1,9 +1,8 @@
-"use client";
-
 import React from "react";
 import { ThemeToggle } from "./ThemeToggle";
 import { LanguageToggle } from "./ui/LanguageToggle";
 import { useTheme } from "@/app/hooks/useTheme";
+import { useTranslation } from "@/app/hooks/useTranslation";
 
 interface EudrHeaderProps {
   isAuthenticated: boolean;
@@ -37,6 +36,7 @@ export function EudrHeader({
   onOpenCloudExplorer,
 }: EudrHeaderProps) {
   const { isDark } = useTheme();
+  const { t } = useTranslation();
 
   const handleNavClick = (e: React.MouseEvent, action?: () => void) => {
     if (typeof window !== "undefined") {
@@ -57,7 +57,7 @@ export function EudrHeader({
         href="https://fafeu.online"
         onClick={(e) => handleNavClick(e, onOpenLanding)}
         style={{ cursor: "pointer", textDecoration: "none" }}
-        title="Voltar à Página Inicial"
+        title={t("nav.home")}
       >
         <img
           src="/faf-logo-transparent.png"
@@ -71,7 +71,7 @@ export function EudrHeader({
         />
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)" }}>
-            Preparador EUDR
+            {t("nav.title")}
           </span>
           <span className="privacy-pill">
             <span />
@@ -99,7 +99,7 @@ export function EudrHeader({
               cursor: "pointer",
             }}
           >
-            🏠 Início
+            {t("nav.home")}
           </a>
         )}
 
@@ -120,7 +120,7 @@ export function EudrHeader({
                   cursor: "pointer",
                 }}
               >
-                🗺️ Preparador
+                {t("nav.preparer")}
               </a>
             )}
 
@@ -139,7 +139,7 @@ export function EudrHeader({
                   cursor: "pointer",
                 }}
               >
-                📊 Dashboard
+                {t("nav.dashboard")}
               </a>
             )}
 
@@ -158,7 +158,7 @@ export function EudrHeader({
                   cursor: "pointer",
                 }}
               >
-                📑 Contratos
+                {t("nav.contracts")}
               </a>
             )}
 
@@ -177,7 +177,7 @@ export function EudrHeader({
                   cursor: "pointer",
                 }}
               >
-                ☁️ Nuvem R2
+                {t("nav.cloud")}
               </a>
             )}
 
@@ -196,7 +196,7 @@ export function EudrHeader({
                   cursor: "pointer",
                 }}
               >
-                + Novo Processo
+                {t("nav.newProcess")}
               </button>
             )}
 
@@ -213,7 +213,7 @@ export function EudrHeader({
                   cursor: "pointer",
                 }}
               >
-                Auditoria
+                {t("nav.audit")}
               </button>
             )}
 
@@ -230,7 +230,7 @@ export function EudrHeader({
                   cursor: "pointer",
                 }}
               >
-                Usuários
+                {t("nav.users")}
               </button>
             )}
 
@@ -251,7 +251,7 @@ export function EudrHeader({
               <span>{loggedUserKey}</span>
               <button
                 onClick={onLogout}
-                title="Encerrar sessão"
+                title={t("nav.logout")}
                 style={{
                   color: "var(--brand-crimson)",
                   fontWeight: 700,
@@ -260,7 +260,7 @@ export function EudrHeader({
                   cursor: "pointer",
                 }}
               >
-                Sair
+                {t("nav.logout")}
               </button>
             </div>
           </>
