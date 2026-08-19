@@ -252,6 +252,157 @@ export function simplifyGeometry(
   return { polygons: simplifiedPolygons };
 }
 
+/**
+ * Helper to test if two 2D line segments [p1, p2] and [p3, p4] intersect strictly
+ */
+function doSegmentsIntersect(p1: Position, p2: Position, p3: Position, p4: Position): boolean {
+  const ccw = (a: Position, b: Position, c: Position) => {
+    return (c[1] - a[1]) * (b[0] - a[0]) > (b[1] - a[1]) * (c[0] - a[0]);
+  };
+  return ccw(p1, p3, p4) !== ccw(p2, p3, p4) && ccw(p1, p2, p3) !== ccw(p1, p2, p4);
+}
+
+export interface TopologyValidationResult {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+  stats: {
+    polygonCount: number;
+    ringCount: number;
+    totalVertices: number;
+    bbox: [number, number, number, number]; // [minLng, minLat, maxLng, maxLat]
+    areaHa: number;
+  };
+}
+
+/**
+ * Validates topological correctness of EUDR polygons (closed rings, WGS84 coordinates, self-intersections)
+ */
+export function validatePolygonTopology(geometry: GeometryData | null): TopologyValidationResult {
+  const result: TopologyValidationResult = {
+    valid: true,
+    errors: [],
+    warnings: [],
+    stats: {
+      polygonCount: 0,
+      ringCount: 0,
+      totalVertices: 0,
+      bbox: [0, 0, 0, 0],
+      areaHa: 0,
+    },
+  };
+
+  if (!geometry || !geometry.polygons || geometry.polygons.length === 0) {
+    result.valid = false;
+    result.errors.push("Nenhum polígono encontrado na geometria.");
+    return result;
+  }
+
+  let minLng = Infinity;
+  let maxLng = -Infinity;
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+  let totalVertices = 0;
+  let ringCount = 0;
+
+  result.stats.polygonCount = geometry.polygons.length;
+  result.stats.areaHa = calculateAreaHectares(geometry);
+
+  for (let pIdx = 0; pIdx < geometry.polygons.length; pIdx++) {
+    const polygon = geometry.polygons[pIdx];
+    if (!polygon || polygon.length === 0) {
+      result.valid = false;
+      result.errors.push(`Polígono #${pIdx + 1} está vazio.`);
+      continue;
+    }
+
+    ringCount += polygon.length;
+
+    for (let rIdx = 0; rIdx < polygon.length; rIdx++) {
+      const ring = polygon[rIdx];
+      const isOuter = rIdx === 0;
+      const ringName = isOuter ? `Polígono #${pIdx + 1} (Anel Exterior)` : `Polígono #${pIdx + 1} (Furo #${rIdx})`;
+
+      if (ring.length < 4) {
+        result.valid = false;
+        result.errors.push(`${ringName} possui menos de 4 pontos (mínimo 3 vértices + fechamento).`);
+        continue;
+      }
+
+      // Check if ring is closed
+      const first = ring[0];
+      const last = ring[ring.length - 1];
+      if (Math.abs(first[0] - last[0]) > 1e-7 || Math.abs(first[1] - last[1]) > 1e-7) {
+        result.warnings.push(`${ringName} não estava explicitamente fechado (fechamento automático aplicado).`);
+      }
+
+      // Check coordinates bounds & coordinate inversion
+      for (let i = 0; i < ring.length; i++) {
+        const [lng, lat] = ring[i];
+        totalVertices++;
+
+        if (isNaN(lng) || isNaN(lat)) {
+          result.valid = false;
+          result.errors.push(`${ringName} contém coordenadas inválidas (NaN).`);
+          continue;
+        }
+
+        if (lng < -180 || lng > 180 || lat < -90 || lat > 90) {
+          result.valid = false;
+          result.errors.push(`${ringName} possui coordenadas fora dos limites WGS84: [${lng}, ${lat}].`);
+        }
+
+        // Detect swapped Lat/Lng in Brazil context (Brazil Latitude is negative -34 to +5, Longitude is negative -74 to -34)
+        if (lat < -34 && lat > -75 && lng > -35 && lng < 6) {
+          result.warnings.push(`${ringName} pode ter coordenadas invertidas (Latitude/Longitude trocadas).`);
+        }
+
+        minLng = Math.min(minLng, lng);
+        maxLng = Math.max(maxLng, lng);
+        minLat = Math.min(minLat, lat);
+        maxLat = Math.max(maxLat, lat);
+      }
+
+      // Check self-intersection (bowtie polygon) on rings with reasonable point counts
+      if (ring.length <= 1000) {
+        let hasSelfIntersection = false;
+        for (let i = 0; i < ring.length - 1; i++) {
+          for (let j = i + 2; j < ring.length - 1; j++) {
+            if (i === 0 && j === ring.length - 2) continue; // Skip adjacent start/end
+            if (doSegmentsIntersect(ring[i], ring[i + 1], ring[j], ring[j + 1])) {
+              hasSelfIntersection = true;
+              break;
+            }
+          }
+          if (hasSelfIntersection) break;
+        }
+        if (hasSelfIntersection) {
+          result.valid = false;
+          result.errors.push(`${ringName} possui auto-interseção (linhas cruzadas em formato de gravata/laço).`);
+        }
+      }
+    }
+  }
+
+  result.stats.ringCount = ringCount;
+  result.stats.totalVertices = totalVertices;
+  result.stats.bbox = [
+    isFinite(minLng) ? Number(minLng.toFixed(6)) : 0,
+    isFinite(minLat) ? Number(minLat.toFixed(6)) : 0,
+    isFinite(maxLng) ? Number(maxLng.toFixed(6)) : 0,
+    isFinite(maxLat) ? Number(maxLat.toFixed(6)) : 0,
+  ];
+
+  if (result.stats.areaHa <= 0) {
+    result.valid = false;
+    result.errors.push("A área calculada é zero ou negativa.");
+  } else if (result.stats.areaHa > 50000) {
+    result.warnings.push(`A área calculada é excepcionalmente grande (${result.stats.areaHa.toFixed(2)} ha). Verifique se o arquivo não contém múltiplos talhões.`);
+  }
+
+  return result;
+}
+
 export function sanitizePlotId(value: string): string {
   return value.trim().toUpperCase().replace(/[^A-Z0-9-]/g, "").replace(/-+/g, "-");
 }

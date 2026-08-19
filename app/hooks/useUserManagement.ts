@@ -3,13 +3,9 @@
 import { useEffect, useState } from "react";
 import { hashPassword } from "../lib/eudr";
 import { recordAuditLog } from "../lib/auditLogger";
+import type { UserProfile } from "../lib/types";
 
-export interface UserProfile {
-  pass?: string;
-  fullName: string;
-  role: "admin" | "user" | "client";
-  clientName?: string;
-}
+export type { UserProfile };
 
 export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);

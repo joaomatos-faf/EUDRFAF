@@ -1,9 +1,6 @@
-export interface UserProfile {
-  pass: string;
-  fullName: string;
-  role: "admin" | "user" | "client";
-  clientName?: string;
-}
+import type { UserProfile } from "./types";
+
+export type { UserProfile };
 
 /**
  * Default initial seed users - Stored strictly with PBKDF2-HMAC-SHA512 (100.000 iterações + Salt)

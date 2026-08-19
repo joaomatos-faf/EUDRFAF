@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { GeometryData, MapbiomasCheckResponse } from "../lib/eudr";
+import { GeometryData } from "../lib/eudr";
+import { MapbiomasCheckResponse } from "../lib/types";
 import { recordAuditLog } from "../lib/auditLogger";
 import { FormState } from "./useEudrForm";
 
