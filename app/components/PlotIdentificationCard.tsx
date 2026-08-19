@@ -2,6 +2,7 @@
 
 import type { FormState } from "../lib/types";
 import { getTwoLetterInitials, generateAutoPlotId } from "../lib/eudr";
+import { useTranslation } from "@/app/hooks/useTranslation";
 
 type Props = {
   form: FormState;
@@ -10,6 +11,8 @@ type Props = {
 };
 
 export function PlotIdentificationCard({ form, onUpdate, onNewProcess }: Props) {
+  const { locale, t } = useTranslation();
+
   const handleAutoGenerate = () => {
     let plotNumber = "01";
     const numberMatch = form.plotId.match(/-([0-9A-Z]+)$/i);
@@ -37,8 +40,8 @@ export function PlotIdentificationCard({ form, onUpdate, onNewProcess }: Props) 
         >
           <span>01</span>
           <div>
-            <h3>Identificação do talhão</h3>
-            <p>Use o mesmo padrão adotado no procedimento.</p>
+            <h3>{locale === "en" ? "Farm Plot Identification" : "Identificação do talhão"}</h3>
+            <p>{locale === "en" ? "Use the standardized EUDR plot format." : "Use o mesmo padrão adotado no procedimento."}</p>
           </div>
         </div>
         <button
@@ -59,15 +62,15 @@ export function PlotIdentificationCard({ form, onUpdate, onNewProcess }: Props) 
             boxShadow: "var(--shadow-subtle)",
             transition: "all 0.16s ease",
           }}
-          title="Limpar todos os campos e iniciar novo talhão"
+          title={locale === "en" ? "Clear all fields and start a new plot" : "Limpar todos os campos e iniciar novo talhão"}
         >
-          <span>↺</span> Iniciar Novo Processo
+          <span>↺</span> {locale === "en" ? "Start New Process" : "Iniciar Novo Processo"}
         </button>
       </div>
 
       <div className="form-grid three">
         <label>
-          Código do talhão *
+          {locale === "en" ? "Plot ID (EUDR Code) *" : "Código do talhão *"}
           <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
             <input
               value={form.plotId}
@@ -78,7 +81,7 @@ export function PlotIdentificationCard({ form, onUpdate, onNewProcess }: Props) 
             <button
               type="button"
               onClick={handleAutoGenerate}
-              title="Gerar código automaticamente (FAF + Fornecedor + Município + N°)"
+              title={locale === "en" ? "Auto-generate code (FAF + Supplier + Municipality + N°)" : "Gerar código automaticamente (FAF + Fornecedor + Município + N°)"}
               style={{
                 padding: "8px 12px",
                 borderRadius: "8px",
@@ -91,19 +94,20 @@ export function PlotIdentificationCard({ form, onUpdate, onNewProcess }: Props) 
                 whiteSpace: "nowrap",
               }}
             >
-              ⚡ Auto-gerar
+              ⚡ {locale === "en" ? "Auto-generate" : "Auto-gerar"}
             </button>
           </div>
           <small>
-            FAF + fornecedor (
+            FAF + {locale === "en" ? "supplier (" : "fornecedor ("}
             {getTwoLetterInitials(form.supplier || form.producer) || "XX"}) +
-            município ({getTwoLetterInitials(form.municipality) || "XX"}) +
-            número (-01)
+            {locale === "en" ? " municipality (" : " município ("}
+            {getTwoLetterInitials(form.municipality) || "XX"}) +
+            {locale === "en" ? " number (-01)" : " número (-01)"}
           </small>
         </label>
 
         <label>
-          Fornecedor *
+          {locale === "en" ? "Supplier / Cooperative *" : "Fornecedor *"}
           <input
             value={form.supplier}
             onChange={(e) => onUpdate("supplier", e.target.value)}
@@ -112,34 +116,34 @@ export function PlotIdentificationCard({ form, onUpdate, onNewProcess }: Props) 
         </label>
 
         <label>
-          Número do CAR
+          {locale === "en" ? "CAR Registry Code" : "Número do CAR"}
           <input
             value={form.car}
             onChange={(e) => onUpdate("car", e.target.value)}
-            placeholder="Registro no CAR"
+            placeholder={locale === "en" ? "CAR Registration Code" : "Registro no CAR"}
           />
         </label>
 
         <label>
-          Nome da fazenda
+          {locale === "en" ? "Farm Name" : "Nome da fazenda"}
           <input
             value={form.farm}
             onChange={(e) => onUpdate("farm", e.target.value)}
-            placeholder="NA se não informado"
+            placeholder={locale === "en" ? "N/A if not provided" : "NA se não informado"}
           />
         </label>
 
         <label>
-          Nome do produtor
+          {locale === "en" ? "Farmer / Producer Name" : "Nome do produtor"}
           <input
             value={form.producer}
             onChange={(e) => onUpdate("producer", e.target.value)}
-            placeholder="NA se não informado"
+            placeholder={locale === "en" ? "N/A if not provided" : "NA se não informado"}
           />
         </label>
 
         <label>
-          Responsável pelo mapeamento * 🔒
+          {locale === "en" ? "Mapped by (Agronomist) * 🔒" : "Responsável pelo mapeamento * 🔒"}
           <input
             value={form.mappedBy}
             readOnly
@@ -152,7 +156,7 @@ export function PlotIdentificationCard({ form, onUpdate, onNewProcess }: Props) 
             }}
           />
           <small style={{ color: "var(--text-muted)" }}>
-            Definido pelo seu perfil de login.
+            {locale === "en" ? "Assigned by your login profile." : "Definido pelo seu perfil de login."}
           </small>
         </label>
       </div>
