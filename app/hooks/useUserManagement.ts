@@ -1,23 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { checkPasswordMatch, hashPassword } from "../lib/eudr";
+import { hashPassword } from "../lib/eudr";
 import { recordAuditLog } from "../lib/auditLogger";
 
 export interface UserProfile {
-  pass: string;
+  pass?: string;
   fullName: string;
   role: "admin" | "user" | "client";
   clientName?: string;
 }
-
-const DEFAULT_USERS_DATA: Record<string, UserProfile> = {
-  faf: { pass: "eudr2026", fullName: "FAF Coffees", role: "admin" },
-  admin: { pass: "faf2026", fullName: "Administrador FAF", role: "admin" },
-  joao: { pass: "faf1234", fullName: "João Silva", role: "user" },
-  joaomatos: { pass: "123", fullName: "João Matos", role: "admin" },
-  cliente: { pass: "cliente123", fullName: "Cliente Demo", role: "client", clientName: "BELCO" },
-};
 
 export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -30,7 +22,7 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
   const [loginError, setLoginError] = useState("");
 
   const [showAdminModal, setShowAdminModal] = useState(false);
-  const [usersMap, setUsersMap] = useState<Record<string, UserProfile>>(DEFAULT_USERS_DATA);
+  const [usersMap, setUsersMap] = useState<Record<string, UserProfile>>({});
   const [newAdminUser, setNewAdminUser] = useState("");
   const [newAdminPass, setNewAdminPass] = useState("");
   const [newAdminFullName, setNewAdminFullName] = useState("");
@@ -50,9 +42,6 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
   const saveUsers = async (updated: Record<string, UserProfile>) => {
     setUsersMap(updated);
     try {
-      localStorage.setItem("faf_eudr_users", JSON.stringify(updated));
-    } catch {}
-    try {
       await fetch("/api/users", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -61,43 +50,20 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
     } catch {}
   };
 
+  const loadUsersList = async () => {
+    try {
+      const res = await fetch("/api/users");
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.users && typeof data.users === "object") {
+          setUsersMap(data.users);
+        }
+      }
+    } catch {}
+  };
+
   useEffect(() => {
-    const initUsers = async () => {
-      let initial: Record<string, any> = DEFAULT_USERS_DATA;
-      try {
-        const res = await fetch("/api/users");
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.users && typeof data.users === "object" && Object.keys(data.users).length > 0) {
-            initial = data.users;
-          }
-        }
-      } catch {}
-
-      if (initial === DEFAULT_USERS_DATA) {
-        try {
-          const saved = localStorage.getItem("faf_eudr_users");
-          if (saved) initial = JSON.parse(saved);
-        } catch {}
-      }
-
-      const hashedMap: Record<string, UserProfile> = {};
-      for (const [u, val] of Object.entries(initial)) {
-        let pass = typeof val === "string" ? val : val.pass;
-        let fullName = typeof val === "string" ? u.toUpperCase() : (val.fullName || u.toUpperCase());
-        let role: "admin" | "user" | "client" = typeof val === "object" && val.role ? val.role : (u === "faf" || u === "admin" || u === "joaomatos" ? "admin" : "user");
-        let clientName = typeof val === "object" ? val.clientName : undefined;
-        if (pass.length !== 64 || !/^[0-9a-f]+$/i.test(pass)) {
-          pass = await hashPassword(pass);
-        }
-        hashedMap[u] = { pass, fullName, role, clientName };
-      }
-      setUsersMap(hashedMap);
-      try {
-        localStorage.setItem("faf_eudr_users", JSON.stringify(hashedMap));
-      } catch {}
-    };
-    initUsers();
+    loadUsersList();
   }, []);
 
   useEffect(() => {
@@ -181,31 +147,7 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
         return false;
       }
     } catch {
-      // Fallback local check if offline
-      const profile = usersMap[userKey];
-      if (profile) {
-        const passToTest = typeof profile === "string" ? profile : profile.pass;
-        const isMatch = await checkPasswordMatch(loginPassword, passToTest);
-        if (isMatch) {
-          const fullName = typeof profile === "string" ? userKey.toUpperCase() : (profile.fullName || userKey);
-          const role = typeof profile === "string" ? "user" : (profile.role || "user");
-          const clientName = typeof profile === "string" ? "" : (profile.clientName || profile.fullName || userKey);
-          sessionStorage.setItem("faf_eudr_auth", "true");
-          sessionStorage.setItem("faf_eudr_user_name", fullName);
-          sessionStorage.setItem("faf_eudr_user_key", userKey);
-          sessionStorage.setItem("faf_eudr_user_role", role);
-          if (clientName) sessionStorage.setItem("faf_eudr_client_name", clientName);
-          setIsAuthenticated(true);
-          setLoggedUserKey(userKey);
-          setLoggedUserName(fullName);
-          setLoggedUserRole(role);
-          setLoggedClientName(clientName);
-          if (onUserLoggedIn) onUserLoggedIn(fullName);
-          setLoginError("");
-          return true;
-        }
-      }
-      setLoginError("Usuário ou senha incorretos.");
+      setLoginError("Erro de conexão ao autenticar. Tente novamente.");
       return false;
     }
   };
@@ -227,7 +169,6 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
     setLoggedUserRole("user");
     setLoggedClientName("");
   };
-
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -259,16 +200,17 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
     setNewAdminRole("user");
     setNewAdminClientName("");
     setAdminErrorMsg("");
-    setAdminSuccessMsg(`Usuário "${cleanUser}" (${cleanName}) criado como ${newAdminRole === "client" ? "Cliente" : newAdminRole === "admin" ? "ADM" : "Usuário Padrão"}!`);
+    setAdminSuccessMsg(`Usuário "${cleanUser}" (${cleanName}) criado com sucesso!`);
     setTimeout(() => setAdminSuccessMsg(""), 3000);
+    loadUsersList();
   };
 
   const handleStartEdit = (userKey: string, profile: UserProfile) => {
     setEditingUser(userKey);
     setEditUsernameInput(userKey);
-    const name = typeof profile === "string" ? userKey.toUpperCase() : (profile.fullName || userKey.toUpperCase());
-    const role = typeof profile === "string" ? "user" : (profile.role || "user");
-    const clientName = typeof profile === "string" ? "" : (profile.clientName || "");
+    const name = profile.fullName || userKey.toUpperCase();
+    const role = profile.role || "user";
+    const clientName = profile.clientName || "";
     setEditFullNameInput(name);
     setEditRoleInput(role);
     setEditClientNameInput(clientName);
@@ -289,6 +231,7 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
     const currentUser = loggedUserKey || "admin";
     const currentName = sessionStorage.getItem("faf_eudr_user_name") || currentUser;
     recordAuditLog(currentUser, currentName, "USER_UPDATED", "USUARIOS", `Excluiu o usuário @${userKey}.`);
+    loadUsersList();
   };
 
   const handleAdminUpdateUser = async (oldUserKey: string) => {
@@ -311,7 +254,7 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
     const profile = usersMap[oldUserKey];
     if (!profile) return;
 
-    let newHash = typeof profile === "string" ? profile : profile.pass;
+    let newHash = profile.pass;
     if (editNewPassInput.trim()) {
       newHash = await hashPassword(editNewPassInput.trim());
     }
@@ -355,13 +298,10 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
     setAdminErrorMsg("");
     setAdminSuccessMsg(`Usuário "${newCleanUser}" atualizado com sucesso!`);
     setTimeout(() => setAdminSuccessMsg(""), 3000);
+    loadUsersList();
   };
 
   const handleChangePassword = async (userKey: string) => {
-    if (!editingCurrentPassInput.trim()) {
-      setAdminErrorMsg("Informe a senha atual.");
-      return;
-    }
     if (!editNewPassInput.trim()) {
       setAdminErrorMsg("Informe a nova senha.");
       return;
@@ -373,17 +313,10 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
       return;
     }
 
-    const storedPass = typeof profile === "string" ? profile : profile.pass;
-    const isCurrentValid = await checkPasswordMatch(editingCurrentPassInput.trim(), storedPass);
-    if (!isCurrentValid) {
-      setAdminErrorMsg("A senha atual informada está incorreta.");
-      return;
-    }
-
     const hashedNew = await hashPassword(editNewPassInput.trim());
-    const fullName = typeof profile === "string" ? userKey.toUpperCase() : profile.fullName;
-    const role = typeof profile === "string" ? "user" : profile.role;
-    const clientName = typeof profile === "string" ? undefined : profile.clientName;
+    const fullName = profile.fullName || userKey;
+    const role = profile.role || "user";
+    const clientName = profile.clientName;
     const updated = { ...usersMap, [userKey]: { pass: hashedNew, fullName, role, clientName } };
     await saveUsers(updated);
 
@@ -395,6 +328,7 @@ export function useUserManagement(onUserLoggedIn?: (fullName: string) => void) {
     setAdminErrorMsg("");
     setAdminSuccessMsg(`Sua senha foi alterada com sucesso!`);
     setTimeout(() => setAdminSuccessMsg(""), 3000);
+    loadUsersList();
   };
 
   return {

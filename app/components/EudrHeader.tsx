@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ThemeToggle } from "./ThemeToggle";
+import { LanguageToggle } from "./ui/LanguageToggle";
 import { useTheme } from "@/app/hooks/useTheme";
 
 interface EudrHeaderProps {
@@ -80,6 +81,7 @@ export function EudrHeader({
       </a>
 
       <div className="topbar-actions">
+        <LanguageToggle />
         <ThemeToggle />
 
         {onOpenLanding && (

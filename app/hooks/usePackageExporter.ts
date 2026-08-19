@@ -1,0 +1,238 @@
+"use client";
+
+import { useState } from "react";
+import JSZip from "jszip";
+import {
+  GeometryData,
+  buildEudrGeoJson,
+  buildProducerXlsxBytes,
+  buildShapefileParts,
+  calculateAreaHectares,
+  downloadBlob,
+  sanitizePlotId,
+} from "../lib/eudr";
+import { recordAuditLog } from "../lib/auditLogger";
+import { FormState } from "./useEudrForm";
+
+export type ExportStep = "idle" | "geojson" | "shapefile" | "excel" | "zip" | "r2_upload" | "done" | "error";
+
+export function usePackageExporter(
+  form: FormState,
+  geometry: GeometryData | null,
+  loggedUserKey: string,
+  onShowToast?: (type: "success" | "error" | "info", message: string) => void
+) {
+  const [exporting, setExporting] = useState(false);
+  const [exportStep, setExportStep] = useState<ExportStep>("idle");
+  const [exportStepMessage, setExportStepMessage] = useState("");
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [r2Publishing, setR2Publishing] = useState(false);
+  const [r2Success, setR2Success] = useState(false);
+
+  const getSafeBaseName = () => {
+    const cleanId = sanitizePlotId(form.plotId) || "TALHAO";
+    return cleanId.replace(/[^a-zA-Z0-9_-]/g, "_");
+  };
+
+  const generateFullZipPackage = async (): Promise<{ zipBlob: Blob; geoJsonStr: string; baseName: string }> => {
+    if (!geometry) throw new Error("Geometria não informada.");
+    const baseName = getSafeBaseName();
+    const zip = new JSZip();
+
+    // 1. GeoJSON
+    setExportStep("geojson");
+    setExportStepMessage("1/4: Gerando WGS84 GeoJSON homologado...");
+    const geoJsonStr = buildEudrGeoJson(geometry, form);
+    zip.file(`${baseName}.geojson`, geoJsonStr);
+
+    // 2. Shapefile (5 parts)
+    setExportStep("shapefile");
+    setExportStepMessage("2/4: Gerando conjunto ESRI Shapefile (.shp, .shx, .dbf, .prj, .cpg)...");
+    const shapeParts = await buildShapefileParts(geometry, form);
+    const shpFolder = zip.folder("shapefile") || zip;
+    shpFolder.file(`${baseName}.shp`, shapeParts.shp);
+    shpFolder.file(`${baseName}.shx`, shapeParts.shx);
+    shpFolder.file(`${baseName}.dbf`, shapeParts.dbf);
+    shpFolder.file(`${baseName}.prj`, shapeParts.prj);
+    shpFolder.file(`${baseName}.cpg`, shapeParts.cpg);
+
+    // 3. Producer XLSX
+    setExportStep("excel");
+    setExportStepMessage("3/4: Criando Planilha de Cadastro do Produtor (.xlsx)...");
+    const xlsxBytes = await buildProducerXlsxBytes(form, geometry);
+    zip.file(`CADASTRO_${baseName}.xlsx`, xlsxBytes);
+
+    // 4. Compactação ZIP
+    setExportStep("zip");
+    setExportStepMessage("4/4: Compactando pacote final...");
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+
+    return { zipBlob, geoJsonStr, baseName };
+  };
+
+  const handleDownloadFullPackage = async () => {
+    if (!geometry) {
+      onShowToast?.("error", "Carregue ou desenhe um polígono antes de exportar.");
+      return;
+    }
+    setExporting(true);
+    try {
+      const { zipBlob, baseName } = await generateFullZipPackage();
+      downloadBlob(zipBlob, `EUDR_PACOTE_${baseName}.zip`);
+
+      setExportStep("done");
+      setExportStepMessage("Pacote gerado e baixado com sucesso!");
+      onShowToast?.("success", `Pacote EUDR_${baseName}.zip baixado com sucesso!`);
+
+      const activeUser = loggedUserKey || "usuario";
+      const activeName = form.mappedBy || activeUser;
+      recordAuditLog(
+        activeUser,
+        activeName,
+        "PACKAGE_EXPORTED",
+        "EXPORTACAO",
+        `Exportou pacote completo ZIP para o talhão "${form.plotId}".`,
+        form.plotId
+      );
+    } catch (e: any) {
+      setExportStep("error");
+      setExportStepMessage(e.message || "Erro ao gerar pacote ZIP.");
+      onShowToast?.("error", e.message || "Falha ao gerar pacote.");
+    } finally {
+      setTimeout(() => {
+        setExporting(false);
+        setExportStep("idle");
+      }, 1500);
+    }
+  };
+
+  const handleDownloadGeoJsonOnly = () => {
+    if (!geometry) return;
+    const baseName = getSafeBaseName();
+    const geoJsonStr = buildEudrGeoJson(geometry, form);
+    const blob = new Blob([geoJsonStr], { type: "application/geo+json;charset=utf-8" });
+    downloadBlob(blob, `${baseName}.geojson`);
+    onShowToast?.("success", `${baseName}.geojson baixado com sucesso!`);
+
+    const activeUser = loggedUserKey || "usuario";
+    const activeName = form.mappedBy || activeUser;
+    recordAuditLog(activeUser, activeName, "GEOJSON_EXPORTED", "EXPORTACAO", `Exportou arquivo GeoJSON para o talhão "${form.plotId}".`, form.plotId);
+  };
+
+  const handleCopySharepointRow = async () => {
+    if (!geometry) return;
+    const areaHa = calculateAreaHectares(geometry).toFixed(2);
+    const center = (() => {
+      const points = geometry.polygons.flat(2);
+      if (!points.length) return { lat: "", lng: "" };
+      const xs = points.map((p) => p[0]);
+      const ys = points.map((p) => p[1]);
+      return {
+        lat: ((Math.min(...ys) + Math.max(...ys)) / 2).toFixed(6),
+        lng: ((Math.min(...xs) + Math.max(...xs)) / 2).toFixed(6),
+      };
+    })();
+
+    const fields = [
+      form.plotId,
+      form.farm,
+      form.producer,
+      form.supplier,
+      form.car,
+      form.municipality,
+      form.state,
+      form.region,
+      areaHa,
+      center.lat,
+      center.lng,
+      form.mappedAt,
+      form.checkedAt,
+      form.compliance,
+      form.notes,
+      form.mappedBy,
+    ];
+
+    const tsvRow = fields.join("\t");
+    try {
+      await navigator.clipboard.writeText(tsvRow);
+      setCopySuccess(true);
+      onShowToast?.("success", "Linha formatada para o SharePoint copiada para a área de transferência!");
+      setTimeout(() => setCopySuccess(false), 3000);
+
+      const activeUser = loggedUserKey || "usuario";
+      const activeName = form.mappedBy || activeUser;
+      recordAuditLog(activeUser, activeName, "SHAREPOINT_COPIED", "INTEGRACAO", `Copiou dados do talhão "${form.plotId}" para área de transferência (SharePoint).`, form.plotId);
+    } catch {
+      onShowToast?.("error", "Não foi possível copiar para a área de transferência.");
+    }
+  };
+
+  const handlePublishToR2 = async () => {
+    if (!geometry) return;
+    setR2Publishing(true);
+    setExporting(true);
+    try {
+      const { zipBlob, geoJsonStr, baseName } = await generateFullZipPackage();
+
+      setExportStep("r2_upload");
+      setExportStepMessage("Publicando arquivos no Cloudflare R2 Vault...");
+
+      const regionKey = form.region ? form.region.toLowerCase().replace(/[^a-z0-9]/g, "_") : "geral";
+      const plotCode = form.plotId.trim().toUpperCase();
+
+      const res = await fetch("/api/r2/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          region: regionKey,
+          plotCode,
+          geoJson: geoJsonStr,
+          metadata: {
+            ...form,
+            areaHectares: calculateAreaHectares(geometry),
+            publishedAt: new Date().toISOString(),
+            publishedBy: loggedUserKey,
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Falha ao publicar no R2.");
+      }
+
+      setR2Success(true);
+      setExportStep("done");
+      setExportStepMessage("Publicado com sucesso no Cloudflare R2!");
+      onShowToast?.("success", `Talhão ${plotCode} publicado com sucesso na Nuvem R2!`);
+
+      const activeUser = loggedUserKey || "usuario";
+      const activeName = form.mappedBy || activeUser;
+      recordAuditLog(activeUser, activeName, "R2_PUBLISHED", "NUVEM_R2", `Publicou geometria e metadados do talhão "${plotCode}" no bucket Cloudflare R2 (${regionKey}).`, plotCode);
+      setTimeout(() => setR2Success(false), 4000);
+    } catch (e: any) {
+      setExportStep("error");
+      setExportStepMessage(e.message || "Erro ao publicar no Cloudflare R2.");
+      onShowToast?.("error", e.message || "Erro ao publicar no R2.");
+    } finally {
+      setR2Publishing(false);
+      setTimeout(() => {
+        setExporting(false);
+        setExportStep("idle");
+      }, 1500);
+    }
+  };
+
+  return {
+    exporting,
+    exportStep,
+    exportStepMessage,
+    copySuccess,
+    r2Publishing,
+    r2Success,
+    handleDownloadFullPackage,
+    handleDownloadGeoJsonOnly,
+    handleCopySharepointRow,
+    handlePublishToR2,
+  };
+}

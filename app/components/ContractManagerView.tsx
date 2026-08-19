@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
-import { ContractRecord } from "@/app/lib/contractStore";
-import { PlotMasterRecord } from "@/app/lib/plotMasterData";
-import { ClientSelectAutocomplete } from "./ClientSelectAutocomplete";
+import { ContractForm } from "./contract-manager/ContractForm";
+import { ContractList } from "./contract-manager/ContractList";
+import { useContractData } from "./contract-manager/useContractData";
+import { useContractEditing } from "./contract-manager/useContractEditing";
+import { useContractLots } from "./contract-manager/useContractHooks";
+import { useContractSave } from "./contract-manager/useContractSave";
 import { ThemeToggle } from "./ThemeToggle";
 import { useTheme } from "@/app/hooks/useTheme";
 
@@ -13,495 +15,59 @@ interface ContractManagerViewProps {
   loggedUserKey?: string;
 }
 
-interface DraftPlotItem {
-  plotId: string;
-  producer: string;
-  supplier: string;
-  farm: string;
-  hectares: number;
-}
-
-interface DraftLotItem {
-  lotNumber: string;
-  region: string;
-  plots: DraftPlotItem[];
-  isCollapsed?: boolean;
-}
-
-// Componente de Autocomplete de Talhões
-interface PlotAutocompleteInputProps {
-  value: string;
-  onChange: (plotId: string) => void;
-  onSelect: (plot: PlotMasterRecord) => void;
-  plotMasterList: PlotMasterRecord[];
-  placeholder?: string;
-}
-
-function PlotAutocompleteInput({
-  value,
-  onChange,
-  onSelect,
-  plotMasterList,
-  placeholder,
-}: PlotAutocompleteInputProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const query = value.trim().toUpperCase();
-  const normQuery = query.replace(/[^A-Z0-9]/g, "");
-
-  const exactMatch = plotMasterList.find(
-    (p) =>
-      p.plotId.toUpperCase() === query ||
-      p.plotId.replace(/[^A-Z0-9]/g, "") === normQuery
-  );
-
-  const filteredPlots = query
-    ? plotMasterList.filter((p) => {
-        const pId = (p.plotId || "").toUpperCase();
-        const producer = (p.producer || "").toUpperCase();
-        const supplier = (p.supplier || "").toUpperCase();
-        const farm = (p.farm || "").toUpperCase();
-        const normP = pId.replace(/[^A-Z0-9]/g, "");
-
-        return (
-          pId.includes(query) ||
-          (normQuery.length > 0 && normP.includes(normQuery)) ||
-          producer.includes(query) ||
-          supplier.includes(query) ||
-          farm.includes(query)
-        );
-      })
-    : plotMasterList.slice(0, 8);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleSelectOption = (p: PlotMasterRecord) => {
-    onSelect(p);
-    setIsOpen(false);
-  };
-
-  return (
-    <div ref={containerRef} style={{ position: "relative", width: "100%" }}>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => {
-          onChange(e.target.value.toUpperCase());
-          setIsOpen(true);
-        }}
-        onFocus={() => {
-          if (!exactMatch || value !== exactMatch.plotId) {
-            setIsOpen(true);
-          }
-        }}
-        placeholder={placeholder || "Ex: NAS-02, P2401..."}
-        required
-        style={{
-          width: "100%",
-          padding: "8px 10px",
-          borderRadius: "8px",
-          border: exactMatch
-            ? "1.5px solid #10b981"
-            : "1px solid rgba(52, 211, 153, 0.3)",
-          fontSize: "13px",
-          fontWeight: 700,
-          background: exactMatch
-            ? "rgba(16, 185, 129, 0.18)"
-            : "#081611",
-          color: "#ffffff",
-          outline: "none",
-          transition: "all 0.15s ease",
-        }}
-      />
-
-      {isOpen && filteredPlots.length > 0 && (
-        <div
-          style={{
-            position: "absolute",
-            top: "calc(100% + 4px)",
-            left: 0,
-            minWidth: "340px",
-            maxWidth: "380px",
-            zIndex: 9999,
-            background: "#0b1d17",
-            border: "1px solid rgba(52, 211, 153, 0.3)",
-            borderRadius: "12px",
-            boxShadow:
-              "0 16px 40px rgba(0, 0, 0, 0.8), 0 4px 12px rgba(0,0,0,0.5)",
-            maxHeight: "260px",
-            overflowY: "auto",
-          }}
-        >
-          <div
-            style={{
-              padding: "8px 12px",
-              background: "#06130e",
-              borderBottom: "1px solid rgba(52, 211, 153, 0.15)",
-              fontSize: "11px",
-              fontWeight: 700,
-              color: "#94a3b8",
-            }}
-          >
-            Sugestões da Base de Talhões ({filteredPlots.length})
-          </div>
-          {filteredPlots.map((p, idx) => (
-            <div
-              key={`${p.plotId}-${idx}`}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                handleSelectOption(p);
-              }}
-              style={{
-                padding: "10px 14px",
-                borderBottom: "1px solid rgba(52, 211, 153, 0.1)",
-                cursor: "pointer",
-                transition: "background 0.12s ease",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "rgba(52, 211, 153, 0.12)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "transparent")
-              }
-            >
-              <div
-                style={{
-                  fontWeight: 800,
-                  fontSize: "13px",
-                  color: "#ffffff",
-                  display: "flex",
-                  justifyContent: "space-between",
-                }}
-              >
-                <span>🌱 {p.plotId}</span>
-                <span
-                  style={{
-                    fontWeight: 700,
-                    color: "#34d399",
-                    fontSize: "11.5px",
-                    background: "rgba(16, 185, 129, 0.2)",
-                    padding: "1px 6px",
-                    borderRadius: "4px",
-                  }}
-                >
-                  {p.hectares ? `${p.hectares.toFixed(2)} ha` : "0 ha"}
-                </span>
-              </div>
-              <div
-                style={{
-                  fontSize: "11.5px",
-                  color: "#cbd5e1",
-                  fontWeight: 600,
-                  marginTop: "3px",
-                }}
-              >
-                Produtor: <strong>{p.producer}</strong>
-              </div>
-              <div
-                style={{
-                  fontSize: "11px",
-                  color: "#94a3b8",
-                  marginTop: "1px",
-                  display: "flex",
-                  gap: "6px",
-                }}
-              >
-                <span>Fazenda: {p.farm || "N/A"}</span>
-                {p.supplier && <span>• Fornecedor: {p.supplier}</span>}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function ContractManagerView({
   onOpenLanding,
   onOpenDashboard,
   loggedUserKey = "usuario",
 }: ContractManagerViewProps) {
-  const [contracts, setContracts] = useState<ContractRecord[]>([]);
-  const [plotMasterList, setPlotMasterList] = useState<PlotMasterRecord[]>([]);
-  const [contractCode, setContractCode] = useState("");
-  const [clientName, setClientName] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [lotSearchQueries, setLotSearchQueries] = useState<
-    Record<number, string>
-  >({});
-  const [editingContractId, setEditingContractId] = useState<string | null>(
-    null
-  );
+  // Hooks para gerenciamento de dados
+  const { contracts, setContracts, plotMasterList, loadContractsAndPlots } = useContractData();
+  
+  // Hooks para gerenciamento de edição
+  const {
+    contractCode,
+    setContractCode,
+    clientName,
+    setClientName,
+    editingContractId,
+    setEditingContractId,
+    handleStartEditContract,
+    handleCancelEdit,
+  } = useContractEditing();
+  
+  // Hooks para gerenciamento de lotes
+  const {
+    lots,
+    setLots,
+    lotsContainerRef,
+    grandTotalHectares,
+    totalPlotsCount,
+    handleAddLot,
+    handleToggleCollapseLot,
+    handleRemoveLot,
+    handleLotChange,
+    handleAddPlotToLot,
+    handleRemovePlotFromLot,
+    handlePlotIdInputChange,
+    handleSelectPlotMaster,
+    handlePlotFieldChange,
+    handleAddMultiplePlotsToLot,
+    resetLots,
+  } = useContractLots(plotMasterList);
+  
+  // Hooks para salvamento
+  const {
+    isSaving,
+    downloadingKey,
+    saveContract,
+    deleteContract,
+    downloadGeoJson,
+  } = useContractSave(lots, loggedUserKey);
 
-  const lotsContainerRef = useRef<HTMLDivElement>(null);
-
-  // Inicialização com 1 lote vazio
-  const [lots, setLots] = useState<DraftLotItem[]>([
-    {
-      lotNumber: "LOTE 01",
-      region: "",
-      plots: [
-        { plotId: "", producer: "", supplier: "", farm: "", hectares: 0 },
-      ],
-      isCollapsed: false,
-    },
-  ]);
-
-  const loadContractsAndPlots = async () => {
-    try {
-      const resContracts = await fetch("/api/r2/copy-contract");
-      if (resContracts.ok) {
-        const dataContracts = await resContracts.json();
-        if (dataContracts.contracts) setContracts(dataContracts.contracts);
-      }
-
-      const resPlots = await fetch("/api/plot-lookup");
-      if (resPlots.ok) {
-        const dataPlots = await resPlots.json();
-        if (dataPlots.plots && dataPlots.plots.length > 0) {
-          setPlotMasterList(dataPlots.plots);
-        }
-      }
-    } catch {
-      // Ignorar falhas silenciosas
-    }
-  };
-
-  useEffect(() => {
-    loadContractsAndPlots();
-  }, []);
-
-  const grandTotalHectares = useMemo(() => {
-    return lots.reduce((total, lot) => {
-      const lotSum = lot.plots.reduce(
-        (sum, p) => sum + (Number(p.hectares) || 0),
-        0
-      );
-      return total + lotSum;
-    }, 0);
-  }, [lots]);
-
-  const totalPlotsCount = useMemo(() => {
-    return lots.reduce((total, lot) => total + lot.plots.length, 0);
-  }, [lots]);
-
-  const handleAddLot = () => {
-    const nextLotNum = `LOTE ${String(lots.length + 1).padStart(2, "0")}`;
-    const collapsedPreviousLots = lots.map((lot) => ({
-      ...lot,
-      isCollapsed: true,
-    }));
-
-    setLots([
-      ...collapsedPreviousLots,
-      {
-        lotNumber: nextLotNum,
-        region: "",
-        plots: [
-          { plotId: "", producer: "", supplier: "", farm: "", hectares: 0 },
-        ],
-        isCollapsed: false,
-      },
-    ]);
-
-    setTimeout(() => {
-      if (lotsContainerRef.current) {
-        lotsContainerRef.current.scrollTo({
-          top: lotsContainerRef.current.scrollHeight,
-          behavior: "smooth",
-        });
-      }
-    }, 120);
-  };
-
-  const handleToggleCollapseLot = (index: number) => {
-    const updated = [...lots];
-    updated[index].isCollapsed = !updated[index].isCollapsed;
-    setLots(updated);
-  };
-
-  const handleRemoveLot = (index: number) => {
-    if (lots.length === 1) return;
-    setLots(lots.filter((_, i) => i !== index));
-  };
-
-  const handleLotChange = (
-    index: number,
-    field: keyof Omit<DraftLotItem, "plots" | "isCollapsed">,
-    value: string
-  ) => {
-    const updated = [...lots];
-    updated[index] = { ...updated[index], [field]: value };
-    setLots(updated);
-  };
-
-  const handleAddPlotToLot = (lotIndex: number) => {
-    const updated = [...lots];
-    const lotPlots = updated[lotIndex].plots;
-    updated[lotIndex].plots = [
-      ...lotPlots,
-      { plotId: "", producer: "", supplier: "", farm: "", hectares: 0 },
-    ];
-    setLots(updated);
-  };
-
-  const handleRemovePlotFromLot = (lotIndex: number, plotIndex: number) => {
-    const updated = [...lots];
-    if (updated[lotIndex].plots.length === 1) return;
-    updated[lotIndex].plots = updated[lotIndex].plots.filter(
-      (_, i) => i !== plotIndex
-    );
-    setLots(updated);
-  };
-
-  const handlePlotIdInputChange = (
-    lotIndex: number,
-    plotIndex: number,
-    rawValue: string
-  ) => {
-    const cleanId = rawValue.toUpperCase().trim();
-    const normId = cleanId.replace(/[^A-Z0-9]/g, "");
-    const updated = [...lots];
-
-    if (!cleanId) {
-      updated[lotIndex].plots[plotIndex] = {
-        plotId: "",
-        producer: "",
-        supplier: "",
-        farm: "",
-        hectares: 0,
-      };
-      setLots(updated);
-      return;
-    }
-
-    const matched = plotMasterList.find(
-      (p) =>
-        p.plotId.toUpperCase().trim() === cleanId ||
-        p.plotId.replace(/[^A-Z0-9]/g, "") === normId
-    );
-
-    if (matched) {
-      updated[lotIndex].plots[plotIndex] = {
-        plotId: matched.plotId || cleanId,
-        producer: matched.producer,
-        supplier: matched.supplier,
-        farm: matched.farm,
-        hectares: matched.hectares,
-      };
-      if (matched.region && !updated[lotIndex].region) {
-        updated[lotIndex].region = matched.region.toUpperCase();
-      }
-    } else {
-      updated[lotIndex].plots[plotIndex] = {
-        ...updated[lotIndex].plots[plotIndex],
-        plotId: cleanId,
-      };
-    }
-
-    setLots(updated);
-  };
-
-  const handleSelectPlotMaster = (
-    lotIndex: number,
-    plotIndex: number,
-    plot: PlotMasterRecord
-  ) => {
-    const updated = [...lots];
-    updated[lotIndex].plots[plotIndex] = {
-      plotId: plot.plotId,
-      producer: plot.producer,
-      supplier: plot.supplier,
-      farm: plot.farm,
-      hectares: plot.hectares,
-    };
-
-    if (plot.region && !updated[lotIndex].region) {
-      updated[lotIndex].region = plot.region.toUpperCase();
-    }
-
-    setLots(updated);
-  };
-
-  const handlePlotFieldChange = (
-    lotIndex: number,
-    plotIndex: number,
-    field: "producer" | "supplier" | "farm" | "hectares",
-    value: string | number
-  ) => {
-    const updated = [...lots];
-    updated[lotIndex].plots[plotIndex] = {
-      ...updated[lotIndex].plots[plotIndex],
-      [field]:
-        field === "hectares" ? parseFloat(String(value)) || 0 : String(value),
-    };
-    setLots(updated);
-  };
-
-  const handleAddMultiplePlotsToLot = (
-    lotIdx: number,
-    plotsToAdd: PlotMasterRecord[]
-  ) => {
-    setLots((prevLots) => {
-      const newLots = [...prevLots];
-      const targetLot = { ...newLots[lotIdx] };
-      let newPlots = [...targetLot.plots];
-
-      const lastPlot = newPlots[newPlots.length - 1];
-      if (
-        lastPlot &&
-        !lastPlot.plotId.trim() &&
-        (!lastPlot.hectares || lastPlot.hectares === 0)
-      ) {
-        newPlots.pop();
-      }
-
-      const existingIds = new Set(
-        newPlots.map((p) => p.plotId.toUpperCase())
-      );
-      plotsToAdd.forEach((p) => {
-        if (!existingIds.has(p.plotId.toUpperCase())) {
-          newPlots.push({
-            plotId: p.plotId,
-            producer: p.producer,
-            supplier: p.supplier,
-            farm: p.farm,
-            hectares: p.hectares,
-          });
-          if (p.region && !targetLot.region) {
-            targetLot.region = p.region.toUpperCase();
-          }
-        }
-      });
-
-      targetLot.plots = newPlots;
-      newLots[lotIdx] = targetLot;
-      return newLots;
-    });
-
-    setLotSearchQueries((prev) => ({ ...prev, [lotIdx]: "" }));
-  };
-
-  const handleStartEditContract = (c: ContractRecord) => {
-    setEditingContractId(c.id);
-    setClientName(c.clientName);
-    setContractCode(c.contractCode);
-    setLots(
+  // Handler para início de edição de contrato
+  const handleStartEdit = (c: import("@/app/lib/contractStore").ContractRecord) => {
+    handleStartEditContract(c);
+    resetLots(
       c.lots.map((lot) => ({
         lotNumber: lot.lotNumber,
         region: lot.region || "",
@@ -518,1582 +84,235 @@ export function ContractManagerView({
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleCancelEdit = () => {
-    setEditingContractId(null);
-    setContractCode("");
-    setClientName("");
-    setLots([
-      {
-        lotNumber: "LOTE 01",
-        region: "",
-        plots: [
-          { plotId: "", producer: "", supplier: "", farm: "", hectares: 0 },
-        ],
-        isCollapsed: false,
-      },
-    ]);
-  };
-
-  const isContractCodeDuplicate =
-    !editingContractId && contractCode.trim()
-      ? contracts.some(
-          (c) =>
-            c.contractCode.trim().toUpperCase() ===
-            contractCode.trim().toUpperCase()
-        )
-      : false;
-
-  const handleSaveContract = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!contractCode.trim() || !clientName.trim()) {
-      alert("⚠️ Preencha o código do contrato e o nome do cliente.");
-      return;
-    }
-
-    if (isContractCodeDuplicate) {
-      alert(
-        `⚠️ Já existe um contrato cadastrado com o código "${contractCode
-          .trim()
-          .toUpperCase()}".\n\nPor favor, informe um código diferente.`
-      );
-      return;
-    }
-
-    for (let i = 0; i < lots.length; i++) {
-      const lot = lots[i];
-      if (!lot.plots || lot.plots.length === 0) {
-        alert(`⚠️ Adicione ao menos 1 talhão ao ${lot.lotNumber || `Lote ${i + 1}`}.`);
-        return;
-      }
-      for (let j = 0; j < lot.plots.length; j++) {
-        if (!lot.plots[j].plotId.trim()) {
-          alert(
-            `⚠️ Preencha o Código do Talhão ${j + 1} no ${
-              lot.lotNumber || `Lote ${i + 1}`
-            }.`
-          );
-          return;
-        }
-      }
-    }
-
-    setIsSaving(true);
-    try {
-      for (const lot of lots) {
-        for (const p of lot.plots) {
-          if (p.plotId.trim()) {
-            await fetch("/api/plot-lookup", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                plotId: p.plotId,
-                producer: p.producer,
-                supplier: p.supplier,
-                farm: p.farm,
-                region: lot.region,
-                hectares: p.hectares,
-              }),
-            });
-          }
-        }
-      }
-
-      const isEditing = Boolean(editingContractId);
-      const res = await fetch("/api/r2/copy-contract", {
-        method: isEditing ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: editingContractId || undefined,
-          contractCode: contractCode.trim().toUpperCase(),
-          clientName: clientName.trim(),
-          lots,
-          createdBy: loggedUserKey,
-        }),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        alert(
-          `✅ Contrato ${data.record.contractCode} ${
-            isEditing ? "atualizado" : "criado"
-          } com sucesso no Cloudflare R2!`
-        );
-        handleCancelEdit();
-        loadContractsAndPlots();
-      } else {
-        throw new Error(data.error || "Erro ao salvar contrato.");
-      }
-    } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Erro ao processar contrato.";
-      alert(`⚠️ ${msg}`);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDownloadGeoJson = async (key: string, filename: string) => {
-    setDownloadingKey(key);
-    try {
-      const res = await fetch(`/api/r2/download?key=${encodeURIComponent(key)}`);
-      if (!res.ok) throw new Error("Erro ao baixar arquivo do R2.");
-      const data = await res.json();
-      if (data.success && data.downloadUrl) {
-        const a = document.createElement("a");
-        a.href = data.downloadUrl;
-        a.download = filename;
-        a.target = "_blank";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }
-    } catch {
-      alert("⚠️ Não foi possível baixar o arquivo do servidor.");
-    } finally {
-      setDownloadingKey(null);
-    }
-  };
-
-  const handleDeleteContract = async (id: string, code: string) => {
-    if (
-      !confirm(
-        `Tem certeza que deseja excluir o Contrato ${code} do Cloudflare R2?`
-      )
-    ) {
-      return;
-    }
-    try {
-      const res = await fetch(`/api/r2/copy-contract?id=${encodeURIComponent(id)}`, {
-        method: "DELETE",
-      });
-      const data = await res.json();
-      if (data.success) {
-        loadContractsAndPlots();
-      } else {
-        alert(`⚠️ ${data.error || "Erro ao excluir contrato."}`);
-      }
-    } catch {
-      alert("⚠️ Erro ao excluir contrato.");
-    }
-  };
-
-  const filteredContracts = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return contracts;
-    return contracts.filter((c) => {
-      const matchClient = (c.clientName || "").toLowerCase().includes(q);
-      const matchCode = (c.contractCode || "").toLowerCase().includes(q);
-      const matchPlots = (c.lots || []).some((l) =>
-        (l.plots || []).some((p) =>
-          (p.plotId || "").toLowerCase().includes(q) ||
-          (p.producer || "").toLowerCase().includes(q) ||
-          (p.farm || "").toLowerCase().includes(q)
-        )
-      );
-      return matchClient || matchCode || matchPlots;
-    });
-  }, [contracts, searchQuery]);
-
-  const { isDark } = useTheme();
-
-  const handleNavClick = (e: React.MouseEvent, action?: () => void) => {
-    if (typeof window !== "undefined") {
-      const host = window.location.hostname.toLowerCase();
-      if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".workers.dev")) {
-        e.preventDefault();
-        action?.();
-      }
-    }
+  // Handler para salvar contrato
+  const handleSave = async () => {
+    const success = await saveContract(
+      contractCode,
+      clientName,
+      editingContractId,
+      contracts,
+      loadContractsAndPlots,
+      handleCancelEdit
+    );
+    return success;
   };
 
   return (
     <div
       style={{
+        maxWidth: "1680px",
+        margin: "0 auto",
+        padding: "24px",
         minHeight: "100vh",
         background: "var(--bg-canvas)",
-        color: "var(--text-primary)",
-        transition: "background 0.25s ease, color 0.25s ease",
+        color: "#e2e8f0",
+        fontFamily: "system-ui, -apple-system, sans-serif",
       }}
     >
-      {/* Apple-style Global Nav Header */}
+      {/* Header */}
       <header
         style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 100,
-          background: "var(--bg-header)",
-          backdropFilter: "saturate(180%) blur(20px)",
-          WebkitBackdropFilter: "saturate(180%) blur(20px)",
-          borderBottom: "0.5px solid var(--border-hairline)",
-          height: "50px",
           display: "flex",
-          alignItems: "center",
-          padding: "0 32px",
           justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "32px",
+          padding: "16px 0",
         }}
       >
-        <a
-          href="https://fafeu.online"
-          onClick={(e) => handleNavClick(e, onOpenLanding)}
-          style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none", cursor: "pointer" }}
-        >
-          <img
-            src="/faf-logo-transparent.png"
-            alt="FAF Coffees"
+        <div>
+          <h1
             style={{
-              height: "26px",
-              width: "auto",
-              objectFit: "contain",
-              display: "block",
-            }}
-          />
-          <span
-            style={{
-              fontSize: "13px",
-              fontWeight: 700,
-              color: "var(--text-primary)",
-              letterSpacing: "-0.01em",
+              margin: 0,
+              fontSize: "24px",
+              fontWeight: 800,
+              background: "linear-gradient(to right, #34d399, #5eead4)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
             }}
           >
-            Gestão de Contratos
-          </span>
-        </a>
-
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            Gestão de Contratos & Lotes
+          </h1>
+          <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#94a3b8" }}>
+            Cadastre contratos e organize talhões em lotes para exportação
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
           <ThemeToggle />
-
-          <span
+          <button
+            type="button"
+            onClick={onOpenLanding}
             style={{
-              color: "var(--text-secondary)",
-              fontSize: "12px",
+              padding: "8px 16px",
+              background: "rgba(59, 130, 246, 0.15)",
+              border: "1px solid rgba(59, 130, 246, 0.3)",
+              color: "#93c5fd",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "13px",
               fontWeight: 600,
             }}
           >
-            {loggedUserKey}
-          </span>
-
+            ← Início
+          </button>
           {onOpenDashboard && (
-            <a
-              href="https://dashboard.fafeu.online"
-              onClick={(e) => handleNavClick(e, onOpenDashboard)}
+            <button
+              type="button"
+              onClick={onOpenDashboard}
               style={{
-                background: "transparent",
-                border: "none",
-                color: "var(--text-secondary)",
-                fontSize: "12.5px",
-                fontWeight: 550,
-                textDecoration: "none",
+                padding: "8px 16px",
+                background: "rgba(139, 92, 246, 0.15)",
+                border: "1px solid rgba(139, 92, 246, 0.3)",
+                color: "#c4b5fd",
+                borderRadius: "8px",
                 cursor: "pointer",
-                transition: "color 0.15s ease",
+                fontSize: "13px",
+                fontWeight: 600,
               }}
             >
-              Dashboard
-            </a>
+              Dashboard →
+            </button>
           )}
-
-          <a
-            href="https://fafeu.online"
-            onClick={(e) => handleNavClick(e, onOpenLanding)}
-            title="Voltar para a página principal (fafeu.online)"
-            style={{
-              background: "var(--brand-crimson)",
-              border: "none",
-              color: "#ffffff",
-              padding: "6px 14px",
-              borderRadius: "999px",
-              fontSize: "12px",
-              fontWeight: 600,
-              textDecoration: "none",
-              cursor: "pointer",
-              boxShadow: "var(--shadow-button)",
-              transition: "all 0.15s ease",
-            }}
-          >
-            Início
-          </a>
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main
+      {/* Métricas */}
+      <div
         style={{
-          maxWidth: "1400px",
-          margin: "0 auto",
-          padding: "48px 32px 80px",
-          width: "100%",
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: "16px",
+          marginBottom: "32px",
         }}
       >
-        {/* Open Minimalist Header & Metrics */}
-        <div style={{ marginBottom: "40px" }}>
-          <span
-            style={{
-              fontSize: "12px",
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "var(--brand-crimson)",
-              display: "block",
-              marginBottom: "4px",
-            }}
-          >
-            Ledger Executivo
-          </span>
-          <h1
-            style={{
-              fontSize: "32px",
-              fontWeight: 800,
-              letterSpacing: "-0.03em",
-              color: "var(--text-primary)",
-              margin: "0 0 28px",
-            }}
-          >
-            Contratos e Importadores
-          </h1>
-
-          {/* Open Metrics Strip (Zero Boxes, Pure Typographic Numbers) */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "48px",
-              flexWrap: "wrap",
-              paddingBottom: "32px",
-              borderBottom: "1px solid var(--border-hairline)",
-            }}
-          >
-            <div>
-              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>
-                Contratos Ativos
-              </span>
-              <strong style={{ fontSize: "28px", fontWeight: 900, color: "var(--text-primary)", display: "block", marginTop: "2px" }}>
-                {contracts.length}
-              </strong>
-            </div>
-
-            <div>
-              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>
-                Lotes Mapeados
-              </span>
-              <strong style={{ fontSize: "28px", fontWeight: 900, color: "var(--brand-crimson)", display: "block", marginTop: "2px" }}>
-                {contracts.reduce((acc, c) => acc + (c.lots ? c.lots.length : 0), 0)}
-              </strong>
-            </div>
-
-            <div>
-              <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>
-                Talhões com Polígono WGS84
-              </span>
-              <strong style={{ fontSize: "28px", fontWeight: 900, color: "var(--status-success)", display: "block", marginTop: "2px" }}>
-                {contracts.reduce(
-                  (acc, c) =>
-                    acc +
-                    (c.lots
-                      ? c.lots.reduce(
-                          (lAcc, l) =>
-                            lAcc + (l.plots ? l.plots.filter((p) => p.plotId || p.targetGeojsonKey).length : 0),
-                          0
-                        )
-                      : 0),
-                  0
-                )}
-              </strong>
-            </div>
-          </div>
-        </div>
-
-        {/* 2 Columns: Left Form / Right Table */}
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "1.3fr 0.7fr",
-            gap: "24px",
-            alignItems: "start",
+            background: "rgba(15, 23, 42, 0.6)",
+            padding: "16px",
+            borderRadius: "12px",
+            textAlign: "center",
           }}
         >
-          {/* Coluna Esquerda: Formulário de Contrato */}
+          <p style={{ margin: "0 0 4px 0", fontSize: "12px", color: "#94a3b8" }}>
+            Contratos
+          </p>
+          <p style={{ margin: 0, fontSize: "24px", fontWeight: 700, color: "#34d399" }}>
+            {contracts.length}
+          </p>
+        </div>
+        <div
+          style={{
+            background: "rgba(15, 23, 42, 0.6)",
+            padding: "16px",
+            borderRadius: "12px",
+            textAlign: "center",
+          }}
+        >
+          <p style={{ margin: "0 0 4px 0", fontSize: "12px", color: "#94a3b8" }}>
+            Lotes
+          </p>
+          <p style={{ margin: 0, fontSize: "24px", fontWeight: 700, color: "#5eead4" }}>
+            {lots.length}
+          </p>
+        </div>
+        <div
+          style={{
+            background: "rgba(15, 23, 42, 0.6)",
+            padding: "16px",
+            borderRadius: "12px",
+            textAlign: "center",
+          }}
+        >
+          <p style={{ margin: "0 0 4px 0", fontSize: "12px", color: "#94a3b8" }}>
+            Talhões
+          </p>
+          <p style={{ margin: 0, fontSize: "24px", fontWeight: 700, color: "#818cf8" }}>
+            {totalPlotsCount}
+          </p>
+        </div>
+        <div
+          style={{
+            background: "rgba(15, 23, 42, 0.6)",
+            padding: "16px",
+            borderRadius: "12px",
+            textAlign: "center",
+          }}
+        >
+          <p style={{ margin: "0 0 4px 0", fontSize: "12px", color: "#94a3b8" }}>
+            Área Total
+          </p>
+          <p style={{ margin: 0, fontSize: "24px", fontWeight: 700, color: "#f87171" }}>
+            {grandTotalHectares.toFixed(2)} ha
+          </p>
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "2fr 1fr",
+          gap: "32px",
+        }}
+      >
+        {/* Coluna Esquerda: Formulário de Contrato */}
+        <div>
+          <ContractForm
+            lots={lots}
+            contractCode={contractCode}
+            clientName={clientName}
+            grandTotalHectares={grandTotalHectares}
+            totalPlotsCount={totalPlotsCount}
+            isSaving={isSaving}
+            editingContractId={editingContractId}
+            plotMasterList={plotMasterList}
+            contracts={contracts}
+            loggedUserKey={loggedUserKey}
+            lotsContainerRef={lotsContainerRef as React.RefObject<HTMLDivElement>}
+            onContractCodeChange={setContractCode}
+            onClientNameChange={setClientName}
+            onSave={handleSave}
+            onCancel={handleCancelEdit}
+            onAddLot={handleAddLot}
+            onToggleCollapseLot={handleToggleCollapseLot}
+            onRemoveLot={handleRemoveLot}
+            onLotChange={handleLotChange}
+            onAddPlotToLot={handleAddPlotToLot}
+            onRemovePlotFromLot={handleRemovePlotFromLot}
+            onPlotIdChange={handlePlotIdInputChange}
+            onSelectPlot={handleSelectPlotMaster}
+            onPlotFieldChange={handlePlotFieldChange}
+            onAddMultiplePlotsToLot={handleAddMultiplePlotsToLot}
+          />
+        </div>
+
+        {/* Coluna Direita: Contratos Salvos no R2 */}
+        <div>
           <div
             style={{
-              background: "rgba(11, 29, 23, 0.65)",
-              border: "1px solid rgba(52, 211, 153, 0.18)",
-              backdropFilter: "blur(12px)",
-              borderRadius: "18px",
-              padding: "26px",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.36)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "18px",
-                paddingBottom: "14px",
-                borderBottom: "1px solid rgba(52, 211, 153, 0.15)",
-              }}
-            >
-              <div>
-                <h2
-                  style={{
-                    fontSize: "18px",
-                    margin: 0,
-                    color: "#ffffff",
-                    fontWeight: 800,
-                  }}
-                >
-                  {editingContractId
-                    ? `✏️ Editando Contrato: ${contractCode}`
-                    : "📜 Cadastrar Novo Contrato"}
-                </h2>
-                <p
-                  style={{
-                    fontSize: "13px",
-                    color: "#94a3b8",
-                    margin: "3px 0 0",
-                  }}
-                >
-                  Selecione o cliente europeu, defina os lotes e monte os
-                  talhões para publicação automática no Cloudflare R2.
-                </p>
-              </div>
-
-              {editingContractId && (
-                <button
-                  type="button"
-                  onClick={handleCancelEdit}
-                  style={{
-                    background: "rgba(239, 68, 68, 0.15)",
-                    color: "#fca5a5",
-                    border: "1px solid rgba(239, 68, 68, 0.35)",
-                    padding: "6px 12px",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                  }}
-                >
-                  ✕ Cancelar Edição
-                </button>
-              )}
-            </div>
-
-            <form
-              onSubmit={handleSaveContract}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "20px",
-              }}
-            >
-              {/* Header Fields: Client Autocomplete + Contract Code */}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1.4fr 1fr",
-                  gap: "16px",
-                  alignItems: "start",
-                }}
-              >
-                <ClientSelectAutocomplete
-                  value={clientName}
-                  onChange={(name) => setClientName(name)}
-                  label="Cliente / Importador Europeu *"
-                  placeholder="Selecione um cliente europeu ou cadastre..."
-                  required={true}
-                  darkMode={true}
-                />
-
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      color: "#a7f3d0",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    Código do Contrato *
-                  </label>
-                  <input
-                    type="text"
-                    value={contractCode}
-                    onChange={(e) =>
-                      setContractCode(e.target.value.toUpperCase())
-                    }
-                    placeholder="Ex: 2026-C001"
-                    required
-                    style={{
-                      width: "100%",
-                      padding: "11px 14px",
-                      borderRadius: "10px",
-                      border: isContractCodeDuplicate
-                        ? "1.5px solid #ef4444"
-                        : "1px solid rgba(52, 211, 153, 0.3)",
-                      background: isContractCodeDuplicate
-                        ? "rgba(239, 68, 68, 0.15)"
-                        : "#081611",
-                      fontSize: "13.5px",
-                      fontWeight: 700,
-                      color: "#ffffff",
-                      outline: "none",
-                    }}
-                  />
-                  {isContractCodeDuplicate && (
-                    <span
-                      style={{
-                        fontSize: "11.5px",
-                        color: "#fca5a5",
-                        fontWeight: 700,
-                        marginTop: "4px",
-                        display: "block",
-                      }}
-                    >
-                      ⚠️ Contrato já existe! Use outro código.
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Lotes & Talhões Section */}
-              <div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "14px",
-                  }}
-                >
-                  <h3
-                    style={{
-                      fontSize: "15px",
-                      margin: 0,
-                      fontWeight: 800,
-                      color: "#ffffff",
-                    }}
-                  >
-                    📦 Lotes & Talhões ({lots.length})
-                  </h3>
-                </div>
-
-                <div
-                  ref={lotsContainerRef}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "16px",
-                    maxHeight: "680px",
-                    overflowY: "auto",
-                    paddingRight: "4px",
-                  }}
-                >
-                  {lots.map((lot, lotIdx) => {
-                    const lotTotalHectares = lot.plots.reduce(
-                      (sum, p) => sum + (Number(p.hectares) || 0),
-                      0
-                    );
-                    const isCollapsed = Boolean(lot.isCollapsed);
-
-                    return (
-                      <div
-                        key={lotIdx}
-                        style={{
-                          background: "rgba(16, 42, 32, 0.6)",
-                          border: isCollapsed
-                            ? "1px solid rgba(52, 211, 153, 0.15)"
-                            : "1.5px solid rgba(52, 211, 153, 0.45)",
-                          borderRadius: "14px",
-                          padding: "18px",
-                          boxShadow: isCollapsed
-                            ? "none"
-                            : "0 4px 16px rgba(0, 0, 0, 0.3)",
-                          transition: "all 0.15s ease",
-                        }}
-                      >
-                        {/* Lot Card Header */}
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "10px",
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontSize: "14px",
-                                fontWeight: 800,
-                                color: "#ffffff",
-                              }}
-                            >
-                              {lot.lotNumber || `LOTE ${lotIdx + 1}`}{" "}
-                              {lot.region ? `(${lot.region})` : ""}
-                            </span>
-                            <span
-                              style={{
-                                fontSize: "12px",
-                                background: "rgba(16, 185, 129, 0.18)",
-                                color: "#34d399",
-                                padding: "3px 10px",
-                                borderRadius: "20px",
-                                fontWeight: 800,
-                                border: "1px solid rgba(52, 211, 153, 0.3)",
-                              }}
-                            >
-                              📐 {lotTotalHectares.toFixed(2)} ha
-                            </span>
-                          </div>
-
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "8px",
-                            }}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => handleToggleCollapseLot(lotIdx)}
-                              style={{
-                                background: isCollapsed
-                                  ? "rgba(255, 255, 255, 0.08)"
-                                  : "rgba(52, 211, 153, 0.15)",
-                                color: isCollapsed ? "#cbd5e1" : "#34d399",
-                                border: "1px solid rgba(52, 211, 153, 0.25)",
-                                padding: "5px 12px",
-                                borderRadius: "8px",
-                                fontSize: "12px",
-                                fontWeight: 700,
-                                cursor: "pointer",
-                              }}
-                            >
-                              {isCollapsed
-                                ? "👁️ Ver / Editar Talhões"
-                                : "🔼 Recolher Lote"}
-                            </button>
-
-                            {lots.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveLot(lotIdx)}
-                                style={{
-                                  background: "rgba(239, 68, 68, 0.15)",
-                                  border: "1px solid rgba(239, 68, 68, 0.3)",
-                                  color: "#fca5a5",
-                                  padding: "5px 9px",
-                                  borderRadius: "8px",
-                                  fontSize: "12px",
-                                  fontWeight: 700,
-                                  cursor: "pointer",
-                                }}
-                              >
-                                🗑️
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Collapsed Preview */}
-                        {isCollapsed ? (
-                          <div
-                            style={{
-                              background: "#081611",
-                              padding: "10px 14px",
-                              borderRadius: "8px",
-                              border: "1px solid rgba(52, 211, 153, 0.15)",
-                              marginTop: "12px",
-                              fontSize: "12.5px",
-                              color: "#94a3b8",
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                            }}
-                          >
-                            <span>
-                              {lot.plots.length} talhão(ões):{" "}
-                              <strong style={{ color: "#ffffff" }}>
-                                {lot.plots
-                                  .map((p) => p.plotId || "Sem ID")
-                                  .join(", ")}
-                              </strong>
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleToggleCollapseLot(lotIdx)}
-                              style={{
-                                background:
-                                  "linear-gradient(135deg, #059669 0%, #10b981 100%)",
-                                color: "#ffffff",
-                                border: "none",
-                                padding: "4px 10px",
-                                borderRadius: "6px",
-                                fontSize: "11px",
-                                fontWeight: 700,
-                                cursor: "pointer",
-                              }}
-                            >
-                              Editar
-                            </button>
-                          </div>
-                        ) : (
-                          /* Expanded Full Lot Editor */
-                          <div style={{ marginTop: "14px" }}>
-                            {/* Lot Name and Region */}
-                            <div
-                              style={{
-                                display: "grid",
-                                gridTemplateColumns: "1fr 1fr",
-                                gap: "12px",
-                                marginBottom: "14px",
-                              }}
-                            >
-                              <div>
-                                <label
-                                  style={{
-                                    fontSize: "11.5px",
-                                    fontWeight: 700,
-                                    color: "#a7f3d0",
-                                    display: "block",
-                                    marginBottom: "4px",
-                                  }}
-                                >
-                                  Nome do Lote
-                                </label>
-                                <input
-                                  type="text"
-                                  value={lot.lotNumber}
-                                  onChange={(e) =>
-                                    handleLotChange(
-                                      lotIdx,
-                                      "lotNumber",
-                                      e.target.value
-                                    )
-                                  }
-                                  placeholder="Ex: LOTE 01"
-                                  style={{
-                                    width: "100%",
-                                    padding: "8px 10px",
-                                    borderRadius: "8px",
-                                    border: "1px solid rgba(52, 211, 153, 0.3)",
-                                    fontSize: "13px",
-                                    background: "#081611",
-                                    color: "#ffffff",
-                                    outline: "none",
-                                  }}
-                                />
-                              </div>
-
-                              <div>
-                                <label
-                                  style={{
-                                    fontSize: "11.5px",
-                                    fontWeight: 700,
-                                    color: "#a7f3d0",
-                                    display: "block",
-                                    marginBottom: "4px",
-                                  }}
-                                >
-                                  Região do Lote
-                                </label>
-                                <input
-                                  type="text"
-                                  value={lot.region}
-                                  onChange={(e) =>
-                                    handleLotChange(
-                                      lotIdx,
-                                      "region",
-                                      e.target.value
-                                    )
-                                  }
-                                  placeholder="Ex: MOGIANA, CERRADO, SUL DE MINAS"
-                                  style={{
-                                    width: "100%",
-                                    padding: "8px 10px",
-                                    borderRadius: "8px",
-                                    border: "1px solid rgba(52, 211, 153, 0.3)",
-                                    fontSize: "13px",
-                                    background: "#081611",
-                                    color: "#ffffff",
-                                    outline: "none",
-                                  }}
-                                />
-                              </div>
-                            </div>
-
-                            {/* Batch Add helper from Master Data */}
-                            <div
-                              style={{
-                                background: "rgba(16, 185, 129, 0.08)",
-                                border: "1px solid rgba(52, 211, 153, 0.25)",
-                                borderRadius: "10px",
-                                padding: "12px",
-                                marginBottom: "16px",
-                              }}
-                            >
-                              <div
-                                style={{
-                                  fontSize: "12px",
-                                  fontWeight: 800,
-                                  color: "#34d399",
-                                  marginBottom: "6px",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "6px",
-                                }}
-                              >
-                                ⚡{" "}
-                                <span>
-                                  Adicionar talhões em lote por
-                                  Produtor/Fazenda/Fornecedor
-                                </span>
-                              </div>
-                              <input
-                                type="text"
-                                value={lotSearchQueries[lotIdx] || ""}
-                                onChange={(e) =>
-                                  setLotSearchQueries((prev) => ({
-                                    ...prev,
-                                    [lotIdx]: e.target.value,
-                                  }))
-                                }
-                                placeholder="Digite nome da fazenda ou produtor para buscar talhões da base..."
-                                style={{
-                                  width: "100%",
-                                  padding: "8px 10px",
-                                  borderRadius: "6px",
-                                  border: "1px solid rgba(52, 211, 153, 0.3)",
-                                  fontSize: "12.5px",
-                                  background: "#081611",
-                                  color: "#ffffff",
-                                  outline: "none",
-                                }}
-                              />
-
-                              {lotSearchQueries[lotIdx]?.trim() && (
-                                <div style={{ marginTop: "10px" }}>
-                                  {(() => {
-                                    const q = lotSearchQueries[lotIdx]
-                                      .toLowerCase()
-                                      .trim();
-                                    const matches = plotMasterList.filter(
-                                      (p) =>
-                                        (p.farm || "")
-                                          .toLowerCase()
-                                          .includes(q) ||
-                                        (p.producer || "")
-                                          .toLowerCase()
-                                          .includes(q) ||
-                                        (p.supplier || "")
-                                          .toLowerCase()
-                                          .includes(q)
-                                    );
-
-                                    if (matches.length === 0) {
-                                      return (
-                                        <div
-                                          style={{
-                                            fontSize: "12px",
-                                            color: "#94a3b8",
-                                            padding: "4px",
-                                          }}
-                                        >
-                                          Nenhum talhão encontrado para &quot;{q}
-                                          &quot;.
-                                        </div>
-                                      );
-                                    }
-
-                                    return (
-                                      <div>
-                                        <div
-                                          style={{
-                                            display: "flex",
-                                            justifyContent: "space-between",
-                                            alignItems: "center",
-                                            marginBottom: "8px",
-                                          }}
-                                        >
-                                          <span
-                                            style={{
-                                              fontSize: "11.5px",
-                                              fontWeight: 700,
-                                              color: "#34d399",
-                                            }}
-                                          >
-                                            {matches.length} talhão(ões)
-                                            encontrado(s)
-                                          </span>
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              handleAddMultiplePlotsToLot(
-                                                lotIdx,
-                                                matches
-                                              )
-                                            }
-                                            style={{
-                                              background:
-                                                "linear-gradient(135deg, #059669 0%, #10b981 100%)",
-                                              color: "#ffffff",
-                                              border: "none",
-                                              padding: "4px 10px",
-                                              borderRadius: "6px",
-                                              fontSize: "11px",
-                                              fontWeight: 700,
-                                              cursor: "pointer",
-                                            }}
-                                          >
-                                            ➕ Inserir Todos ({matches.length})
-                                          </button>
-                                        </div>
-                                        <div
-                                          style={{
-                                            display: "flex",
-                                            flexWrap: "wrap",
-                                            gap: "6px",
-                                            maxHeight: "120px",
-                                            overflowY: "auto",
-                                          }}
-                                        >
-                                          {matches.slice(0, 15).map((m) => (
-                                            <button
-                                              key={m.plotId}
-                                              type="button"
-                                              onClick={() =>
-                                                handleAddMultiplePlotsToLot(
-                                                  lotIdx,
-                                                  [m]
-                                                )
-                                              }
-                                              style={{
-                                                background: "#081611",
-                                                border:
-                                                  "1px solid rgba(52, 211, 153, 0.3)",
-                                                color: "#f1f5f9",
-                                                padding: "4px 8px",
-                                                borderRadius: "6px",
-                                                fontSize: "11.5px",
-                                                cursor: "pointer",
-                                                textAlign: "left",
-                                              }}
-                                            >
-                                              <strong style={{ color: "#34d399" }}>
-                                                {m.plotId}
-                                              </strong>{" "}
-                                              ({m.hectares} ha) · {m.farm}
-                                            </button>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    );
-                                  })()}
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Plots List Inside Lot */}
-                            <div
-                              style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "10px",
-                              }}
-                            >
-                              {lot.plots.map((plot, plotIdx) => (
-                                <div
-                                  key={plotIdx}
-                                  style={{
-                                    background: "rgba(8, 22, 17, 0.85)",
-                                    padding: "12px 14px",
-                                    borderRadius: "10px",
-                                    border: "1px solid rgba(52, 211, 153, 0.2)",
-                                  }}
-                                >
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      justifyContent: "space-between",
-                                      alignItems: "center",
-                                      marginBottom: "8px",
-                                    }}
-                                  >
-                                    <span
-                                      style={{
-                                        fontSize: "12px",
-                                        fontWeight: 800,
-                                        color: "#34d399",
-                                      }}
-                                    >
-                                      Talhão #{plotIdx + 1}
-                                    </span>
-                                    {lot.plots.length > 1 && (
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          handleRemovePlotFromLot(
-                                            lotIdx,
-                                            plotIdx
-                                          )
-                                        }
-                                        style={{
-                                          background: "rgba(239, 68, 68, 0.15)",
-                                          border: "1px solid rgba(239, 68, 68, 0.3)",
-                                          color: "#fca5a5",
-                                          padding: "3px 8px",
-                                          borderRadius: "6px",
-                                          fontSize: "11px",
-                                          fontWeight: 700,
-                                          cursor: "pointer",
-                                        }}
-                                      >
-                                        ✕ Remover
-                                      </button>
-                                    )}
-                                  </div>
-
-                                  <div
-                                    style={{
-                                      display: "grid",
-                                      gridTemplateColumns:
-                                        "1.3fr 1.1fr 1.1fr 1.1fr 0.8fr",
-                                      gap: "10px",
-                                    }}
-                                  >
-                                    <div>
-                                      <label
-                                        style={{
-                                          fontSize: "11px",
-                                          fontWeight: 700,
-                                          color: "#a7f3d0",
-                                          display: "block",
-                                          marginBottom: "3px",
-                                        }}
-                                      >
-                                        PLOT ID *
-                                      </label>
-                                      <PlotAutocompleteInput
-                                        value={plot.plotId}
-                                        onChange={(newVal) =>
-                                          handlePlotIdInputChange(
-                                            lotIdx,
-                                            plotIdx,
-                                            newVal
-                                          )
-                                        }
-                                        onSelect={(selectedPlot) =>
-                                          handleSelectPlotMaster(
-                                            lotIdx,
-                                            plotIdx,
-                                            selectedPlot
-                                          )
-                                        }
-                                        plotMasterList={plotMasterList}
-                                        placeholder="Ex: NAS-02, P2401..."
-                                      />
-                                    </div>
-
-                                    <div>
-                                      <label
-                                        style={{
-                                          fontSize: "11px",
-                                          fontWeight: 700,
-                                          color: "#a7f3d0",
-                                          display: "block",
-                                          marginBottom: "3px",
-                                        }}
-                                      >
-                                        Produtor
-                                      </label>
-                                      <input
-                                        type="text"
-                                        value={plot.producer}
-                                        onChange={(e) =>
-                                          handlePlotFieldChange(
-                                            lotIdx,
-                                            plotIdx,
-                                            "producer",
-                                            e.target.value
-                                          )
-                                        }
-                                        placeholder="Nome do Produtor"
-                                        style={{
-                                          width: "100%",
-                                          padding: "8px 10px",
-                                          borderRadius: "8px",
-                                          border: "1px solid rgba(52, 211, 153, 0.3)",
-                                          fontSize: "12px",
-                                          background: "#081611",
-                                          color: "#ffffff",
-                                          outline: "none",
-                                        }}
-                                      />
-                                    </div>
-
-                                    <div>
-                                      <label
-                                        style={{
-                                          fontSize: "11px",
-                                          fontWeight: 700,
-                                          color: "#a7f3d0",
-                                          display: "block",
-                                          marginBottom: "3px",
-                                        }}
-                                      >
-                                        Fornecedor
-                                      </label>
-                                      <input
-                                        type="text"
-                                        value={plot.supplier}
-                                        onChange={(e) =>
-                                          handlePlotFieldChange(
-                                            lotIdx,
-                                            plotIdx,
-                                            "supplier",
-                                            e.target.value
-                                          )
-                                        }
-                                        placeholder="Nome do Fornecedor"
-                                        style={{
-                                          width: "100%",
-                                          padding: "8px 10px",
-                                          borderRadius: "8px",
-                                          border: "1px solid rgba(52, 211, 153, 0.3)",
-                                          fontSize: "12px",
-                                          background: "#081611",
-                                          color: "#ffffff",
-                                          outline: "none",
-                                        }}
-                                      />
-                                    </div>
-
-                                    <div>
-                                      <label
-                                        style={{
-                                          fontSize: "11px",
-                                          fontWeight: 700,
-                                          color: "#a7f3d0",
-                                          display: "block",
-                                          marginBottom: "3px",
-                                        }}
-                                      >
-                                        Fazenda
-                                      </label>
-                                      <input
-                                        type="text"
-                                        value={plot.farm}
-                                        onChange={(e) =>
-                                          handlePlotFieldChange(
-                                            lotIdx,
-                                            plotIdx,
-                                            "farm",
-                                            e.target.value
-                                          )
-                                        }
-                                        placeholder="Nome da Fazenda"
-                                        style={{
-                                          width: "100%",
-                                          padding: "8px 10px",
-                                          borderRadius: "8px",
-                                          border: "1px solid rgba(52, 211, 153, 0.3)",
-                                          fontSize: "12px",
-                                          background: "#081611",
-                                          color: "#ffffff",
-                                          outline: "none",
-                                        }}
-                                      />
-                                    </div>
-
-                                    <div>
-                                      <label
-                                        style={{
-                                          fontSize: "11px",
-                                          fontWeight: 700,
-                                          color: "#a7f3d0",
-                                          display: "block",
-                                          marginBottom: "3px",
-                                        }}
-                                      >
-                                        Área (ha)
-                                      </label>
-                                      <input
-                                        type="number"
-                                        step="0.01"
-                                        value={plot.hectares || ""}
-                                        onChange={(e) =>
-                                          handlePlotFieldChange(
-                                            lotIdx,
-                                            plotIdx,
-                                            "hectares",
-                                            e.target.value
-                                          )
-                                        }
-                                        placeholder="0.00"
-                                        style={{
-                                          width: "100%",
-                                          padding: "8px 10px",
-                                          borderRadius: "8px",
-                                          border: "1px solid rgba(52, 211, 153, 0.3)",
-                                          fontSize: "12px",
-                                          fontWeight: 700,
-                                          color: "#34d399",
-                                          background: "#081611",
-                                          outline: "none",
-                                        }}
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-
-                            {/* Add Plot to Current Lot */}
-                            <button
-                              type="button"
-                              onClick={() => handleAddPlotToLot(lotIdx)}
-                              style={{
-                                width: "100%",
-                                marginTop: "10px",
-                                background: "rgba(16, 185, 129, 0.08)",
-                                color: "#34d399",
-                                border: "1px dashed rgba(52, 211, 153, 0.4)",
-                                padding: "9px",
-                                borderRadius: "8px",
-                                fontSize: "12px",
-                                fontWeight: 700,
-                                cursor: "pointer",
-                                transition: "all 0.15s ease",
-                              }}
-                            >
-                              ➕ Adicionar mais um talhão neste lote (
-                              {lot.lotNumber || `LOTE ${lotIdx + 1}`})
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  {/* Add Another Lot Button */}
-                  <button
-                    type="button"
-                    onClick={handleAddLot}
-                    style={{
-                      width: "100%",
-                      padding: "13px",
-                      background: "rgba(16, 185, 129, 0.12)",
-                      color: "#34d399",
-                      border: "1.5px dashed rgba(52, 211, 153, 0.45)",
-                      borderRadius: "12px",
-                      fontSize: "13px",
-                      fontWeight: 800,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "6px",
-                      marginTop: "4px",
-                    }}
-                  >
-                    <span>➕</span> Adicionar Mais Um Lote ao Contrato
-                  </button>
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isSaving}
-                style={{
-                  width: "100%",
-                  padding: "14px",
-                  fontSize: "14px",
-                  fontWeight: 800,
-                  borderRadius: "12px",
-                  border: "none",
-                  background: editingContractId
-                    ? "linear-gradient(135deg, #d97706 0%, #b45309 100%)"
-                    : "linear-gradient(135deg, #059669 0%, #10b981 100%)",
-                  color: "#ffffff",
-                  cursor: "pointer",
-                  boxShadow: "0 4px 18px rgba(16, 185, 129, 0.3)",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                {isSaving
-                  ? "⏳ Processando e Publicando no R2..."
-                  : editingContractId
-                  ? `💾 Salvar Alterações do Contrato (${grandTotalHectares.toFixed(
-                      2
-                    )} ha) no R2`
-                  : `🚀 Criar Pacote do Contrato (${grandTotalHectares.toFixed(
-                      2
-                    )} ha) no R2`}
-              </button>
-            </form>
-          </div>
-
-          {/* Coluna Direita: Contratos Salvos no R2 */}
-          <div
-            style={{
-              background: "rgba(11, 29, 23, 0.65)",
-              border: "1px solid rgba(52, 211, 153, 0.18)",
-              backdropFilter: "blur(12px)",
-              borderRadius: "18px",
+              background: "rgba(15, 23, 42, 0.6)",
+              borderRadius: "16px",
               padding: "24px",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.36)",
             }}
           >
-            <div
+            <h2
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "14px",
+                margin: "0 0 16px 0",
+                fontSize: "18px",
+                fontWeight: 700,
+                color: "#e2e8f0",
               }}
             >
-              <h3
-                style={{
-                  fontSize: "16px",
-                  margin: 0,
-                  fontWeight: 800,
-                  color: "#ffffff",
-                }}
-              >
-                📁 Contratos no R2 ({contracts.length})
-              </h3>
-            </div>
-
-            {/* Search Filter */}
-            <div style={{ marginBottom: "14px", position: "relative" }}>
-              <span
-                style={{
-                  position: "absolute",
-                  left: "12px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  fontSize: "13px",
-                  color: "#94a3b8",
-                }}
-              >
-                🔍
-              </span>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar contrato ou cliente..."
-                style={{
-                  width: "100%",
-                  padding: "10px 12px 10px 34px",
-                  fontSize: "13px",
-                  borderRadius: "10px",
-                  border: "1px solid rgba(52, 211, 153, 0.3)",
-                  outline: "none",
-                  background: "#081611",
-                  color: "#ffffff",
-                }}
-              />
-            </div>
-
-            {/* Contracts Feed */}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-                maxHeight: "740px",
-                overflowY: "auto",
-              }}
-            >
-              {filteredContracts.length === 0 ? (
-                <div
-                  style={{
-                    padding: "36px 16px",
-                    textAlign: "center",
-                    color: "#94a3b8",
-                    fontSize: "13px",
-                  }}
-                >
-                  Nenhum contrato encontrado.
-                </div>
-              ) : (
-                filteredContracts.map((c) => {
-                  const contractPlotsCount = (c.lots || []).reduce(
-                    (sum, l) => sum + (l.plots || []).length,
-                    0
-                  );
-                  const contractTotalHectares = (c.lots || []).reduce(
-                    (sum, l) =>
-                      sum +
-                      (l.plots || []).reduce(
-                        (pSum, p) => pSum + (Number(p.hectares) || 0),
-                        0
-                      ),
-                    0
-                  );
-                  const firstPlotWithKey = (c.lots || [])
-                    .flatMap((l) => l.plots || [])
-                    .find((p) => p.targetGeojsonKey || p.sourceGeojsonKey);
-                  const contractGeojsonKey =
-                    firstPlotWithKey?.targetGeojsonKey ||
-                    firstPlotWithKey?.sourceGeojsonKey;
-
-                  return (
-                    <div
-                      key={c.id}
-                      style={{
-                        background: "rgba(16, 42, 32, 0.6)",
-                        border: "1px solid rgba(52, 211, 153, 0.2)",
-                        borderRadius: "12px",
-                        padding: "14px",
-                        transition: "all 0.15s ease",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "flex-start",
-                        }}
-                      >
-                        <div>
-                          <div
-                            style={{
-                              fontSize: "14px",
-                              fontWeight: 800,
-                              color: "#34d399",
-                            }}
-                          >
-                            📋 {c.contractCode}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: "12.5px",
-                              fontWeight: 700,
-                              color: "#f1f5f9",
-                              marginTop: "2px",
-                            }}
-                          >
-                            🏢 {c.clientName}
-                          </div>
-                        </div>
-
-                        <span
-                          style={{
-                            fontSize: "12px",
-                            background: "rgba(16, 185, 129, 0.18)",
-                            color: "#34d399",
-                            padding: "3px 8px",
-                            borderRadius: "6px",
-                            fontWeight: 800,
-                            border: "1px solid rgba(52, 211, 153, 0.3)",
-                          }}
-                        >
-                          {contractTotalHectares.toFixed(2)} ha
-                        </span>
-                      </div>
-
-                      <div
-                        style={{
-                          fontSize: "11.5px",
-                          color: "#94a3b8",
-                          marginTop: "8px",
-                        }}
-                      >
-                        {c.lots?.length || 0} lote(s) · {contractPlotsCount} talhão(ões)
-                      </div>
-
-                      {/* Action buttons */}
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "8px",
-                          marginTop: "10px",
-                          paddingTop: "10px",
-                          borderTop: "1px solid rgba(52, 211, 153, 0.12)",
-                        }}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => handleStartEditContract(c)}
-                          style={{
-                            flex: 1,
-                            padding: "6px 10px",
-                            borderRadius: "6px",
-                            border: "1px solid rgba(52, 211, 153, 0.3)",
-                            background: "rgba(255, 255, 255, 0.08)",
-                            color: "#ffffff",
-                            fontSize: "11.5px",
-                            fontWeight: 700,
-                            cursor: "pointer",
-                          }}
-                        >
-                          ✏️ Editar
-                        </button>
-
-                        {contractGeojsonKey && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleDownloadGeoJson(
-                                contractGeojsonKey,
-                                `${c.contractCode}.geojson`
-                              )
-                            }
-                            disabled={downloadingKey === contractGeojsonKey}
-                            style={{
-                              flex: 1.2,
-                              padding: "6px 10px",
-                              borderRadius: "6px",
-                              border: "none",
-                              background:
-                                "linear-gradient(135deg, #059669 0%, #10b981 100%)",
-                              color: "#ffffff",
-                              fontSize: "11.5px",
-                              fontWeight: 700,
-                              cursor: "pointer",
-                            }}
-                          >
-                            {downloadingKey === contractGeojsonKey
-                              ? "⏳ Baixando..."
-                              : "🌐 GeoJSON"}
-                          </button>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleDeleteContract(c.id, c.contractCode)
-                          }
-                          style={{
-                            padding: "6px 10px",
-                            borderRadius: "6px",
-                            border: "1px solid rgba(239, 68, 68, 0.3)",
-                            background: "rgba(239, 68, 68, 0.15)",
-                            color: "#fca5a5",
-                            fontSize: "11.5px",
-                            fontWeight: 700,
-                            cursor: "pointer",
-                          }}
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+              Contratos Salvos
+            </h2>
+            <ContractList
+              contracts={contracts}
+              onEdit={handleStartEdit}
+              onDelete={(id) => deleteContract(id, loadContractsAndPlots)}
+              onDownload={downloadGeoJson}
+              downloadingKey={downloadingKey}
+            />
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
