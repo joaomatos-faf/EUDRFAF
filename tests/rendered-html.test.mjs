@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 async function render() {
@@ -14,7 +16,13 @@ async function render() {
   );
 }
 
-test("renderiza a interface completa do Preparador EUDR", async () => {
+test("renderiza a interface completa do Preparador EUDR", async (t) => {
+  const workerFile = fileURLToPath(new URL("../dist/server/index.js", import.meta.url));
+  if (!existsSync(workerFile)) {
+    t.skip("dist/server/index.js não encontrado. Execute 'npm run build' antes de testar a renderização do bundle compilado.");
+    return;
+  }
+
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);

@@ -26,11 +26,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run automated test suite
-        run: pnpm test
+      - name: Typecheck
+        run: pnpm run typecheck
 
       - name: Build application bundle
         run: pnpm run build
+
+      - name: Run automated test suite
+        run: pnpm test
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3

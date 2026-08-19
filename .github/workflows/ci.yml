@@ -39,10 +39,10 @@ jobs:
       - name: Checagem estática de tipos (TypeScript)
         run: pnpm run typecheck
 
-      - name: Execução dos testes automatizados (Node Test Runner)
-        run: pnpm test
-
       - name: Build de produção (Vinext / Next.js)
         run: pnpm run build
         env:
           NODE_ENV: production
+
+      - name: Execução dos testes automatizados (Node Test Runner)
+        run: pnpm test
