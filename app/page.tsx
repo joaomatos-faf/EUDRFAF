@@ -33,89 +33,8 @@ import {
   getTwoLetterInitials,
   incrementPlotIdNumber,
 } from "./lib/eudr";
-
-type FormState = {
-  plotId: string;
-  farm: string;
-  producer: string;
-  supplier: string;
-  region: string;
-  municipality: string;
-  state: string;
-  mappedAt: string;
-  checkedAt: string;
-  compliance: string;
-  notes: string;
-  mappedBy: string;
-  car: string;
-};
-
-type Municipality = {
-  id: number;
-  name: string;
-  stateCode: string;
-  stateName: string;
-  region: string;
-};
-
-type IbgeMunicipality = {
-  "municipio-id"?: number;
-  "municipio-nome"?: string;
-  "UF-sigla"?: string;
-  "UF-nome"?: string;
-  "regiao-nome"?: string;
-};
-
-type MapbiomasCheck = {
-  status: "idle" | "loading" | "clear" | "attention" | "error";
-  areaHa: number;
-  checkedAt: string;
-  message: string;
-  verificationUrl: string;
-  changes: Array<{
-    fromYear: number;
-    toYear: number;
-    pixelValue: number;
-    className: string;
-    fromHa: number;
-    toHa: number;
-  }>;
-};
-
-const emptyMapbiomasCheck: MapbiomasCheck = {
-  status: "idle",
-  areaHa: 0,
-  checkedAt: "",
-  message: "",
-  verificationUrl: "",
-  changes: [],
-};
-
-const today = new Date().toISOString().slice(0, 10);
-const shapefileDetailFields = new Set<keyof FormState>([
-  "plotId", "farm", "producer", "supplier", "region", "municipality", "state",
-  "mappedAt", "mappedBy", "car",
-]);
-
-const initialForm: FormState = {
-  plotId: "",
-  farm: "",
-  producer: "",
-  supplier: "",
-  region: "",
-  municipality: "",
-  state: "",
-  mappedAt: today,
-  checkedAt: today,
-  compliance: "",
-  notes: "",
-  mappedBy: "",
-  car: "",
-};
-
-function normalizedText(value: string) {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
-}
+import type { FormState, MapbiomasCheck, Municipality, IbgeMunicipality } from "./lib/constants";
+import { initialForm, emptyMapbiomasCheck, shapefileDetailFields, normalizedText } from "./lib/constants";
 
 const MapPreviewComponent = dynamic(() => import("./MapPreviewComponent"), { 
   ssr: false, 
@@ -125,36 +44,6 @@ const MapPreviewComponent = dynamic(() => import("./MapPreviewComponent"), {
 function MapPreview({ geometry }: { geometry: GeometryData }) {
   return <MapPreviewComponent geometry={geometry} />;
 }
-
-// Função para criptografar a senha usando o algoritmo SHA-256 do navegador
-async function hashPassword(password: string): Promise<string> {
-  const msgUint8 = new TextEncoder().encode("FAF_EUDR_SALT_2026_" + password);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-const checkPasswordMatch = async (inputPass: string, storedValue: string): Promise<boolean> => {
-  const inputHash = await hashPassword(inputPass);
-  if (storedValue.length === 64 && /^[0-9a-f]+$/i.test(storedValue)) {
-    return inputHash === storedValue;
-  }
-  return inputPass === storedValue;
-};
-
-interface UserProfile {
-  pass: string;
-  fullName: string;
-  role: "admin" | "user";
-}
-
-// Dicionário de Usuários Padrão com Permissões (ADM vs Usuário)
-const DEFAULT_USERS_DATA: Record<string, UserProfile> = {
-  faf: { pass: "eudr2026", fullName: "FAF Coffees", role: "admin" },
-  admin: { pass: "faf2026", fullName: "Administrador FAF", role: "admin" },
-  joao: { pass: "faf1234", fullName: "João Silva", role: "user" },
-  joaomatos: { pass: "123", fullName: "João Matos", role: "admin" },
-};
 
 export default function Home() {
   const [form, setForm] = useState<FormState>(initialForm);

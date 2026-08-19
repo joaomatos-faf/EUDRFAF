@@ -8,6 +8,13 @@ export interface UserProfile {
 /**
  * Default initial seed users - Stored strictly with PBKDF2-HMAC-SHA512 (100.000 iterações + Salt)
  * Zero plaintext credentials in source code.
+ * 
+ * Senhas padrão (apenas para primeiro acesso - devem ser alteradas):
+ * - faf: eudr2026
+ * - admin: faf2026
+ * - joao: faf1234
+ * - joaomatos: 123
+ * - cliente: cliente123
  */
 export const DEFAULT_USERS_DATA: Record<string, UserProfile> = {
   faf: {
