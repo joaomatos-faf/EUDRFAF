@@ -2,7 +2,7 @@ import React from "react";
 import { ThemeToggle } from "./ThemeToggle";
 import { LanguageToggle } from "./ui/LanguageToggle";
 import { useTheme } from "@/app/hooks/useTheme";
-import { useTranslation } from "@/app/hooks/useTranslation";
+import { useTranslation, getSubdomainUrl } from "@/app/hooks/useTranslation";
 
 interface EudrHeaderProps {
   isAuthenticated: boolean;
@@ -36,7 +36,7 @@ export function EudrHeader({
   onOpenCloudExplorer,
 }: EudrHeaderProps) {
   const { isDark } = useTheme();
-  const { t } = useTranslation();
+  const { locale, t } = useTranslation();
 
   const handleNavClick = (e: React.MouseEvent, action?: () => void) => {
     if (typeof window !== "undefined") {
@@ -54,7 +54,7 @@ export function EudrHeader({
     <header className="topbar">
       <a
         className="brand-lockup"
-        href="https://fafeu.online"
+        href={getSubdomainUrl("https://fafeu.online", locale)}
         onClick={(e) => handleNavClick(e, onOpenLanding)}
         style={{ cursor: "pointer", textDecoration: "none" }}
         title={t("nav.home")}
@@ -86,7 +86,7 @@ export function EudrHeader({
 
         {onOpenLanding && (
           <a
-            href="https://fafeu.online"
+            href={getSubdomainUrl("https://fafeu.online", locale)}
             onClick={(e) => handleNavClick(e, onOpenLanding)}
             style={{
               color: "var(--text-secondary)",
@@ -107,7 +107,7 @@ export function EudrHeader({
           <>
             {onOpenPreparer && activeView !== "app" && (
               <a
-                href="https://app.fafeu.online"
+                href={getSubdomainUrl("https://app.fafeu.online", locale)}
                 onClick={(e) => handleNavClick(e, onOpenPreparer)}
                 style={{
                   color: "var(--text-secondary)",
@@ -126,7 +126,7 @@ export function EudrHeader({
 
             {onOpenDashboard && activeView !== "dashboard" && (
               <a
-                href="https://dashboard.fafeu.online"
+                href={getSubdomainUrl("https://dashboard.fafeu.online", locale)}
                 onClick={(e) => handleNavClick(e, onOpenDashboard)}
                 style={{
                   color: "var(--text-secondary)",
@@ -145,7 +145,7 @@ export function EudrHeader({
 
             {onOpenContracts && activeView !== "contratos" && (
               <a
-                href="https://contratos.fafeu.online"
+                href={getSubdomainUrl("https://contratos.fafeu.online", locale)}
                 onClick={(e) => handleNavClick(e, onOpenContracts)}
                 style={{
                   color: "var(--text-secondary)",
@@ -164,7 +164,7 @@ export function EudrHeader({
 
             {onOpenCloudExplorer && (
               <a
-                href="https://cloud.fafeu.online"
+                href={getSubdomainUrl("https://cloud.fafeu.online", locale)}
                 onClick={(e) => handleNavClick(e, onOpenCloudExplorer)}
                 style={{
                   color: "var(--text-secondary)",
