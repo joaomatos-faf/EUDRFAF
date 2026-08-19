@@ -7,7 +7,9 @@ import { useContractEditing } from "./contract-manager/useContractEditing";
 import { useContractLots } from "./contract-manager/useContractHooks";
 import { useContractSave } from "./contract-manager/useContractSave";
 import { ThemeToggle } from "./ThemeToggle";
+import { LanguageToggle } from "./ui/LanguageToggle";
 import { useTheme } from "@/app/hooks/useTheme";
+import { useTranslation } from "@/app/hooks/useTranslation";
 
 interface ContractManagerViewProps {
   onOpenLanding: () => void;
@@ -20,6 +22,7 @@ export function ContractManagerView({
   onOpenDashboard,
   loggedUserKey = "usuario",
 }: ContractManagerViewProps) {
+  const { locale, t } = useTranslation();
   // Hooks para gerenciamento de dados
   const { contracts, setContracts, plotMasterList, loadContractsAndPlots } = useContractData();
   
@@ -130,13 +133,16 @@ export function ContractManagerView({
               WebkitTextFillColor: "transparent",
             }}
           >
-            Gestão de Contratos & Lotes
+            {locale === "en" ? "EUDR Contracts & Lot Management" : "Gestão de Contratos & Lotes"}
           </h1>
           <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#94a3b8" }}>
-            Cadastre contratos e organize talhões em lotes para exportação
+            {locale === "en"
+              ? "Register export contracts and organize farm plots into certified lots"
+              : "Cadastre contratos e organize talhões em lotes para exportação"}
           </p>
         </div>
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          <LanguageToggle />
           <ThemeToggle />
           <button
             type="button"
@@ -152,7 +158,7 @@ export function ContractManagerView({
               fontWeight: 600,
             }}
           >
-            ← Início
+            {locale === "en" ? "← Home" : "← Início"}
           </button>
           {onOpenDashboard && (
             <button

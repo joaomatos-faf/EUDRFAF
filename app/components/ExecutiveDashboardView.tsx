@@ -4,7 +4,9 @@ import React, { useState, useEffect, useMemo } from "react";
 import type { PlotMasterRecord } from "@/app/lib/plotMasterData";
 import { getContracts, ContractRecord } from "@/app/lib/contractStore";
 import { ThemeToggle } from "./ThemeToggle";
+import { LanguageToggle } from "./ui/LanguageToggle";
 import { useTheme } from "@/app/hooks/useTheme";
+import { useTranslation } from "@/app/hooks/useTranslation";
 
 interface ExecutiveDashboardProps {
   onNavigateToContracts?: () => void;
@@ -22,6 +24,7 @@ export default function ExecutiveDashboardView({
   userName = "FAF Coffees",
 }: ExecutiveDashboardProps) {
   const { isDark } = useTheme();
+  const { locale, t } = useTranslation();
   const [selectedRegionFilter, setSelectedRegionFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [masterPlots, setMasterPlots] = useState<PlotMasterRecord[]>([]);
@@ -210,7 +213,7 @@ export default function ExecutiveDashboardView({
               marginBottom: "4px",
             }}
           >
-            Analytics & Conformidade EUDR
+            {locale === "en" ? "EUDR Compliance & Analytics" : "Analytics & Conformidade EUDR"}
           </span>
           <h1
             style={{
@@ -221,11 +224,12 @@ export default function ExecutiveDashboardView({
               color: "var(--text-primary)",
             }}
           >
-            Dashboard Executivo
+            {t("dash.title")}
           </h1>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <LanguageToggle />
           <ThemeToggle />
 
           <button
@@ -243,7 +247,7 @@ export default function ExecutiveDashboardView({
               transition: "all 0.15s ease",
             }}
           >
-            Exportar CSV
+            {locale === "en" ? "Export CSV" : "Exportar CSV"}
           </button>
         </div>
       </div>

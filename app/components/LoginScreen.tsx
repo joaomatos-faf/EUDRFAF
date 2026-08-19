@@ -2,7 +2,9 @@
 
 import React from "react";
 import { ThemeToggle } from "./ThemeToggle";
+import { LanguageToggle } from "./ui/LanguageToggle";
 import { useTheme } from "@/app/hooks/useTheme";
+import { useTranslation, getSubdomainUrl } from "@/app/hooks/useTranslation";
 
 interface LoginScreenProps {
   loginUsername: string;
@@ -31,17 +33,28 @@ export function LoginScreen({
   loginError,
   onLogin,
   onBackToLanding,
-  title = "Iniciar Sessão",
-  eyebrow = "FAF Coffees · Sustentabilidade",
-  subtitle = "Informe suas credenciais para acessar a plataforma geoespacial EUDR.",
-  buttonText = "Continuar ›",
-  userLabel = "Usuário",
-  passLabel = "Senha",
-  userPlaceholder = "ex: joao",
-  passPlaceholder = "••••••••",
-  backText = "‹ Voltar ao Início",
+  title,
+  eyebrow,
+  subtitle,
+  buttonText,
+  userLabel,
+  passLabel,
+  userPlaceholder,
+  passPlaceholder,
+  backText,
 }: LoginScreenProps) {
   const { isDark } = useTheme();
+  const { locale, t } = useTranslation();
+
+  const activeTitle = title || t("auth.login");
+  const activeEyebrow = eyebrow || t("auth.eyebrow");
+  const activeSubtitle = subtitle || t("auth.subtitle");
+  const activeButtonText = buttonText || t("auth.continue");
+  const activeUserLabel = userLabel || t("auth.username");
+  const activePassLabel = passLabel || t("auth.password");
+  const activeUserPlaceholder = userPlaceholder || t("auth.placeholderUser");
+  const activePassPlaceholder = passPlaceholder || t("auth.placeholderPass");
+  const activeBackText = backText || t("auth.back");
 
   const handleBack = (e: React.MouseEvent) => {
     if (typeof window !== "undefined") {
@@ -64,7 +77,8 @@ export function LoginScreen({
         position: "relative",
       }}
     >
-      <div style={{ position: "absolute", top: "20px", right: "24px" }}>
+      <div style={{ position: "absolute", top: "20px", right: "24px", display: "flex", alignItems: "center", gap: "10px" }}>
+        <LanguageToggle />
         <ThemeToggle />
       </div>
 
@@ -81,7 +95,7 @@ export function LoginScreen({
       >
         {onBackToLanding && (
           <a
-            href="https://fafeu.online"
+            href={getSubdomainUrl("https://fafeu.online", locale)}
             onClick={handleBack}
             style={{
               color: "var(--brand-crimson)",
@@ -95,7 +109,7 @@ export function LoginScreen({
               cursor: "pointer",
             }}
           >
-            {backText}
+            {activeBackText}
           </a>
         )}
 
@@ -120,7 +134,7 @@ export function LoginScreen({
               margin: "0 0 6px",
             }}
           >
-            {title}
+            {activeTitle}
           </h1>
           <p
             style={{
@@ -130,7 +144,7 @@ export function LoginScreen({
               lineHeight: 1.45,
             }}
           >
-            {subtitle}
+            {activeSubtitle}
           </p>
         </div>
 
@@ -145,12 +159,12 @@ export function LoginScreen({
               color: "var(--text-primary)",
             }}
           >
-            {userLabel}
+            {activeUserLabel}
             <input
               type="text"
               value={loginUsername}
               onChange={(e) => setLoginUsername(e.target.value)}
-              placeholder={userPlaceholder}
+              placeholder={activeUserPlaceholder}
               autoFocus
               required
               style={{
@@ -158,9 +172,10 @@ export function LoginScreen({
                 borderRadius: "10px",
                 border: "0.5px solid var(--border-strong)",
                 outline: "none",
-                fontSize: "14px",
-                background: "var(--bg-surface)",
+                fontSize: "13px",
+                background: "var(--bg-card)",
                 color: "var(--text-primary)",
+                fontFamily: "inherit",
               }}
             />
           </label>
@@ -175,21 +190,22 @@ export function LoginScreen({
               color: "var(--text-primary)",
             }}
           >
-            {passLabel}
+            {activePassLabel}
             <input
               type="password"
               value={loginPassword}
               onChange={(e) => setLoginPassword(e.target.value)}
-              placeholder={passPlaceholder}
+              placeholder={activePassPlaceholder}
               required
               style={{
                 padding: "11px 14px",
                 borderRadius: "10px",
                 border: "0.5px solid var(--border-strong)",
                 outline: "none",
-                fontSize: "14px",
-                background: "var(--bg-surface)",
+                fontSize: "13px",
+                background: "var(--bg-card)",
                 color: "var(--text-primary)",
+                fontFamily: "inherit",
               }}
             />
           </label>
@@ -197,13 +213,13 @@ export function LoginScreen({
           {loginError && (
             <div
               style={{
-                color: "var(--status-danger)",
                 background: "var(--status-danger-bg)",
+                border: "0.5px solid var(--status-danger-border)",
+                color: "var(--status-danger)",
                 padding: "10px 14px",
-                borderRadius: "8px",
-                fontSize: "12.5px",
-                fontWeight: 600,
-                textAlign: "center",
+                borderRadius: "10px",
+                fontSize: "12px",
+                lineHeight: 1.4,
               }}
             >
               {loginError}
@@ -213,23 +229,28 @@ export function LoginScreen({
           <button
             type="submit"
             style={{
-              width: "100%",
-              padding: "12px",
-              marginTop: "8px",
-              fontSize: "14px",
-              fontWeight: 600,
-              borderRadius: "999px",
               background: "var(--brand-crimson)",
               color: "#ffffff",
               border: "none",
+              borderRadius: "999px",
+              padding: "12px",
+              fontSize: "13px",
+              fontWeight: 600,
               cursor: "pointer",
+              marginTop: "8px",
               boxShadow: "var(--shadow-button)",
-              transition: "all 0.15s ease",
+              fontFamily: "inherit",
             }}
           >
-            {buttonText}
+            {activeButtonText}
           </button>
         </form>
+
+        <div style={{ textAlign: "center", marginTop: "24px" }}>
+          <span style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>
+            {activeEyebrow}
+          </span>
+        </div>
       </div>
     </main>
   );
