@@ -3,13 +3,7 @@
 import React from "react";
 import { UserForm } from "./admin/UserForm";
 import { UserTable } from "./admin/UserTable";
-
-interface UserProfile {
-  pass: string;
-  fullName: string;
-  role: "admin" | "user" | "client";
-  clientName?: string;
-}
+import type { UserProfile } from "../lib/types";
 
 interface AdminUserModalProps {
   showAdminModal: boolean;

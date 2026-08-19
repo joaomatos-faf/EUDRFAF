@@ -2,13 +2,7 @@
 
 import React from "react";
 import { ClientSelectAutocomplete } from "../ClientSelectAutocomplete";
-
-interface UserProfile {
-  pass: string;
-  fullName: string;
-  role: "admin" | "user" | "client";
-  clientName?: string;
-}
+import type { UserProfile } from "../../lib/types";
 
 interface UserEditRowProps {
   userKey: string;

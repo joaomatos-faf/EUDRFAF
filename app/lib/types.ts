@@ -1,4 +1,24 @@
-/** Tipos compartilhados do Preparador EUDR */
+export interface UserProfile {
+  pass?: string;
+  fullName: string;
+  role: "admin" | "user" | "client";
+  clientName?: string;
+}
+
+export interface MapbiomasCheckResponse {
+  status: "conforme" | "alerta" | "erro";
+  hasDeforestationPost2020: boolean;
+  alertCount: number;
+  message: string;
+  alerts?: Array<{
+    id: string;
+    year: number;
+    areaHa: number;
+    biome?: string;
+  }>;
+  geometryHash?: string;
+  fromCache?: boolean;
+}
 
 export type FormState = {
   plotId: string;

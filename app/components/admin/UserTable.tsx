@@ -2,13 +2,7 @@
 
 import React from "react";
 import { UserEditRow } from "./UserEditRow";
-
-interface UserProfile {
-  pass: string;
-  fullName: string;
-  role: "admin" | "user" | "client";
-  clientName?: string;
-}
+import type { UserProfile } from "../../lib/types";
 
 interface UserTableProps {
   loggedUserRole: "admin" | "user" | "client";

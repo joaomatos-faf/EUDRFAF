@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { GeometryData, MapbiomasCheckResponse } from "@/app/lib/eudr";
+import { GeometryData } from "@/app/lib/eudr";
+import { MapbiomasCheckResponse } from "@/app/lib/types";
 
 interface AuditActionsBarProps {
   geometry: GeometryData | null;
@@ -141,7 +142,7 @@ export function AuditActionsBar({
                 : "✓ ÁREA CONFORME: SEM DESMATAMENTO PÓS-31/12/2020"}
             </span>
             <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-muted)" }}>
-              {mapbiomasCheck.source || "MapBiomas"}
+              {(mapbiomasCheck as any).source || "MapBiomas Alertas"}
             </span>
           </div>
 

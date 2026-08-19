@@ -1,8 +1,6 @@
-"use client";
-
-import { ChangeEvent, DragEvent } from "react";
+import { ChangeEvent, DragEvent, useMemo } from "react";
 import dynamic from "next/dynamic";
-import type { GeometryData } from "../lib/eudr";
+import { type GeometryData, validatePolygonTopology } from "../lib/eudr";
 
 const MapPreviewComponent = dynamic(() => import("../MapPreviewComponent"), {
   ssr: false,
@@ -36,13 +34,17 @@ export function GeometryImporter({
   onDragLeave,
   onDrop,
 }: Props) {
+  const topology = useMemo(() => {
+    return geometry ? validatePolygonTopology(geometry) : null;
+  }, [geometry]);
+
   return (
     <article className="card">
       <div className="card-title">
         <span>02</span>
         <div>
           <h3>Geometria da área</h3>
-          <p>A área em hectares é calculada automaticamente.</p>
+          <p>A área em hectares e a consistência topológica são calculadas automaticamente.</p>
         </div>
       </div>
 
@@ -55,12 +57,16 @@ export function GeometryImporter({
           border: isDragging
             ? "2px dashed #0284c7"
             : geometry
-            ? "2px solid #166534"
+            ? topology?.valid
+              ? "2px solid #166534"
+              : "2px solid #dc2626"
             : "2px dashed var(--line-strong)",
           background: isDragging
             ? "#e0f2fe"
             : geometry
-            ? "#f0fdf4"
+            ? topology?.valid
+              ? "#f0fdf4"
+              : "#fef2f2"
             : "var(--canvas)",
           padding: "26px 20px",
           borderRadius: "14px",
@@ -89,7 +95,7 @@ export function GeometryImporter({
             transition: "transform 0.2s",
           }}
         >
-          {isDragging ? "📥" : geometry ? "✅" : "↥"}
+          {isDragging ? "📥" : geometry ? (topology?.valid ? "✅" : "⚠️") : "↥"}
         </span>
         <strong
           style={{
@@ -112,12 +118,35 @@ export function GeometryImporter({
           {isDragging
             ? "Suporta arquivos .kml, .geojson e .json"
             : geometry
-            ? "Arquivo validado. Arraste outro arquivo ou clique para substituir."
-            : "Formatos aceitos: .kml, .geojson ou .json"}
+            ? "Arquivo carregado. Clique ou arraste outro para substituir."
+            : "Formatos aceitos: .kml, .geojson ou .json (WGS84 ou UTM SIRGAS 2000)"}
         </small>
       </label>
 
       {error && <p className="error-box">{error}</p>}
+
+      {/* Alertas de Topologia */}
+      {topology && !topology.valid && (
+        <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "10px", padding: "12px 16px", marginTop: "12px" }}>
+          <strong style={{ color: "#991b1b", fontSize: "13px", display: "block", marginBottom: "4px" }}>⚠️ Problemas Topológicos Detectados:</strong>
+          <ul style={{ margin: 0, paddingLeft: "18px", fontSize: "12px", color: "#b91c1c" }}>
+            {topology.errors.map((err, i) => (
+              <li key={i}>{err}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {topology && topology.warnings.length > 0 && (
+        <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "10px", padding: "12px 16px", marginTop: "12px" }}>
+          <strong style={{ color: "#92400e", fontSize: "13px", display: "block", marginBottom: "4px" }}>ℹ️ Avisos de Conformidade da Geometria:</strong>
+          <ul style={{ margin: 0, paddingLeft: "18px", fontSize: "12px", color: "#b45309" }}>
+            {topology.warnings.map((warn, i) => (
+              <li key={i}>{warn}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {geometry && (
         <div className="geometry-result">
@@ -134,14 +163,18 @@ export function GeometryImporter({
               </strong>
             </div>
             <div>
-              <span>Polígonos</span>
-              <strong>{geometry.polygons.length}</strong>
+              <span>Polígonos / Furos</span>
+              <strong>
+                {geometry.polygons.length} pol. ({topology?.stats.totalVertices || 0} vértices)
+              </strong>
             </div>
             <div>
-              <span>Sistema</span>
-              <strong>WGS 84</strong>
+              <span>Sistema de Coordenadas</span>
+              <strong>WGS 84 (EPSG:4326)</strong>
             </div>
-            <p>✓ Geometria fechada e pronta para exportação.</p>
+            <p style={{ color: topology?.valid ? "#166534" : "#991b1b" }}>
+              {topology?.valid ? "✓ Geometria fechada e validada para submissão EUDR." : "⚠️ Ajuste os erros topológicos antes de submeter."}
+            </p>
             {centerCoord && (
               <a
                 className="text-link"

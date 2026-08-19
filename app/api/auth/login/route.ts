@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Usuário ou senha incorretos." }, { status: 401, headers: corsHeaders });
     }
 
-    const storedPass = typeof profile === "string" ? profile : profile.pass;
+    const storedPass = typeof profile === "string" ? profile : (profile.pass || "");
     const isMatch = await checkPasswordMatch(password, storedPass);
 
     if (!isMatch) {

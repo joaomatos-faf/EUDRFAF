@@ -10,11 +10,16 @@ export interface AuditLogEntry {
     | "USER_UPDATED"
     | "PASSWORD_CHANGED"
     | "FILE_UPLOADED"
+    | "GEOMETRY_LOADED"
     | "MAPBIOMAS_CHECKED"
     | "GFW_CHECKED"
     | "PACKAGE_EXPORTED"
-    | "PROCESS_RESET";
-  category: "ACESSO" | "USUARIOS" | "GEOMETRIA" | "MAPBIOMAS" | "GFW" | "EXPORTACAO";
+    | "GEOJSON_EXPORTED"
+    | "SHAREPOINT_COPIED"
+    | "R2_PUBLISHED"
+    | "PROCESS_RESET"
+    | "AUDITORIA";
+  category: "ACESSO" | "USUARIOS" | "GEOMETRIA" | "MAPBIOMAS" | "GFW" | "EXPORTACAO" | "AUDITORIA";
   details: string;
   plotId?: string;
   meta?: Record<string, unknown>;
