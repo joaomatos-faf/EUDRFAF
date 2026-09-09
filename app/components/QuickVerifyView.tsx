@@ -192,11 +192,11 @@ export function QuickVerifyView({
     if (file) handleFileProcess(file);
   };
 
-  const handleCopyCoords = (platformName?: string) => {
+  const handleCopyCoords = (platformName?: string | React.MouseEvent) => {
     if (!centerCoord) return;
     const text = `${centerCoord.lat.toFixed(6)}, ${centerCoord.lng.toFixed(6)}`;
     navigator.clipboard.writeText(text);
-    if (platformName) {
+    if (typeof platformName === "string") {
       setCopiedPlatformName(platformName);
       setTimeout(() => setCopiedPlatformName(null), 2000);
     } else {
@@ -649,7 +649,7 @@ export function QuickVerifyView({
                   </span>
                   {centerCoord && (
                     <button
-                      onClick={handleCopyCoords}
+                      onClick={() => handleCopyCoords()}
                       style={{
                         background: "none",
                         border: "none",
