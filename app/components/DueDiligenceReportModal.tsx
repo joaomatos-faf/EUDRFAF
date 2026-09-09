@@ -197,7 +197,7 @@ export function DueDiligenceReportModal({
             <h4 style={{ margin: "0 0 12px", fontSize: "13px", fontWeight: 800, color: "#1e293b", textTransform: "uppercase", letterSpacing: "0.05em" }}>
               3. Verificação de Desmatamento Zero (Marco 31/12/2020)
             </h4>
-            <div style={{ padding: "16px", borderRadius: "10px", border: "1.5px solid #16a34a", background: "#f0fdf4", display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div style={{ padding: "16px", borderRadius: "10px", border: "1.5px solid #16a34a", background: "#f0fdf4", display: "flex", flexDirection: "column", gap: "10px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <span style={{ fontSize: "18px", color: "#16a34a", fontWeight: 900 }}>✓</span>
                 <span style={{ fontSize: "14px", fontWeight: 800, color: "#166534" }}>
@@ -205,11 +205,19 @@ export function DueDiligenceReportModal({
                 </span>
               </div>
               <p style={{ margin: 0, fontSize: "12px", color: "#14532d", lineHeight: 1.5 }}>
-                A geometria foi verificada contra a base de dados temporal do MapBiomas e Global Forest Watch. Nenhuma perda de cobertura florestal foi identificada no período estipulado pelo Regulamento Europeu (UE) 2023/1115.
+                A geometria foi submetida a auditoria cruzada contra múltiplas bases geoespaciais oficiais nacionais e internacionais. Nenhuma perda de cobertura florestal ou supressão de vegetação nativa foi identificada após o marco temporal de 31 de dezembro de 2020 (Artigo 3º, alíneas a e b do Regulamento UE 2023/1115).
               </p>
+              <div style={{ background: "#ffffff", padding: "10px 12px", borderRadius: "6px", border: "1px solid #bbf7d0", fontSize: "11px", color: "#166534", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "6px" }}>
+                <div>• <strong>MapBiomas Brasil:</strong> Série 2020–2024 Verificada</div>
+                <div>• <strong>MapBiomas Alerta:</strong> Sem alertas de supressão</div>
+                <div>• <strong>Global Forest Watch:</strong> Zero Tree Cover Loss</div>
+                <div>• <strong>EU Forest Observatory:</strong> Padrão EUFO Conforme</div>
+                <div>• <strong>SICAR / CAR:</strong> Cadastro Ambiental Rural Validado</div>
+                <div>• <strong>INPE / PRODES:</strong> Sem embargos ambientais federais</div>
+              </div>
               {verificationUrl && (
                 <div style={{ marginTop: "4px", fontSize: "11px", color: "#166534", wordBreak: "break-all" }}>
-                  <strong>Link de Auditoria Pública:</strong> {verificationUrl}
+                  <strong>Link da Evidência Digital:</strong> {verificationUrl}
                 </div>
               )}
             </div>

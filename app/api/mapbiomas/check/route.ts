@@ -344,7 +344,11 @@ async function fallbackDeforestationCheck(geometry: GeometryData, plotId: string
     : `https://www.globalforestwatch.org/map/?map=center,lat:${centerLat},lng:${centerLng},zoom:14`;
 
   const mapbiomasUrl = `https://plataforma.brasil.mapbiomas.org/?theme=coverage_lclu#${centerLat},${centerLng},14`;
+  const mapbiomasAlertaUrl = "https://alerta.mapbiomas.org/";
   const eufoUrl = "https://forest-observatory.ec.europa.eu/forest/";
+  const inpeUrl = "https://terrabrasilis.dpi.inpe.br/app/map/deforestation";
+  const sicarUrl = "https://www.car.gov.br/#/consultar";
+  const ibamaUrl = "https://servicos.ibama.gov.br/ctf/publico/areasembargadas/ConsultaPublicaAreasEmbargadas.php";
 
   return {
     areaHa: Number(calculatedArea.toFixed(2)),
@@ -358,8 +362,12 @@ async function fallbackDeforestationCheck(geometry: GeometryData, plotId: string
     source: "MapBiomas / Global Forest Watch · Verificação EUDR (Marco 31/12/2020)",
     verificationUrl: mapUrl,
     mapbiomasUrl,
+    mapbiomasAlertaUrl,
     gfwUrl: mapUrl,
     eufoUrl,
+    inpeUrl,
+    sicarUrl,
+    ibamaUrl,
     fromCache: false,
   };
 }
@@ -420,8 +428,12 @@ export async function POST(request: Request) {
         source: "MapBiomas · Série temporal de Cobertura por classe",
         verificationUrl: verificationUrl(territoryId),
         mapbiomasUrl: verificationUrl(territoryId),
+        mapbiomasAlertaUrl: "https://alerta.mapbiomas.org/",
         gfwUrl: `https://www.globalforestwatch.org/map/?map=center,lat:${Number(((Math.min(...geometry.polygons.flat(2).map((p) => p[1])) + Math.max(...geometry.polygons.flat(2).map((p) => p[1]))) / 2).toFixed(6))},lng:${Number(((Math.min(...geometry.polygons.flat(2).map((p) => p[0])) + Math.max(...geometry.polygons.flat(2).map((p) => p[0]))) / 2).toFixed(6))},zoom:14`,
         eufoUrl: "https://forest-observatory.ec.europa.eu/forest/",
+        inpeUrl: "https://terrabrasilis.dpi.inpe.br/app/map/deforestation",
+        sicarUrl: "https://www.car.gov.br/#/consultar",
+        ibamaUrl: "https://servicos.ibama.gov.br/ctf/publico/areasembargadas/ConsultaPublicaAreasEmbargadas.php",
         geometryHash: geoHash,
         fromCache: false,
       };
