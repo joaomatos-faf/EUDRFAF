@@ -64,6 +64,8 @@ export function QuickVerifyView({
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [showApiModal, setShowApiModal] = useState(false);
   const [copiedPlatformName, setCopiedPlatformName] = useState<string | null>(null);
+  const [filterCategory, setFilterCategory] = useState<"all" | "direct" | "portal">("all");
+  const [downloadFeedback, setDownloadFeedback] = useState<string | null>(null);
 
   // Calcula área em hectares
   const area = useMemo(() => {
@@ -133,6 +135,8 @@ export function QuickVerifyView({
         mapbiomasUrl: data.mapbiomasUrl,
         mapbiomasAlertaUrl: data.mapbiomasAlertaUrl,
         gfwUrl: data.gfwUrl,
+        sentinelUrl: data.sentinelUrl,
+        googleMapsUrl: data.googleMapsUrl,
         eufoUrl: data.eufoUrl,
         inpeUrl: data.inpeUrl,
         sicarUrl: data.sicarUrl,
@@ -207,9 +211,58 @@ export function QuickVerifyView({
 
   const handleDownloadGeoJson = () => {
     if (!geometry) return;
+    const baseName = fileName ? fileName.replace(/\.[^/.]+$/, "") : "talhao";
     const geoJson = buildEudrGeoJson(geometry, "VERIFICADO-EUDR", area);
     const blob = new Blob([JSON.stringify(geoJson, null, 2)], { type: "application/geo+json" });
-    downloadBlob(`${fileName ? fileName.replace(/\.[^/.]+$/, "") : "talhao"}-eudr.geojson`, blob);
+    downloadBlob(`${baseName}-eudr.geojson`, blob);
+    setDownloadFeedback("GeoJSON baixado com sucesso!");
+    setTimeout(() => setDownloadFeedback(null), 2500);
+  };
+
+  const handleDownloadKml = () => {
+    if (!geometry) return;
+    const baseName = fileName ? fileName.replace(/\.[^/.]+$/, "") : "talhao";
+    const placemarks = geometry.polygons
+      .map((polygon, i) => {
+        const outer = polygon[0].map(([lon, lat]) => `${lon},${lat},0`).join(" ");
+        const innerHoles = polygon
+          .slice(1)
+          .map(
+            (ring) => `
+          <innerBoundaryIs>
+            <LinearRing>
+              <coordinates>${ring.map(([lon, lat]) => `${lon},${lat},0`).join(" ")}</coordinates>
+            </LinearRing>
+          </innerBoundaryIs>`
+          )
+          .join("");
+        return `
+    <Placemark>
+      <name>${baseName} - Polígono ${i + 1}</name>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>${outer}</coordinates>
+          </LinearRing>
+        </outerBoundaryIs>${innerHoles}
+      </Polygon>
+    </Placemark>`;
+      })
+      .join("");
+
+    const kmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${baseName}</name>
+    <description>Talhão exportado para verificação EUDR (FAF Coffees)</description>
+    ${placemarks}
+  </Document>
+</kml>`;
+
+    const blob = new Blob([kmlContent], { type: "application/vnd.google-earth.kml+xml" });
+    downloadBlob(`${baseName}-eudr.kml`, blob);
+    setDownloadFeedback("KML baixado com sucesso!");
+    setTimeout(() => setDownloadFeedback(null), 2500);
   };
 
   const handleReset = () => {
@@ -217,90 +270,172 @@ export function QuickVerifyView({
     setFileName("");
     setCheckResult(null);
     setErrorMessage("");
+    setDownloadFeedback(null);
   };
 
   const centroidLat = centerCoord?.lat?.toFixed(6) || "0";
   const centroidLng = centerCoord?.lng?.toFixed(6) || "0";
 
   const platforms = [
+    // 1. Zoom Direto no Talhão (Automático por coordenadas)
     {
-      name: "MapBiomas Cobertura",
+      id: "gfw",
+      name: "Global Forest Watch (GFW)",
+      icon: "🌲",
+      category: "direct" as const,
+      badgeText: "Zoom Automático no Talhão",
+      badgeColor: "#10b981",
+      mainUrl:
+        checkResult?.gfwUrl ||
+        `https://www.globalforestwatch.org/map/?map=center,lat:${centroidLat},lng:${centroidLng},zoom:15`,
+      mainLabel: "Abrir no GFW com Zoom Exato ↗",
+      desc: "Monitoramento global de cobertura florestal com coordenadas e contorno de satélite aplicados",
+      allowDirectDownload: true,
+      requiresUploadNote: "",
+      apiName: "GFW Data API",
+      apiStatus: "Chave Gratuita Imediata",
+      apiHowTo: "Crie uma conta gratuita em globalforestwatch.org/my-gfw e gere sua API Key no menu Developer API.",
+    },
+    {
+      id: "sentinel",
+      name: "Sentinel Hub EO Browser",
       icon: "🛰️",
+      category: "direct" as const,
+      badgeText: "Zoom Automático + Marco 2020",
+      badgeColor: "#10b981",
+      mainUrl:
+        checkResult?.sentinelUrl ||
+        `https://apps.sentinel-hub.com/eo-browser/?zoom=15&lat=${centroidLat}&lng=${centroidLng}&themeId=DEFAULT-THEME`,
+      mainLabel: "Abrir no Sentinel Hub com Zoom Exato ↗",
+      desc: "Imagens de satélite Sentinel-2/Landsat no talhão com comparação histórica antes e após 31/12/2020",
+      allowDirectDownload: true,
+      requiresUploadNote: "",
+      apiName: "Copernicus Data Space",
+      apiStatus: "Acesso Aberto & APIs REST",
+      apiHowTo: "Acesse dataspace.copernicus.eu e cadastre-se para obter credenciais OAuth de consumo automatizado de imagens.",
+    },
+    {
+      id: "google_sat",
+      name: "Google Maps Satélite HD",
+      icon: "🗺️",
+      category: "direct" as const,
+      badgeText: "Zoom Automático Satélite",
+      badgeColor: "#10b981",
+      mainUrl:
+        checkResult?.googleMapsUrl ||
+        `https://www.google.com/maps/@${centroidLat},${centroidLng},16z/data=!3m1!1e3`,
+      mainLabel: "Abrir no Google Satélite com Zoom Exato ↗",
+      desc: "Visualização em alta resolução de satélite centralizada no centróide exato do talhão",
+      allowDirectDownload: false,
+      requiresUploadNote: "",
+      apiName: "Google Maps Platform",
+      apiStatus: "Disponível",
+      apiHowTo: "Ative a API Maps JavaScript ou Static Maps no console Google Cloud (console.cloud.google.com).",
+    },
+
+    // 2. Portais Governamentais / Requerem Importação do Arquivo ou Token
+    {
+      id: "mapbiomas",
+      name: "MapBiomas Cobertura",
+      icon: "🇧🇷",
+      category: "portal" as const,
+      badgeText: checkResult?.mapbiomasUrl?.includes("territoryId") ? "Polígono Vinculado via API" : "Requer Importar ou Token API",
+      badgeColor: checkResult?.mapbiomasUrl?.includes("territoryId") ? "#10b981" : "#f59e0b",
       mainUrl:
         checkResult?.mapbiomasUrl ||
         checkResult?.verificationUrl ||
-        `https://plataforma.brasil.mapbiomas.org/?theme=coverage_lclu#${centroidLat},${centroidLng},14`,
-      mainLabel: "Abrir Mapa com Coordenadas ↗",
-      desc: "Série histórica 1985–2024 de uso e cobertura com centróide localizado",
+        `https://plataforma.brasil.mapbiomas.org/?theme=coverage_lclu`,
+      mainLabel: "Abrir Portal MapBiomas ↗",
+      desc: "Série temporal oficial 1985–2024 de uso e cobertura do solo do Brasil",
+      requiresUploadNote: "O portal web abre na visão do Brasil. Baixe o GeoJSON ou KML abaixo e clique em 'Importar Território' no MapBiomas (ou configure MAPBIOMAS_TOKEN na API para abrir com zoom direto).",
+      allowDirectDownload: true,
       apiName: "MapBiomas API",
-      apiStatus: "Disponível (Token via contato)",
-      apiHowTo: "Cadastre-se na plataforma MapBiomas ou solicite token para API de Estatísticas em contato@mapbiomas.org.",
+      apiStatus: "Token Institucional Gratuito",
+      apiHowTo: "Solicite o token da API de Estatísticas/Upload de Territórios pelo e-mail contato@mapbiomas.org e configure a variável MAPBIOMAS_TOKEN nas configurações do sistema.",
     },
     {
-      name: "Global Forest Watch (GFW)",
-      icon: "🌲",
-      mainUrl:
-        checkResult?.gfwUrl ||
-        `https://www.globalforestwatch.org/map/?map=center,lat:${centroidLat},lng:${centroidLng},zoom:14`,
-      mainLabel: "Abrir no GFW com Zoom Exato ↗",
-      desc: "Monitoramento global de perda de cobertura arbórea com coordenadas aplicadas",
-      apiName: "GFW Data API",
-      apiStatus: "Chave Gratuita Imediata",
-      apiHowTo: "Crie conta gratuita em globalforestwatch.org/my-gfw e gere sua API Key no menu Developer API.",
-    },
-    {
+      id: "eufo",
       name: "EU Forest Observatory (EUFO)",
       icon: "🇪🇺",
+      category: "portal" as const,
+      badgeText: "Importar AOI no Portal",
+      badgeColor: "#0284c7",
       mainUrl: "https://forest-observatory.ec.europa.eu/forest/rmap",
-      mainLabel: "Abrir Mapa Interativo Global (GFC 2020) ↗",
-      desc: "Base oficial da Comissão Europeia para o marco temporal EUDR (31/12/2020)",
+      mainLabel: "Abrir Mapa EUFO (GFC 2020) ↗",
+      desc: "Base oficial da Comissão Europeia para auditoria do marco temporal EUDR (31/12/2020)",
+      requiresUploadNote: "O portal da Comissão Europeia não aceita zoom por URL. Baixe o GeoJSON ou KML abaixo e utilize a ferramenta 'Upload AOI' no mapa do portal.",
+      allowDirectDownload: true,
       apiName: "JRC WMS & Earth Engine",
-      apiStatus: "Acesso Público Aberto",
-      apiHowTo: "Acesse via WMS (https://ies-ows.jrc.ec.europa.eu/iforce/gfc2020/wms.py?) ou Google Earth Engine (JRC/GFC2020/V1).",
+      apiStatus: "100% Público e Gratuito",
+      apiHowTo: "Consuma as camadas raster WMS via https://ies-ows.jrc.ec.europa.eu/iforce/gfc2020/wms.py? ou Google Earth Engine (JRC/GFC2020/V1).",
     },
     {
+      id: "terrabrasilis",
       name: "TerraBrasilis / INPE",
-      icon: "🇧🇷",
+      icon: "🛰️",
+      category: "portal" as const,
+      badgeText: "Importar Camada no Portal",
+      badgeColor: "#0284c7",
       mainUrl: "https://terrabrasilis.dpi.inpe.br/app/map/deforestation",
-      mainLabel: "Abrir Mapa de Desmatamento (DETER/PRODES) ↗",
-      desc: "Alertas DETER e taxas oficiais do PRODES do Governo Federal",
+      mainLabel: "Abrir TerraBrasilis (DETER/PRODES) ↗",
+      desc: "Alertas DETER e taxas de desmatamento PRODES do Instituto Nacional de Pesquisas Espaciais (INPE)",
+      requiresUploadNote: "O visualizador do INPE não aceita coordenadas na barra de endereço. Baixe o GeoJSON ou KML abaixo e importe na aba de camadas do portal.",
+      allowDirectDownload: true,
       apiName: "GeoServer OGC WMS/WFS",
-      apiStatus: "API 100% Pública e Gratuita",
-      apiHowTo: "Consuma camadas WMS em https://terrabrasilis.dpi.inpe.br/geoserver/ows ou via REST API em terrabrasilis.dpi.inpe.br/api/v1/.",
+      apiStatus: "API Pública e Gratuita",
+      apiHowTo: "Conecte camadas WMS diretamente via https://terrabrasilis.dpi.inpe.br/geoserver/ows ou consuma a REST API em terrabrasilis.dpi.inpe.br/api/v1/.",
     },
     {
+      id: "sicar",
       name: "SICAR - Cadastro Rural",
       icon: "📋",
+      category: "portal" as const,
+      badgeText: "Consulta Pública CAR",
+      badgeColor: "#64748b",
       mainUrl: "https://consulta.car.gov.br/",
-      mainLabel: "Abrir Mapa Interativo de Imóveis ↗",
+      mainLabel: "Abrir Mapa de Imóveis do CAR ↗",
       secondaryUrl: "https://consultapublica.car.gov.br/publico/imoveis/index",
-      secondaryLabel: "Consulta Textual ↗",
-      desc: "Consulta pública espacial dos imóveis rurais e reservas ambientais",
+      secondaryLabel: "Consulta Textual por Município ↗",
+      desc: "Base pública dos limites de imóveis rurais e reservas ambientais do Brasil",
+      requiresUploadNote: "Use as coordenadas copiadas ou o código do CAR para pesquisar e localizar a propriedade no mapa oficial do Governo Federal.",
+      allowDirectDownload: true,
       apiName: "API SICAR (ConectaGov/Serpro)",
-      apiStatus: "Requer Credenciamento Federal",
-      apiHowTo: "Disponível no catálogo de APIs do Governo Federal (apigateway.conectagov.estaleiro.serpro.gov.br) para entes públicos e empresas.",
+      apiStatus: "Credenciamento Federal",
+      apiHowTo: "Disponível no catálogo do Governo Federal (apigateway.conectagov.estaleiro.serpro.gov.br) para entes públicos e empresas autorizadas.",
     },
     {
+      id: "ibama",
       name: "IBAMA Embargos",
       icon: "⚖️",
+      category: "portal" as const,
+      badgeText: "Painel Espacial IBAMA",
+      badgeColor: "#64748b",
       mainUrl: "https://pam.ibama.gov.br/",
-      mainLabel: "Abrir Painel Interativo de Embargos ↗",
+      mainLabel: "Abrir Painel Espacial IBAMA ↗",
       secondaryUrl: "https://servicos.ibama.gov.br/ctf/publico/areasembargadas/ConsultaPublicaAreasEmbargadas.php",
-      secondaryLabel: "Formulário de Embargos ↗",
-      desc: "Painel espacial e consulta de autuações e embargos ambientais",
+      secondaryLabel: "Formulário de Certidões ↗",
+      desc: "Painel espacial de autuações e polígonos embargados pelo IBAMA",
+      requiresUploadNote: "Verifique se o centróide ou polígono intercepta áreas com embargo ambiental emitido pelo órgão fiscalizador.",
+      allowDirectDownload: false,
       apiName: "Dados Abertos / Shapefiles IBAMA",
-      apiStatus: "Acesso Público Aberto",
-      apiHowTo: "Download direto de camadas e polígonos de embargos em dadosabertos.ibama.gov.br e pam.ibama.gov.br sem necessidade de chave.",
+      apiStatus: "Download Público Aberto",
+      apiHowTo: "Download direto de shapefiles de embargos em dadosabertos.ibama.gov.br e pam.ibama.gov.br sem necessidade de chave.",
     },
     {
+      id: "mapbiomas_alerta",
       name: "MapBiomas Alerta",
       icon: "🚨",
+      category: "portal" as const,
+      badgeText: "Laudos com Satélite Planet",
+      badgeColor: "#f59e0b",
       mainUrl: "https://alerta.mapbiomas.org/",
-      mainLabel: "Abrir Portal de Alertas Validados ↗",
-      desc: "Laudos técnicos de desmatamento validados com imagens de alta resolução",
+      mainLabel: "Abrir Portal de Alertas ↗",
+      desc: "Laudos técnicos de desmatamento validados com imagens de alta resolução (3m) do satélite Planet",
+      requiresUploadNote: "Faça upload do arquivo do talhão na consulta espacial do MapBiomas Alerta para cruzar com o histórico de alertas validados.",
+      allowDirectDownload: true,
       apiName: "API MapBiomas Alerta",
-      apiStatus: "Disponível para parceiros",
-      apiHowTo: "Consulte o catálogo de alertas e laudos com integração via API REST mediante convênio técnico institucional.",
+      apiStatus: "Parceria Institucional",
+      apiHowTo: "Integração direta de laudos e alertas via API REST mediante termo de cooperação institucional.",
     },
   ];
 
@@ -798,7 +933,7 @@ export function QuickVerifyView({
               </div>
             </div>
 
-            {/* Hub de Auditoria Cruzada - 7 Plataformas */}
+            {/* Hub de Auditoria Cruzada - 9 Plataformas */}
             <div
               style={{
                 background: "var(--surface)",
@@ -807,14 +942,30 @@ export function QuickVerifyView({
                 padding: "24px",
               }}
             >
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "18px" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "16px" }}>
                 <div>
-                  <h4 style={{ fontSize: "17px", fontWeight: 700, margin: "0 0 6px 0" }}>
-                    Hub de Auditoria Cruzada — 7 Plataformas Oficiais
-                  </h4>
-                  <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: 0, maxWidth: "700px" }}>
-                    Acesse os mapas interativos e ferramentas de validação espacial com as coordenadas exatas do talhão
-                    já pré-configuradas.
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <h4 style={{ fontSize: "17px", fontWeight: 700, margin: 0 }}>
+                      Hub de Auditoria Cruzada — 9 Plataformas Oficiais
+                    </h4>
+                    {downloadFeedback && (
+                      <span
+                        style={{
+                          fontSize: "11.5px",
+                          fontWeight: 700,
+                          color: "#10b981",
+                          background: "rgba(16, 185, 129, 0.12)",
+                          border: "1px solid rgba(16, 185, 129, 0.3)",
+                          padding: "2px 8px",
+                          borderRadius: "6px",
+                        }}
+                      >
+                        ✓ {downloadFeedback}
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: "4px 0 0 0", maxWidth: "720px" }}>
+                    Valide a conformidade do talhão em múltiplos satélites e portais oficiais com coordenadas, links diretos e arquivos prontos para importação.
                   </p>
                 </div>
                 <button
@@ -834,6 +985,81 @@ export function QuickVerifyView({
                 </button>
               </div>
 
+              {/* Banner Didático de Explicação de Portais Governamentais */}
+              <div
+                style={{
+                  background: "rgba(2, 132, 199, 0.06)",
+                  border: "1px solid rgba(2, 132, 199, 0.2)",
+                  borderRadius: "12px",
+                  padding: "12px 16px",
+                  marginBottom: "18px",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "10px",
+                }}
+              >
+                <span style={{ fontSize: "18px", lineHeight: 1 }}>💡</span>
+                <div style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.45 }}>
+                  <strong style={{ color: "var(--text-primary)" }}>Como funcionam os acessos às plataformas:</strong>
+                  <br />
+                  Plataformas como <strong>Global Forest Watch</strong>, <strong>Sentinel Hub</strong> e <strong>Google Satélite</strong> abrem com <strong>zoom direto no seu talhão</strong>.
+                  Já portais governamentais como <strong>MapBiomas</strong>, <strong>Forest EU</strong> e <strong>TerraBrasilis</strong> não leem coordenadas na URL; para consultá-los, clique no botão <strong>"📥 Baixar GeoJSON"</strong> ou <strong>"📥 Baixar KML"</strong> no card da plataforma e carregue o arquivo no mapa do portal (Upload AOI / Importar Camada).
+                </div>
+              </div>
+
+              {/* Filtros de Categoria */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-tertiary)", marginRight: "4px" }}>
+                  FILTRAR:
+                </span>
+                <button
+                  onClick={() => setFilterCategory("all")}
+                  style={{
+                    background: filterCategory === "all" ? "var(--brand-crimson)" : "var(--bg-canvas)",
+                    color: filterCategory === "all" ? "#ffffff" : "var(--text-secondary)",
+                    border: "1px solid var(--line)",
+                    borderRadius: "8px",
+                    padding: "6px 12px",
+                    fontSize: "12px",
+                    fontWeight: 650,
+                    cursor: "pointer",
+                  }}
+                >
+                  🌐 Todas ({platforms.length})
+                </button>
+                <button
+                  onClick={() => setFilterCategory("direct")}
+                  style={{
+                    background: filterCategory === "direct" ? "#10b981" : "var(--bg-canvas)",
+                    color: filterCategory === "direct" ? "#ffffff" : "var(--text-secondary)",
+                    border: "1px solid var(--line)",
+                    borderRadius: "8px",
+                    padding: "6px 12px",
+                    fontSize: "12px",
+                    fontWeight: 650,
+                    cursor: "pointer",
+                  }}
+                >
+                  🚀 Zoom Direto no Talhão ({platforms.filter((p) => p.category === "direct").length})
+                </button>
+                <button
+                  onClick={() => setFilterCategory("portal")}
+                  style={{
+                    background: filterCategory === "portal" ? "#0284c7" : "var(--bg-canvas)",
+                    color: filterCategory === "portal" ? "#ffffff" : "var(--text-secondary)",
+                    border: "1px solid var(--line)",
+                    borderRadius: "8px",
+                    padding: "6px 12px",
+                    fontSize: "12px",
+                    fontWeight: 650,
+                    cursor: "pointer",
+                  }}
+                >
+                  🏛️ Portais Oficiais & Governamentais ({platforms.filter((p) => p.category === "portal").length})
+                </button>
+              </div>
+
+              {/* Grade de Cards das Plataformas */}
               <div
                 style={{
                   display: "grid",
@@ -841,105 +1067,194 @@ export function QuickVerifyView({
                   gap: "14px",
                 }}
               >
-                {platforms.map((plat) => (
-                  <div
-                    key={plat.name}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "space-between",
-                      gap: "12px",
-                      padding: "16px 18px",
-                      borderRadius: "14px",
-                      background: "var(--bg-canvas)",
-                      border: "1px solid var(--line)",
-                      transition: "border-color 0.15s ease",
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-                        <span style={{ fontSize: "22px" }}>{plat.icon}</span>
-                        <div>
-                          <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>
-                            {plat.name}
+                {platforms
+                  .filter((plat) => filterCategory === "all" || plat.category === filterCategory)
+                  .map((plat) => (
+                    <div
+                      key={plat.id}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                        gap: "12px",
+                        padding: "16px 18px",
+                        borderRadius: "14px",
+                        background: "var(--bg-canvas)",
+                        border: "1px solid var(--line)",
+                        transition: "border-color 0.15s ease",
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginBottom: "6px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <span style={{ fontSize: "22px" }}>{plat.icon}</span>
+                            <div>
+                              <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>
+                                {plat.name}
+                              </div>
+                              <span style={{ fontSize: "11px", color: plat.badgeColor, fontWeight: 650 }}>
+                                {plat.badgeText}
+                              </span>
+                            </div>
                           </div>
-                          <span style={{ fontSize: "11px", color: "#10b981", fontWeight: 600 }}>
-                            {plat.apiStatus}
+                          <span
+                            style={{
+                              fontSize: "10px",
+                              fontWeight: 700,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.04em",
+                              padding: "2px 6px",
+                              borderRadius: "4px",
+                              background: plat.category === "direct" ? "rgba(16, 185, 129, 0.1)" : "rgba(2, 132, 199, 0.1)",
+                              color: plat.category === "direct" ? "#10b981" : "#0284c7",
+                            }}
+                          >
+                            {plat.category === "direct" ? "Zoom Direto" : "Portal Oficial"}
                           </span>
                         </div>
-                      </div>
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "var(--text-secondary)",
-                          margin: "6px 0 0 0",
-                          lineHeight: 1.35,
-                        }}
-                      >
-                        {plat.desc}
-                      </p>
-                    </div>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "8px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <a
-                          href={plat.mainUrl}
-                          target="_blank"
-                          rel="noreferrer"
+                        <p
                           style={{
-                            flex: 1,
-                            textAlign: "center",
-                            background: "var(--brand-crimson)",
-                            color: "#ffffff",
-                            padding: "8px 12px",
-                            borderRadius: "8px",
                             fontSize: "12px",
-                            fontWeight: 650,
-                            textDecoration: "none",
-                            display: "block",
+                            color: "var(--text-secondary)",
+                            margin: "6px 0 0 0",
+                            lineHeight: 1.35,
                           }}
                         >
-                          {plat.mainLabel}
-                        </a>
-
-                        <button
-                          onClick={() => handleCopyCoords(plat.name)}
-                          title="Copiar latitude e longitude para colar na busca do portal"
-                          style={{
-                            background: "var(--surface)",
-                            border: "1px solid var(--line-strong)",
-                            color: copiedPlatformName === plat.name ? "#10b981" : "var(--text-secondary)",
-                            padding: "8px 12px",
-                            borderRadius: "8px",
-                            fontSize: "11.5px",
-                            fontWeight: 600,
-                            cursor: "pointer",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {copiedPlatformName === plat.name ? "✓ Copiado!" : "📋 Copiar Lat/Lng"}
-                        </button>
+                          {plat.desc}
+                        </p>
                       </div>
 
-                      {plat.secondaryUrl && (
-                        <a
-                          href={plat.secondaryUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{
-                            textAlign: "center",
-                            color: "var(--text-secondary)",
-                            fontSize: "11.5px",
-                            padding: "4px 8px",
-                            textDecoration: "underline",
-                          }}
-                        >
-                          {plat.secondaryLabel}
-                        </a>
-                      )}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" }}>
+                        {/* Botão de Acesso Principal e Copiar Coordenadas */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <a
+                            href={plat.mainUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                              flex: 1,
+                              textAlign: "center",
+                              background: plat.category === "direct" ? "var(--brand-crimson)" : "#0284c7",
+                              color: "#ffffff",
+                              padding: "8px 12px",
+                              borderRadius: "8px",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              textDecoration: "none",
+                              display: "block",
+                            }}
+                          >
+                            {plat.mainLabel}
+                          </a>
+
+                          <button
+                            onClick={() => handleCopyCoords(plat.name)}
+                            title="Copiar latitude e longitude para colar na busca do portal"
+                            style={{
+                              background: "var(--surface)",
+                              border: "1px solid var(--line-strong)",
+                              color: copiedPlatformName === plat.name ? "#10b981" : "var(--text-secondary)",
+                              padding: "8px 12px",
+                              borderRadius: "8px",
+                              fontSize: "11.5px",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {copiedPlatformName === plat.name ? "✓ Copiado!" : "📋 Lat/Lng"}
+                          </button>
+                        </div>
+
+                        {/* Ações de Download 1-Clique do Arquivo para Importação no Portal */}
+                        {plat.allowDirectDownload && (
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <button
+                              onClick={handleDownloadGeoJson}
+                              title="Baixar arquivo GeoJSON para importar neste portal"
+                              style={{
+                                flex: 1,
+                                background: "rgba(2, 132, 199, 0.08)",
+                                border: "1px solid rgba(2, 132, 199, 0.25)",
+                                color: "#0284c7",
+                                padding: "6px 8px",
+                                borderRadius: "6px",
+                                fontSize: "11px",
+                                fontWeight: 650,
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: "4px",
+                              }}
+                            >
+                              📥 Baixar GeoJSON
+                            </button>
+
+                            <button
+                              onClick={handleDownloadKml}
+                              title="Baixar arquivo KML para importar neste portal"
+                              style={{
+                                flex: 1,
+                                background: "rgba(16, 185, 129, 0.08)",
+                                border: "1px solid rgba(16, 185, 129, 0.25)",
+                                color: "#10b981",
+                                padding: "6px 8px",
+                                borderRadius: "6px",
+                                fontSize: "11px",
+                                fontWeight: 650,
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: "4px",
+                              }}
+                            >
+                              📥 Baixar KML
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Nota Explicativa para Portais que requerem upload */}
+                        {plat.requiresUploadNote && (
+                          <div
+                            style={{
+                              background: "rgba(245, 158, 11, 0.07)",
+                              border: "1px solid rgba(245, 158, 11, 0.22)",
+                              borderRadius: "8px",
+                              padding: "8px 10px",
+                              fontSize: "11px",
+                              color: "var(--text-secondary)",
+                              lineHeight: 1.35,
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: "6px",
+                            }}
+                          >
+                            <span style={{ fontSize: "13px", lineHeight: 1 }}>💡</span>
+                            <span>{plat.requiresUploadNote}</span>
+                          </div>
+                        )}
+
+                        {plat.secondaryUrl && (
+                          <a
+                            href={plat.secondaryUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                              textAlign: "center",
+                              color: "var(--text-secondary)",
+                              fontSize: "11px",
+                              padding: "2px 6px",
+                              textDecoration: "underline",
+                            }}
+                          >
+                            {plat.secondaryLabel}
+                          </a>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
           </div>
@@ -983,7 +1298,7 @@ export function QuickVerifyView({
                     Guia de Obtenção de APIs & Acessos
                   </h3>
                   <p style={{ fontSize: "12.5px", color: "var(--text-secondary)", margin: "2px 0 0 0" }}>
-                    Como obter chaves, tokens e conectar cada uma das 7 plataformas ao sistema FAF
+                    Como obter chaves, tokens e conectar cada uma das 9 plataformas ao sistema FAF
                   </p>
                 </div>
               </div>

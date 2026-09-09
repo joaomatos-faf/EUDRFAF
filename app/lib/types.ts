@@ -61,6 +61,8 @@ export type MapbiomasCheck = {
   mapbiomasUrl?: string;
   mapbiomasAlertaUrl?: string;
   gfwUrl?: string;
+  sentinelUrl?: string;
+  googleMapsUrl?: string;
   eufoUrl?: string;
   inpeUrl?: string;
   sicarUrl?: string;

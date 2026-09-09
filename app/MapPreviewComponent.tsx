@@ -70,7 +70,6 @@ export default function MapPreviewComponent({
     <div
       style={{
         width: "100%",
-        maxWidth: "680px",
         borderRadius: "12px",
         overflow: "hidden",
         border: "1px solid rgba(52, 211, 153, 0.3)",

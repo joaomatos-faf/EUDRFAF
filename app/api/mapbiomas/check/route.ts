@@ -343,8 +343,10 @@ async function fallbackDeforestationCheck(geometry: GeometryData, plotId: string
     ? `https://www.globalforestwatch.org/map/geostore/${geostoreId}/?map=center,lat:${centerLat},lng:${centerLng},zoom:14`
     : `https://www.globalforestwatch.org/map/?map=center,lat:${centerLat},lng:${centerLng},zoom:14`;
 
-  const mapbiomasUrl = `https://plataforma.brasil.mapbiomas.org/?theme=coverage_lclu#${centerLat},${centerLng},14`;
+  const mapbiomasUrl = "https://plataforma.brasil.mapbiomas.org/?theme=coverage_lclu";
   const mapbiomasAlertaUrl = "https://alerta.mapbiomas.org/";
+  const sentinelUrl = `https://apps.sentinel-hub.com/eo-browser/?zoom=15&lat=${centerLat}&lng=${centerLng}&themeId=DEFAULT-THEME`;
+  const googleMapsUrl = `https://www.google.com/maps/@${centerLat},${centerLng},16z/data=!3m1!1e3`;
   const eufoUrl = "https://forest-observatory.ec.europa.eu/forest/rmap";
   const inpeUrl = "https://terrabrasilis.dpi.inpe.br/app/map/deforestation";
   const sicarUrl = "https://consulta.car.gov.br/";
@@ -364,6 +366,8 @@ async function fallbackDeforestationCheck(geometry: GeometryData, plotId: string
     mapbiomasUrl,
     mapbiomasAlertaUrl,
     gfwUrl: mapUrl,
+    sentinelUrl,
+    googleMapsUrl,
     eufoUrl,
     inpeUrl,
     sicarUrl,
@@ -430,6 +434,8 @@ export async function POST(request: Request) {
         mapbiomasUrl: verificationUrl(territoryId),
         mapbiomasAlertaUrl: "https://alerta.mapbiomas.org/",
         gfwUrl: `https://www.globalforestwatch.org/map/?map=center,lat:${Number(((Math.min(...geometry.polygons.flat(2).map((p) => p[1])) + Math.max(...geometry.polygons.flat(2).map((p) => p[1]))) / 2).toFixed(6))},lng:${Number(((Math.min(...geometry.polygons.flat(2).map((p) => p[0])) + Math.max(...geometry.polygons.flat(2).map((p) => p[0]))) / 2).toFixed(6))},zoom:14`,
+        sentinelUrl: `https://apps.sentinel-hub.com/eo-browser/?zoom=15&lat=${Number(((Math.min(...geometry.polygons.flat(2).map((p) => p[1])) + Math.max(...geometry.polygons.flat(2).map((p) => p[1]))) / 2).toFixed(6))}&lng=${Number(((Math.min(...geometry.polygons.flat(2).map((p) => p[0])) + Math.max(...geometry.polygons.flat(2).map((p) => p[0]))) / 2).toFixed(6))}&themeId=DEFAULT-THEME`,
+        googleMapsUrl: `https://www.google.com/maps/@${Number(((Math.min(...geometry.polygons.flat(2).map((p) => p[1])) + Math.max(...geometry.polygons.flat(2).map((p) => p[1]))) / 2).toFixed(6))},${Number(((Math.min(...geometry.polygons.flat(2).map((p) => p[0])) + Math.max(...geometry.polygons.flat(2).map((p) => p[0]))) / 2).toFixed(6))},16z/data=!3m1!1e3`,
         eufoUrl: "https://forest-observatory.ec.europa.eu/forest/rmap",
         inpeUrl: "https://terrabrasilis.dpi.inpe.br/app/map/deforestation",
         sicarUrl: "https://consulta.car.gov.br/",
