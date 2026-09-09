@@ -30,13 +30,26 @@ export async function POST(request: Request) {
       return Response.json({ error: "Informe usuário e senha." }, { status: 400, headers: corsHeaders });
     }
 
-    // Load users from Cloudflare KV merged with default users
+    // Load users from environment variables and Cloudflare KV (ZERO credentials in git code)
     let users: Record<string, UserProfile> = { ...DEFAULT_USERS_DATA };
     const cfEnv = await getCloudflareEnv();
+
+    const envUsersJson =
+      cfEnv?.USERS_DATA_JSON ||
+      (typeof process !== "undefined" ? process.env?.USERS_DATA_JSON : null);
+    if (envUsersJson && typeof envUsersJson === "string") {
+      try {
+        const parsed = JSON.parse(envUsersJson);
+        if (parsed && typeof parsed === "object") {
+          users = { ...users, ...parsed };
+        }
+      } catch {}
+    }
+
     if (cfEnv?.USERS_KV && typeof cfEnv.USERS_KV.get === "function") {
       const data = (await cfEnv.USERS_KV.get("faf_eudr_users", { type: "json" })) as Record<string, UserProfile> | null;
       if (data && typeof data === "object") {
-        users = { ...DEFAULT_USERS_DATA, ...data };
+        users = { ...users, ...data };
       }
     }
 
