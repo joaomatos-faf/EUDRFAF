@@ -62,6 +62,8 @@ export function QuickVerifyView({
   const [checkResult, setCheckResult] = useState<MapbiomasCheck | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [copiedCoords, setCopiedCoords] = useState(false);
+  const [showApiModal, setShowApiModal] = useState(false);
+  const [copiedPlatformName, setCopiedPlatformName] = useState<string | null>(null);
 
   // Calcula área em hectares
   const area = useMemo(() => {
@@ -190,12 +192,17 @@ export function QuickVerifyView({
     if (file) handleFileProcess(file);
   };
 
-  const handleCopyCoords = () => {
+  const handleCopyCoords = (platformName?: string) => {
     if (!centerCoord) return;
     const text = `${centerCoord.lat.toFixed(6)}, ${centerCoord.lng.toFixed(6)}`;
     navigator.clipboard.writeText(text);
-    setCopiedCoords(true);
-    setTimeout(() => setCopiedCoords(false), 2000);
+    if (platformName) {
+      setCopiedPlatformName(platformName);
+      setTimeout(() => setCopiedPlatformName(null), 2000);
+    } else {
+      setCopiedCoords(true);
+      setTimeout(() => setCopiedCoords(false), 2000);
+    }
   };
 
   const handleDownloadGeoJson = () => {
@@ -215,52 +222,85 @@ export function QuickVerifyView({
   const centroidLat = centerCoord?.lat?.toFixed(6) || "0";
   const centroidLng = centerCoord?.lng?.toFixed(6) || "0";
 
-  const fallbackPlatforms = [
+  const platforms = [
     {
       name: "MapBiomas Cobertura",
       icon: "🛰️",
-      url: checkResult?.mapbiomasUrl || checkResult?.verificationUrl || "https://plataforma.brasil.mapbiomas.org/",
-      desc: "Série histórica 1985–2024 de uso e cobertura do solo",
-    },
-    {
-      name: "MapBiomas Alerta",
-      icon: "🚨",
-      url: checkResult?.mapbiomasAlertaUrl || "https://alerta.mapbiomas.org/",
-      desc: "Laudos validados de desmatamento com imagens de alta resolução",
+      mainUrl:
+        checkResult?.mapbiomasUrl ||
+        checkResult?.verificationUrl ||
+        `https://plataforma.brasil.mapbiomas.org/?theme=coverage_lclu#${centroidLat},${centroidLng},14`,
+      mainLabel: "Abrir Mapa com Coordenadas ↗",
+      desc: "Série histórica 1985–2024 de uso e cobertura com centróide localizado",
+      apiName: "MapBiomas API",
+      apiStatus: "Disponível (Token via contato)",
+      apiHowTo: "Cadastre-se na plataforma MapBiomas ou solicite token para API de Estatísticas em contato@mapbiomas.org.",
     },
     {
       name: "Global Forest Watch (GFW)",
       icon: "🌲",
-      url:
+      mainUrl:
         checkResult?.gfwUrl ||
         `https://www.globalforestwatch.org/map/?map=center,lat:${centroidLat},lng:${centroidLng},zoom:14`,
-      desc: "Monitoramento global de perda de cobertura arbórea",
+      mainLabel: "Abrir no GFW com Zoom Exato ↗",
+      desc: "Monitoramento global de perda de cobertura arbórea com coordenadas aplicadas",
+      apiName: "GFW Data API",
+      apiStatus: "Chave Gratuita Imediata",
+      apiHowTo: "Crie conta gratuita em globalforestwatch.org/my-gfw e gere sua API Key no menu Developer API.",
     },
     {
       name: "EU Forest Observatory (EUFO)",
       icon: "🇪🇺",
-      url: checkResult?.eufoUrl || "https://forest-observatory.ec.europa.eu/forest/",
-      desc: "Base oficial da Comissão Europeia para auditoria do EUDR",
+      mainUrl: "https://forest-observatory.ec.europa.eu/forest/rmap",
+      mainLabel: "Abrir Mapa Interativo Global (GFC 2020) ↗",
+      desc: "Base oficial da Comissão Europeia para o marco temporal EUDR (31/12/2020)",
+      apiName: "JRC WMS & Earth Engine",
+      apiStatus: "Acesso Público Aberto",
+      apiHowTo: "Acesse via WMS (https://ies-ows.jrc.ec.europa.eu/iforce/gfc2020/wms.py?) ou Google Earth Engine (JRC/GFC2020/V1).",
     },
     {
       name: "TerraBrasilis / INPE",
       icon: "🇧🇷",
-      url: checkResult?.inpeUrl || "https://terrabrasilis.dpi.inpe.br/app/map/deforestation",
-      desc: "Alertas DETER e taxas oficiais do PRODES",
+      mainUrl: "https://terrabrasilis.dpi.inpe.br/app/map/deforestation",
+      mainLabel: "Abrir Mapa de Desmatamento (DETER/PRODES) ↗",
+      desc: "Alertas DETER e taxas oficiais do PRODES do Governo Federal",
+      apiName: "GeoServer OGC WMS/WFS",
+      apiStatus: "API 100% Pública e Gratuita",
+      apiHowTo: "Consuma camadas WMS em https://terrabrasilis.dpi.inpe.br/geoserver/ows ou via REST API em terrabrasilis.dpi.inpe.br/api/v1/.",
     },
     {
-      name: "SICAR - Consulta Pública",
+      name: "SICAR - Cadastro Rural",
       icon: "📋",
-      url: checkResult?.sicarUrl || "https://www.car.gov.br/#/consultar",
-      desc: "Base federal do Cadastro Ambiental Rural",
+      mainUrl: "https://consulta.car.gov.br/",
+      mainLabel: "Abrir Mapa Interativo de Imóveis ↗",
+      secondaryUrl: "https://consultapublica.car.gov.br/publico/imoveis/index",
+      secondaryLabel: "Consulta Textual ↗",
+      desc: "Consulta pública espacial dos imóveis rurais e reservas ambientais",
+      apiName: "API SICAR (ConectaGov/Serpro)",
+      apiStatus: "Requer Credenciamento Federal",
+      apiHowTo: "Disponível no catálogo de APIs do Governo Federal (apigateway.conectagov.estaleiro.serpro.gov.br) para entes públicos e empresas.",
     },
     {
       name: "IBAMA Embargos",
       icon: "⚖️",
-      url:
-        checkResult?.ibamaUrl ||
-        "https://servicos.ibama.gov.br/ctf/publico/areasembargadas/ConsultaPublicaAreasEmbargadas.php",
-      desc: "Consulta pública de autuações e embargos ambientais",
+      mainUrl: "https://pam.ibama.gov.br/",
+      mainLabel: "Abrir Painel Interativo de Embargos ↗",
+      secondaryUrl: "https://servicos.ibama.gov.br/ctf/publico/areasembargadas/ConsultaPublicaAreasEmbargadas.php",
+      secondaryLabel: "Formulário de Embargos ↗",
+      desc: "Painel espacial e consulta de autuações e embargos ambientais",
+      apiName: "Dados Abertos / Shapefiles IBAMA",
+      apiStatus: "Acesso Público Aberto",
+      apiHowTo: "Download direto de camadas e polígonos de embargos em dadosabertos.ibama.gov.br e pam.ibama.gov.br sem necessidade de chave.",
+    },
+    {
+      name: "MapBiomas Alerta",
+      icon: "🚨",
+      mainUrl: "https://alerta.mapbiomas.org/",
+      mainLabel: "Abrir Portal de Alertas Validados ↗",
+      desc: "Laudos técnicos de desmatamento validados com imagens de alta resolução",
+      apiName: "API MapBiomas Alerta",
+      apiStatus: "Disponível para parceiros",
+      apiHowTo: "Consulte o catálogo de alertas e laudos com integração via API REST mediante convênio técnico institucional.",
     },
   ];
 
@@ -352,6 +392,22 @@ export function QuickVerifyView({
               Dashboard
             </button>
           )}
+
+          <button
+            onClick={() => setShowApiModal(true)}
+            style={{
+              background: "rgba(3, 105, 161, 0.1)",
+              border: "1px solid rgba(3, 105, 161, 0.3)",
+              color: "#0284c7",
+              padding: "6px 12px",
+              borderRadius: "8px",
+              fontSize: "12px",
+              fontWeight: 650,
+              cursor: "pointer",
+            }}
+          >
+            🔑 Como Obter APIs
+          </button>
 
           <LanguageToggle />
           <ThemeToggle />
@@ -751,83 +807,258 @@ export function QuickVerifyView({
                 padding: "24px",
               }}
             >
-              <div style={{ marginBottom: "18px" }}>
-                <h4 style={{ fontSize: "16px", fontWeight: 700, margin: "0 0 6px 0" }}>
-                  Hub de Auditoria Cruzada — 7 Plataformas Oficiais
-                </h4>
-                <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: 0 }}>
-                  Acesse diretamente as bases governamentais e científicas com as coordenadas exatas do polígono
-                  para comprovação documental e compliance com órgãos fiscalizadores.
-                </p>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "12px", marginBottom: "18px" }}>
+                <div>
+                  <h4 style={{ fontSize: "17px", fontWeight: 700, margin: "0 0 6px 0" }}>
+                    Hub de Auditoria Cruzada — 7 Plataformas Oficiais
+                  </h4>
+                  <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: 0, maxWidth: "700px" }}>
+                    Acesse os mapas interativos e ferramentas de validação espacial com as coordenadas exatas do talhão
+                    já pré-configuradas.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowApiModal(true)}
+                  style={{
+                    background: "rgba(3, 105, 161, 0.08)",
+                    border: "1px solid rgba(3, 105, 161, 0.25)",
+                    color: "#0284c7",
+                    padding: "8px 16px",
+                    borderRadius: "8px",
+                    fontSize: "12.5px",
+                    fontWeight: 650,
+                    cursor: "pointer",
+                  }}
+                >
+                  🔑 Guia de APIs & Conexões
+                </button>
               </div>
 
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                  gap: "12px",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+                  gap: "14px",
                 }}
               >
-                {fallbackPlatforms.map((plat) => (
-                  <a
+                {platforms.map((plat) => (
+                  <div
                     key={plat.name}
-                    href={plat.url}
-                    target="_blank"
-                    rel="noreferrer"
                     style={{
                       display: "flex",
-                      alignItems: "flex-start",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
                       gap: "12px",
-                      padding: "14px 16px",
-                      borderRadius: "12px",
+                      padding: "16px 18px",
+                      borderRadius: "14px",
                       background: "var(--bg-canvas)",
                       border: "1px solid var(--line)",
-                      textDecoration: "none",
-                      color: "inherit",
-                      transition: "all 0.15s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = "var(--line-strong)";
-                      e.currentTarget.style.transform = "translateY(-2px)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = "var(--line)";
-                      e.currentTarget.style.transform = "none";
+                      transition: "border-color 0.15s ease",
                     }}
                   >
-                    <span style={{ fontSize: "20px" }}>{plat.icon}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          fontSize: "13.5px",
-                          fontWeight: 700,
-                          color: "var(--text-primary)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        <span>{plat.name}</span>
-                        <span style={{ fontSize: "12px", color: "var(--text-tertiary)" }}>↗</span>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
+                        <span style={{ fontSize: "22px" }}>{plat.icon}</span>
+                        <div>
+                          <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>
+                            {plat.name}
+                          </div>
+                          <span style={{ fontSize: "11px", color: "#10b981", fontWeight: 600 }}>
+                            {plat.apiStatus}
+                          </span>
+                        </div>
                       </div>
                       <p
                         style={{
-                          fontSize: "11.5px",
-                          color: "var(--text-tertiary)",
-                          margin: "4px 0 0 0",
-                          lineHeight: 1.3,
+                          fontSize: "12px",
+                          color: "var(--text-secondary)",
+                          margin: "6px 0 0 0",
+                          lineHeight: 1.35,
                         }}
                       >
                         {plat.desc}
                       </p>
                     </div>
-                  </a>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <a
+                          href={plat.mainUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            flex: 1,
+                            textAlign: "center",
+                            background: "var(--brand-crimson)",
+                            color: "#ffffff",
+                            padding: "8px 12px",
+                            borderRadius: "8px",
+                            fontSize: "12px",
+                            fontWeight: 650,
+                            textDecoration: "none",
+                            display: "block",
+                          }}
+                        >
+                          {plat.mainLabel}
+                        </a>
+
+                        <button
+                          onClick={() => handleCopyCoords(plat.name)}
+                          title="Copiar latitude e longitude para colar na busca do portal"
+                          style={{
+                            background: "var(--surface)",
+                            border: "1px solid var(--line-strong)",
+                            color: copiedPlatformName === plat.name ? "#10b981" : "var(--text-secondary)",
+                            padding: "8px 12px",
+                            borderRadius: "8px",
+                            fontSize: "11.5px",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {copiedPlatformName === plat.name ? "✓ Copiado!" : "📋 Copiar Lat/Lng"}
+                        </button>
+                      </div>
+
+                      {plat.secondaryUrl && (
+                        <a
+                          href={plat.secondaryUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            textAlign: "center",
+                            color: "var(--text-secondary)",
+                            fontSize: "11.5px",
+                            padding: "4px 8px",
+                            textDecoration: "underline",
+                          }}
+                        >
+                          {plat.secondaryLabel}
+                        </a>
+                      )}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
           </div>
         )}
       </main>
+
+      {/* Modal: Guia Completo de APIs e Integração */}
+      {showApiModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.65)",
+            backdropFilter: "blur(6px)",
+            zIndex: 9999,
+            display: "grid",
+            placeItems: "center",
+            padding: "20px",
+          }}
+          onClick={() => setShowApiModal(false)}
+        >
+          <div
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--line)",
+              borderRadius: "20px",
+              padding: "32px",
+              maxWidth: "760px",
+              width: "100%",
+              maxHeight: "85vh",
+              overflowY: "auto",
+              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span style={{ fontSize: "28px" }}>🔑</span>
+                <div>
+                  <h3 style={{ fontSize: "19px", fontWeight: 800, margin: 0 }}>
+                    Guia de Obtenção de APIs & Acessos
+                  </h3>
+                  <p style={{ fontSize: "12.5px", color: "var(--text-secondary)", margin: "2px 0 0 0" }}>
+                    Como obter chaves, tokens e conectar cada uma das 7 plataformas ao sistema FAF
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowApiModal(false)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  fontSize: "22px",
+                  cursor: "pointer",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {platforms.map((p) => (
+                <div
+                  key={p.name}
+                  style={{
+                    padding: "16px",
+                    borderRadius: "12px",
+                    background: "var(--bg-canvas)",
+                    border: "1px solid var(--line)",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span>{p.icon}</span>
+                      <strong style={{ fontSize: "14px" }}>{p.name}</strong>
+                      <span style={{ fontSize: "12px", color: "var(--text-tertiary)" }}>({p.apiName})</span>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 650,
+                        padding: "2px 8px",
+                        borderRadius: "999px",
+                        background: "rgba(16, 185, 129, 0.12)",
+                        color: "#10b981",
+                        border: "1px solid rgba(16, 185, 129, 0.3)",
+                      }}
+                    >
+                      {p.apiStatus}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: "12.5px", color: "var(--text-secondary)", margin: 0, lineHeight: 1.4 }}>
+                    {p.apiHowTo}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ marginTop: "24px", textAlign: "right" }}>
+              <button
+                onClick={() => setShowApiModal(false)}
+                style={{
+                  background: "var(--brand-crimson)",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "10px 22px",
+                  fontSize: "13px",
+                  fontWeight: 650,
+                  cursor: "pointer",
+                }}
+              >
+                Entendido, Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -345,10 +345,10 @@ async function fallbackDeforestationCheck(geometry: GeometryData, plotId: string
 
   const mapbiomasUrl = `https://plataforma.brasil.mapbiomas.org/?theme=coverage_lclu#${centerLat},${centerLng},14`;
   const mapbiomasAlertaUrl = "https://alerta.mapbiomas.org/";
-  const eufoUrl = "https://forest-observatory.ec.europa.eu/forest/";
+  const eufoUrl = "https://forest-observatory.ec.europa.eu/forest/rmap";
   const inpeUrl = "https://terrabrasilis.dpi.inpe.br/app/map/deforestation";
-  const sicarUrl = "https://www.car.gov.br/#/consultar";
-  const ibamaUrl = "https://servicos.ibama.gov.br/ctf/publico/areasembargadas/ConsultaPublicaAreasEmbargadas.php";
+  const sicarUrl = "https://consulta.car.gov.br/";
+  const ibamaUrl = "https://pam.ibama.gov.br/";
 
   return {
     areaHa: Number(calculatedArea.toFixed(2)),
@@ -430,10 +430,10 @@ export async function POST(request: Request) {
         mapbiomasUrl: verificationUrl(territoryId),
         mapbiomasAlertaUrl: "https://alerta.mapbiomas.org/",
         gfwUrl: `https://www.globalforestwatch.org/map/?map=center,lat:${Number(((Math.min(...geometry.polygons.flat(2).map((p) => p[1])) + Math.max(...geometry.polygons.flat(2).map((p) => p[1]))) / 2).toFixed(6))},lng:${Number(((Math.min(...geometry.polygons.flat(2).map((p) => p[0])) + Math.max(...geometry.polygons.flat(2).map((p) => p[0]))) / 2).toFixed(6))},zoom:14`,
-        eufoUrl: "https://forest-observatory.ec.europa.eu/forest/",
+        eufoUrl: "https://forest-observatory.ec.europa.eu/forest/rmap",
         inpeUrl: "https://terrabrasilis.dpi.inpe.br/app/map/deforestation",
-        sicarUrl: "https://www.car.gov.br/#/consultar",
-        ibamaUrl: "https://servicos.ibama.gov.br/ctf/publico/areasembargadas/ConsultaPublicaAreasEmbargadas.php",
+        sicarUrl: "https://consulta.car.gov.br/",
+        ibamaUrl: "https://pam.ibama.gov.br/",
         geometryHash: geoHash,
         fromCache: false,
       };
