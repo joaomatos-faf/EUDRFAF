@@ -75,7 +75,7 @@ export type MapbiomasCheck = {
   }>;
 };
 
-export type ActiveView = "landing" | "app" | "portal" | "contratos" | "dashboard";
+export type ActiveView = "landing" | "app" | "portal" | "contratos" | "dashboard" | "verify";
 
 export const EMPTY_MAPBIOMAS_CHECK: MapbiomasCheck = {
   status: "idle",

@@ -13,6 +13,7 @@ import { NewProcessModal } from "./components/NewProcessModal";
 import { ClientPortalModal } from "./components/ClientPortalModal";
 import { ServerStorageExplorer } from "./components/ServerStorageExplorer";
 import ExecutiveDashboardView from "./components/ExecutiveDashboardView";
+import { QuickVerifyView } from "./components/QuickVerifyView";
 import { PlotIdentificationCard } from "./components/PlotIdentificationCard";
 import { GeometryImporter } from "./components/GeometryImporter";
 import { LocationComplianceCard } from "./components/LocationComplianceCard";
@@ -273,11 +274,83 @@ export default function Home() {
         onOpenFafApp={() => setActiveView("app")}
         onOpenClientPortal={() => setActiveView("portal")}
         onOpenDashboard={() => setActiveView("dashboard")}
+        onOpenVerify={() => setActiveView("verify")}
         onOpenCloud={() => {
           if (typeof window !== "undefined") {
             window.location.href = "/cloud";
           }
         }}
+      />
+    );
+  }
+
+  // 1.5. Verificador Rápido de KML (verify.fafeu.online)
+  if (activeView === "verify") {
+    if (userMgmt.isAuthenticated === false) {
+      return (
+        <LoginScreen
+          loginUsername={userMgmt.loginUsername}
+          setLoginUsername={userMgmt.setLoginUsername}
+          loginPassword={userMgmt.loginPassword}
+          setLoginPassword={userMgmt.setLoginPassword}
+          loginError={userMgmt.loginError}
+          title="Verificador Rápido de KML"
+          eyebrow="FAF Coffees • Auditoria Instantânea EUDR"
+          subtitle="Informe suas credenciais de administrador ou operador para verificar arquivos KML diretamente."
+          buttonText="Acessar Verificador ➔"
+          userLabel="Usuário"
+          passLabel="Senha"
+          userPlaceholder="ex: admin ou joaomatos"
+          passPlaceholder="••••••••"
+          backText="‹ Voltar ao Início"
+          onLogin={async (e) => {
+            if (e && typeof e.preventDefault === "function") e.preventDefault();
+            const success = await userMgmt.handleLogin(e);
+            if (success) setActiveView("verify");
+          }}
+          onBackToLanding={() => setActiveView("landing")}
+        />
+      );
+    }
+
+    if (userMgmt.loggedUserRole === "client") {
+      return (
+        <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "var(--bg-canvas)", padding: "24px" }}>
+          <div style={{ maxWidth: "480px", background: "var(--surface)", border: "1px solid var(--line)", borderRadius: "16px", padding: "32px", textAlign: "center" }}>
+            <div style={{ fontSize: "36px", marginBottom: "16px" }}>🔒</div>
+            <h3 style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 8px 0" }}>Acesso Restrito</h3>
+            <p style={{ fontSize: "13.5px", color: "var(--text-secondary)", margin: "0 0 24px 0" }}>
+              O Verificador Rápido de KML é exclusivo para administradores e operadores de campo. Para consultar seus lotes e contratos, acesse o Portal do Cliente.
+            </p>
+            <button
+              onClick={() => setActiveView("portal")}
+              style={{
+                background: "var(--brand-crimson)",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: "8px",
+                padding: "10px 20px",
+                fontSize: "13.5px",
+                fontWeight: 650,
+                cursor: "pointer",
+              }}
+            >
+              Ir para o Portal do Cliente ➔
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <QuickVerifyView
+        userName={userMgmt.loggedUserName || userMgmt.loggedUserKey || "Operador"}
+        userRole={userMgmt.loggedUserRole}
+        onLogout={userMgmt.handleLogout}
+        onOpenApp={() => setActiveView("app")}
+        onOpenDashboard={() => setActiveView("dashboard")}
+        onOpenContracts={() => setActiveView("contratos")}
+        onOpenLanding={() => setActiveView("landing")}
       />
     );
   }
@@ -327,6 +400,7 @@ export default function Home() {
           onOpenPreparer={() => setActiveView("app")}
           onOpenDashboard={() => setActiveView("dashboard")}
           onOpenContracts={() => setActiveView("contratos")}
+          onOpenVerify={() => setActiveView("verify")}
           onOpenAdminModal={() => userMgmt.setShowAdminModal(true)}
           onLogout={userMgmt.handleLogout}
           onNewProcess={handleNewProcessClick}
@@ -387,6 +461,7 @@ export default function Home() {
           onOpenPreparer={() => setActiveView("app")}
           onOpenDashboard={() => setActiveView("dashboard")}
           onOpenContracts={() => setActiveView("contratos")}
+          onOpenVerify={() => setActiveView("verify")}
           onOpenAdminModal={() => userMgmt.setShowAdminModal(true)}
           onLogout={userMgmt.handleLogout}
           onNewProcess={handleNewProcessClick}
@@ -509,6 +584,7 @@ export default function Home() {
         onOpenPreparer={() => setActiveView("app")}
         onOpenDashboard={() => setActiveView("dashboard")}
         onOpenContracts={() => setActiveView("contratos")}
+        onOpenVerify={() => setActiveView("verify")}
         onOpenAdminModal={() => userMgmt.setShowAdminModal(true)}
         onLogout={userMgmt.handleLogout}
         onNewProcess={handleNewProcessClick}

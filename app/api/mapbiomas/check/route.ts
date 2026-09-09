@@ -150,23 +150,23 @@ function validateGeometry(value: unknown): GeometryData {
 function validateDetails(value: unknown) {
   const input = value && typeof value === "object" ? value as Record<string, unknown> : {};
   const text = (field: string) => String(input[field] ?? "").trim().slice(0, 120);
-  const plotId = sanitizePlotId(text("plotId"));
-  const attributes: ShapefileAttributes = {
-    farm: text("farm"),
-    producer: text("producer"),
-    supplier: text("supplier"),
-    region: text("region"),
-    municipality: text("municipality"),
-    state: text("state"),
-    mappedAt: text("mappedAt"),
-    checkedAt: text("checkedAt"),
-    compliance: text("compliance"),
-    mappedBy: text("mappedBy"),
-    car: text("car"),
-  };
-  if (!plotId || !attributes.supplier || !attributes.municipality || !attributes.state || !attributes.mappedBy) {
-    throw new Error("Preencha o código do talhão, fornecedor, município, estado e responsável pelo mapeamento antes da consulta.");
+  let plotId = sanitizePlotId(text("plotId"));
+  if (!plotId) {
+    plotId = `VERIFY-${Date.now().toString(36).toUpperCase()}`;
   }
+  const attributes: ShapefileAttributes = {
+    farm: text("farm") || "Talhão Verificação Rápida",
+    producer: text("producer") || "Operador FAF",
+    supplier: text("supplier") || "Verificação Rápida",
+    region: text("region") || "Brasil",
+    municipality: text("municipality") || "Brasil",
+    state: text("state") || "BR",
+    mappedAt: text("mappedAt") || new Date().toISOString().slice(0, 10),
+    checkedAt: text("checkedAt") || new Date().toISOString().slice(0, 10),
+    compliance: text("compliance") || "Em Análise",
+    mappedBy: text("mappedBy") || "FAF Verificador",
+    car: text("car") || "N/A",
+  };
   return { plotId, attributes };
 }
 
