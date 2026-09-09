@@ -58,15 +58,26 @@ export function HumanValidationCard({
           </small>
         </span>
       </label>
-      {mapbiomasCheck.verificationUrl && (
-        <a
-          className="text-link"
-          href={mapbiomasCheck.verificationUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Abrir talhão no MapBiomas ↗
-        </a>
+      {(mapbiomasCheck.verificationUrl || mapbiomasCheck.mapbiomasUrl) && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginTop: "4px" }}>
+          <a
+            className="text-link"
+            href={mapbiomasCheck.mapbiomasUrl || (mapbiomasCheck.verificationUrl.includes("mapbiomas") ? mapbiomasCheck.verificationUrl : "https://plataforma.brasil.mapbiomas.org/?theme=coverage_lclu")}
+            target="_blank"
+            rel="noreferrer"
+          >
+            🇧🇷 Abrir no MapBiomas Brasil ↗
+          </a>
+          <a
+            className="text-link"
+            href={mapbiomasCheck.gfwUrl || (mapbiomasCheck.verificationUrl.includes("globalforestwatch") ? mapbiomasCheck.verificationUrl : "https://www.globalforestwatch.org/map/")}
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: "var(--accent, #0284c7)" }}
+          >
+            🌍 Abrir no Global Forest Watch ↗
+          </a>
+        </div>
       )}
     </article>
   );

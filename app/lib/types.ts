@@ -58,6 +58,9 @@ export type MapbiomasCheck = {
   checkedAt: string;
   message: string;
   verificationUrl: string;
+  mapbiomasUrl?: string;
+  gfwUrl?: string;
+  eufoUrl?: string;
   changes: Array<{
     fromYear: number;
     toYear: number;

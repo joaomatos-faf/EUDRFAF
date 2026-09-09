@@ -273,15 +273,43 @@ export function LocationComplianceCard({
                 <p>{mapbiomasCheck.message}</p>
               </>
             )}
-            {mapbiomasCheck.verificationUrl && (
-              <a
-                className="verification-link"
-                href={mapbiomasCheck.verificationUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Abrir talhão na Plataforma Interativa do MapBiomas ↗
-              </a>
+            {(mapbiomasCheck.verificationUrl || mapbiomasCheck.mapbiomasUrl || mapbiomasCheck.gfwUrl) && (
+              <div className="verification-links-group" style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(0,0,0,0.08)" }}>
+                <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted, #64748b)" }}>
+                  Auditoria Cruzada de Desmatamento (EUDR Multi-Plataforma):
+                </span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  <a
+                    className="verification-link"
+                    href={mapbiomasCheck.mapbiomasUrl || (mapbiomasCheck.verificationUrl && mapbiomasCheck.verificationUrl.includes("mapbiomas") ? mapbiomasCheck.verificationUrl : "https://plataforma.brasil.mapbiomas.org/?theme=coverage_lclu")}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, padding: "6px 12px", borderRadius: "6px", background: "rgba(22, 163, 74, 0.1)", color: "#15803d", textDecoration: "none", border: "1px solid rgba(22, 163, 74, 0.25)" }}
+                  >
+                    🇧🇷 Abrir no MapBiomas Brasil ↗
+                  </a>
+
+                  <a
+                    className="verification-link"
+                    href={mapbiomasCheck.gfwUrl || (mapbiomasCheck.verificationUrl && mapbiomasCheck.verificationUrl.includes("globalforestwatch") ? mapbiomasCheck.verificationUrl : "https://www.globalforestwatch.org/map/")}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, padding: "6px 12px", borderRadius: "6px", background: "rgba(3, 105, 161, 0.1)", color: "#0369a1", textDecoration: "none", border: "1px solid rgba(3, 105, 161, 0.25)" }}
+                  >
+                    🌍 Abrir no Global Forest Watch (GFW) ↗
+                  </a>
+
+                  <a
+                    className="verification-link"
+                    href={mapbiomasCheck.eufoUrl || "https://forest-observatory.ec.europa.eu/forest/"}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, padding: "6px 12px", borderRadius: "6px", background: "rgba(100, 116, 139, 0.1)", color: "#475569", textDecoration: "none", border: "1px solid rgba(100, 116, 139, 0.25)" }}
+                  >
+                    🇪🇺 Observatório Europeu (EUFO) ↗
+                  </a>
+                </div>
+              </div>
             )}
           </div>
         )}

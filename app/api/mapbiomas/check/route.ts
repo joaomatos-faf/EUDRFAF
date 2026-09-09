@@ -341,7 +341,10 @@ async function fallbackDeforestationCheck(geometry: GeometryData, plotId: string
 
   const mapUrl = geostoreId
     ? `https://www.globalforestwatch.org/map/geostore/${geostoreId}/?map=center,lat:${centerLat},lng:${centerLng},zoom:14`
-    : `https://plataforma.brasil.mapbiomas.org`;
+    : `https://www.globalforestwatch.org/map/?map=center,lat:${centerLat},lng:${centerLng},zoom:14`;
+
+  const mapbiomasUrl = `https://plataforma.brasil.mapbiomas.org/?theme=coverage_lclu#${centerLat},${centerLng},14`;
+  const eufoUrl = "https://forest-observatory.ec.europa.eu/forest/";
 
   return {
     areaHa: Number(calculatedArea.toFixed(2)),
@@ -354,6 +357,9 @@ async function fallbackDeforestationCheck(geometry: GeometryData, plotId: string
     collection: "10.1",
     source: "MapBiomas / Global Forest Watch · Verificação EUDR (Marco 31/12/2020)",
     verificationUrl: mapUrl,
+    mapbiomasUrl,
+    gfwUrl: mapUrl,
+    eufoUrl,
     fromCache: false,
   };
 }
@@ -413,6 +419,9 @@ export async function POST(request: Request) {
         collection: "10.1",
         source: "MapBiomas · Série temporal de Cobertura por classe",
         verificationUrl: verificationUrl(territoryId),
+        mapbiomasUrl: verificationUrl(territoryId),
+        gfwUrl: `https://www.globalforestwatch.org/map/?map=center,lat:${Number(((Math.min(...geometry.polygons.flat(2).map((p) => p[1])) + Math.max(...geometry.polygons.flat(2).map((p) => p[1]))) / 2).toFixed(6))},lng:${Number(((Math.min(...geometry.polygons.flat(2).map((p) => p[0])) + Math.max(...geometry.polygons.flat(2).map((p) => p[0]))) / 2).toFixed(6))},zoom:14`,
+        eufoUrl: "https://forest-observatory.ec.europa.eu/forest/",
         geometryHash: geoHash,
         fromCache: false,
       };
