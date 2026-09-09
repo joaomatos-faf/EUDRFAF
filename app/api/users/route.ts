@@ -78,13 +78,25 @@ export async function GET() {
     const cfEnv = await getCloudflareEnv();
     let currentUsers: Record<string, UserProfile> = { ...DEFAULT_USERS_DATA };
 
+    const envUsersJson =
+      cfEnv?.USERS_DATA_JSON ||
+      (typeof process !== "undefined" ? process.env?.USERS_DATA_JSON : null);
+    if (envUsersJson && typeof envUsersJson === "string") {
+      try {
+        const parsed = JSON.parse(envUsersJson);
+        if (parsed && typeof parsed === "object") {
+          currentUsers = { ...currentUsers, ...parsed };
+        }
+      } catch {}
+    }
+
     if (cfEnv?.USERS_KV && typeof cfEnv.USERS_KV.get === "function") {
       const data = (await cfEnv.USERS_KV.get("faf_eudr_users", { type: "json" })) as Record<string, UserProfile> | null;
       if (data && typeof data === "object") {
-        currentUsers = { ...DEFAULT_USERS_DATA, ...data };
+        currentUsers = { ...currentUsers, ...data };
       }
     } else if (memoryUsersStore) {
-      currentUsers = { ...DEFAULT_USERS_DATA, ...memoryUsersStore };
+      currentUsers = { ...currentUsers, ...memoryUsersStore };
     }
 
     // Security: NEVER return password hashes or plaintext in GET
