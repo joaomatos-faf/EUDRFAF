@@ -59,8 +59,12 @@ export type MapbiomasCheck = {
   message: string;
   verificationUrl: string;
   mapbiomasUrl?: string;
+  mapbiomasAlertaUrl?: string;
   gfwUrl?: string;
   eufoUrl?: string;
+  inpeUrl?: string;
+  sicarUrl?: string;
+  ibamaUrl?: string;
   changes: Array<{
     fromYear: number;
     toYear: number;

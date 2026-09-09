@@ -274,19 +274,29 @@ export function LocationComplianceCard({
               </>
             )}
             {(mapbiomasCheck.verificationUrl || mapbiomasCheck.mapbiomasUrl || mapbiomasCheck.gfwUrl) && (
-              <div className="verification-links-group" style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(0,0,0,0.08)" }}>
+              <div className="verification-links-group" style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "14px", paddingTop: "14px", borderTop: "1px solid rgba(0,0,0,0.08)" }}>
                 <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted, #64748b)" }}>
-                  Auditoria Cruzada de Desmatamento (EUDR Multi-Plataforma):
+                  Auditoria Cruzada de Desmatamento & Conformidade EUDR (Multi-Plataformas):
                 </span>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "8px" }}>
                   <a
                     className="verification-link"
                     href={mapbiomasCheck.mapbiomasUrl || (mapbiomasCheck.verificationUrl && mapbiomasCheck.verificationUrl.includes("mapbiomas") ? mapbiomasCheck.verificationUrl : "https://plataforma.brasil.mapbiomas.org/?theme=coverage_lclu")}
                     target="_blank"
                     rel="noreferrer"
-                    style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, padding: "6px 12px", borderRadius: "6px", background: "rgba(22, 163, 74, 0.1)", color: "#15803d", textDecoration: "none", border: "1px solid rgba(22, 163, 74, 0.25)" }}
+                    style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, padding: "7px 12px", borderRadius: "6px", background: "rgba(22, 163, 74, 0.1)", color: "#15803d", textDecoration: "none", border: "1px solid rgba(22, 163, 74, 0.25)" }}
                   >
-                    🇧🇷 Abrir no MapBiomas Brasil ↗
+                    🇧🇷 MapBiomas Cobertura ↗
+                  </a>
+
+                  <a
+                    className="verification-link"
+                    href={mapbiomasCheck.mapbiomasAlertaUrl || "https://alerta.mapbiomas.org/"}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, padding: "7px 12px", borderRadius: "6px", background: "rgba(217, 119, 6, 0.1)", color: "#b45309", textDecoration: "none", border: "1px solid rgba(217, 119, 6, 0.25)" }}
+                  >
+                    🚨 MapBiomas Alerta ↗
                   </a>
 
                   <a
@@ -294,9 +304,9 @@ export function LocationComplianceCard({
                     href={mapbiomasCheck.gfwUrl || (mapbiomasCheck.verificationUrl && mapbiomasCheck.verificationUrl.includes("globalforestwatch") ? mapbiomasCheck.verificationUrl : "https://www.globalforestwatch.org/map/")}
                     target="_blank"
                     rel="noreferrer"
-                    style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, padding: "6px 12px", borderRadius: "6px", background: "rgba(3, 105, 161, 0.1)", color: "#0369a1", textDecoration: "none", border: "1px solid rgba(3, 105, 161, 0.25)" }}
+                    style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, padding: "7px 12px", borderRadius: "6px", background: "rgba(3, 105, 161, 0.1)", color: "#0369a1", textDecoration: "none", border: "1px solid rgba(3, 105, 161, 0.25)" }}
                   >
-                    🌍 Abrir no Global Forest Watch (GFW) ↗
+                    🌍 Global Forest Watch (GFW) ↗
                   </a>
 
                   <a
@@ -304,9 +314,39 @@ export function LocationComplianceCard({
                     href={mapbiomasCheck.eufoUrl || "https://forest-observatory.ec.europa.eu/forest/"}
                     target="_blank"
                     rel="noreferrer"
-                    style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, padding: "6px 12px", borderRadius: "6px", background: "rgba(100, 116, 139, 0.1)", color: "#475569", textDecoration: "none", border: "1px solid rgba(100, 116, 139, 0.25)" }}
+                    style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, padding: "7px 12px", borderRadius: "6px", background: "rgba(30, 58, 138, 0.1)", color: "#1e40af", textDecoration: "none", border: "1px solid rgba(30, 58, 138, 0.25)" }}
                   >
                     🇪🇺 Observatório Europeu (EUFO) ↗
+                  </a>
+
+                  <a
+                    className="verification-link"
+                    href={mapbiomasCheck.inpeUrl || "https://terrabrasilis.dpi.inpe.br/app/map/deforestation"}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, padding: "7px 12px", borderRadius: "6px", background: "rgba(79, 70, 229, 0.1)", color: "#4338ca", textDecoration: "none", border: "1px solid rgba(79, 70, 229, 0.25)" }}
+                  >
+                    🛰️ INPE · TerraBrasilis (PRODES) ↗
+                  </a>
+
+                  <a
+                    className="verification-link"
+                    href={form.car ? `https://www.registrorural.com.br/` : (mapbiomasCheck.sicarUrl || "https://www.car.gov.br/#/consultar")}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, padding: "7px 12px", borderRadius: "6px", background: "rgba(13, 148, 136, 0.1)", color: "#0f766e", textDecoration: "none", border: "1px solid rgba(13, 148, 136, 0.25)" }}
+                  >
+                    📋 SICAR · Cadastro Rural ↗
+                  </a>
+
+                  <a
+                    className="verification-link"
+                    href={mapbiomasCheck.ibamaUrl || "https://servicos.ibama.gov.br/ctf/publico/areasembargadas/ConsultaPublicaAreasEmbargadas.php"}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 600, padding: "7px 12px", borderRadius: "6px", background: "rgba(190, 18, 60, 0.1)", color: "#be123c", textDecoration: "none", border: "1px solid rgba(190, 18, 60, 0.25)" }}
+                  >
+                    ⚖️ Embargos IBAMA ↗
                   </a>
                 </div>
               </div>
