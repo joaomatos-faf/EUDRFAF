@@ -11,6 +11,7 @@ interface LandingPageProps {
   onOpenClientPortal: () => void;
   onOpenDashboard?: () => void;
   onOpenCloud?: () => void;
+  onOpenVerify?: () => void;
 }
 
 export function LandingPage({
@@ -18,6 +19,7 @@ export function LandingPage({
   onOpenClientPortal,
   onOpenDashboard,
   onOpenCloud,
+  onOpenVerify,
 }: LandingPageProps) {
   const { isDark } = useTheme();
   const { locale, t } = useTranslation();
@@ -133,6 +135,26 @@ export function LandingPage({
               }}
             >
               📊 Dashboard
+            </a>
+          )}
+
+          {onOpenVerify && (
+            <a
+              href="https://verify.fafeu.online"
+              onClick={(e) => handleNavClick(e, onOpenVerify)}
+              style={{
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "var(--text-secondary)",
+                padding: "8px 14px",
+                borderRadius: "999px",
+                background: "var(--bg-subtle)",
+                textDecoration: "none",
+                transition: "all 0.2s ease",
+                cursor: "pointer",
+              }}
+            >
+              🔍 Verificar KML
             </a>
           )}
 

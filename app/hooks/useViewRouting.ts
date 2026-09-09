@@ -38,12 +38,13 @@ export function useViewRouting(loggedUserRole: string | undefined, isAuthenticat
     }
 
     const detectView = (): ActiveView => {
+      if (host.startsWith("verify.") || search.includes("view=verify") || hash.includes("verify")) return "verify";
       if (host.startsWith("dashboard.") || search.includes("view=dashboard") || hash.includes("dashboard")) return "dashboard";
       if (host.startsWith("contratos.") || search.includes("view=contratos") || hash.includes("contratos")) return "contratos";
       if (host.startsWith("portal.") || host.startsWith("cliente.") || search.includes("view=portal") || hash.includes("portal")) return "portal";
       if (host.startsWith("app.") || host.startsWith("preparador.") || search.includes("view=app") || hash.includes("app")) return "app";
       if (search.includes("view=landing") || hash.includes("landing")) return "landing";
-      if (savedView && ["landing", "app", "portal", "contratos", "dashboard"].includes(savedView)) return savedView;
+      if (savedView && ["landing", "app", "portal", "contratos", "dashboard", "verify"].includes(savedView)) return savedView;
       return "landing";
     };
 

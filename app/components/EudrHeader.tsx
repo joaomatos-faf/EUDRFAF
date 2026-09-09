@@ -8,11 +8,12 @@ interface EudrHeaderProps {
   isAuthenticated: boolean;
   loggedUserRole: "admin" | "user" | "client";
   loggedUserKey: string;
-  activeView?: "landing" | "app" | "portal" | "contratos" | "dashboard";
+  activeView?: "landing" | "app" | "portal" | "contratos" | "dashboard" | "verify";
   onOpenLanding?: () => void;
   onOpenPreparer?: () => void;
   onOpenDashboard?: () => void;
   onOpenContracts?: () => void;
+  onOpenVerify?: () => void;
   onOpenAdminModal?: () => void;
   onLogout: () => void;
   onNewProcess?: () => void;
@@ -29,6 +30,7 @@ export function EudrHeader({
   onOpenPreparer,
   onOpenDashboard,
   onOpenContracts,
+  onOpenVerify,
   onOpenAdminModal,
   onLogout,
   onNewProcess,
@@ -159,6 +161,25 @@ export function EudrHeader({
                 }}
               >
                 {t("nav.contracts")}
+              </a>
+            )}
+
+            {onOpenVerify && activeView !== "verify" && (
+              <a
+                href={getSubdomainUrl("https://verify.fafeu.online", locale)}
+                onClick={(e) => handleNavClick(e, onOpenVerify)}
+                style={{
+                  color: "var(--text-secondary)",
+                  fontSize: "12.5px",
+                  fontWeight: 550,
+                  padding: "6px 12px",
+                  borderRadius: "999px",
+                  textDecoration: "none",
+                  transition: "all 0.15s ease",
+                  cursor: "pointer",
+                }}
+              >
+                Verificar KML
               </a>
             )}
 
