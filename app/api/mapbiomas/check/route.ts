@@ -299,9 +299,15 @@ function compareCoverageSeries(response: StatisticsResponse) {
 }
 
 function verificationUrl(territoryId: string) {
-  const url = new URL("https://plataforma.brasil.mapbiomas.org");
-  url.searchParams.append("theme", "coverage_lclu");
-  url.searchParams.append("territoryId", territoryId);
+  const url = new URL("https://plataforma.brasil.mapbiomas.org/coverage/coverage_lclu");
+  url.searchParams.append("tl[id]", "1");
+  url.searchParams.append("tl[themeKey]", "coverage");
+  url.searchParams.append("tl[subthemeKey]", "coverage_lclu");
+  url.searchParams.append("tl[legendKey]", "default");
+  url.searchParams.append("tl[year]", String(END_YEAR));
+  url.searchParams.append("t[regionKey]", "brazil");
+  url.searchParams.append("t[ids][]", territoryId);
+  url.searchParams.append("t[divisionCategoryId]", "4");
   return url.toString();
 }
 
