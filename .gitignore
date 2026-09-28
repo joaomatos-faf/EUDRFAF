@@ -45,3 +45,8 @@ next-env.d.ts
 /work/
 /.local/
 *.tsbuildinfo
+
+# sensitive customer data, master spreadsheets and raw backups
+*.xlsx
+*.xls
+backup_*.zip

@@ -1,20 +1,20 @@
 import crypto from "node:crypto";
 import { ENCRYPTED_PAYLOAD, PlotMasterRecord } from "@/app/lib/plotMasterData";
-
-// A chave AES-256 é derivada da variável de ambiente FAF_EUDR_SECRET_KEY.
-// Configure-a em .dev.vars (local) ou via `npx wrangler secret put FAF_EUDR_SECRET_KEY` (produção).
-const _rawKey = process.env.FAF_EUDR_SECRET_KEY;
-if (!_rawKey) {
-  throw new Error("[plot-lookup] FAF_EUDR_SECRET_KEY não está configurada. Defina a variável de ambiente antes de iniciar o servidor.");
-}
-const SECRET_KEY = crypto.createHash("sha256").update(_rawKey).digest();
+import { getAuthenticatedSession } from "@/app/lib/auth";
 
 let dynamicMasterList: PlotMasterRecord[] = [];
 
 function getMasterList(): PlotMasterRecord[] {
   if (dynamicMasterList.length === 0) {
+    const rawKey =
+      (typeof process !== "undefined" && process.env?.FAF_EUDR_SECRET_KEY) ||
+      "";
+    if (!rawKey) {
+      return [];
+    }
     try {
-      const decipher = crypto.createDecipheriv("aes-256-cbc", SECRET_KEY, Buffer.from(ENCRYPTED_PAYLOAD.iv, "hex"));
+      const secretKey = crypto.createHash("sha256").update(rawKey).digest();
+      const decipher = crypto.createDecipheriv("aes-256-cbc", secretKey, Buffer.from(ENCRYPTED_PAYLOAD.iv, "hex"));
       let decrypted = decipher.update(ENCRYPTED_PAYLOAD.data, "hex", "utf8");
       decrypted += decipher.final("utf8");
       dynamicMasterList = JSON.parse(decrypted);
@@ -27,6 +27,22 @@ function getMasterList(): PlotMasterRecord[] {
 }
 
 export async function GET(request: Request) {
+  const session = await getAuthenticatedSession(request);
+  if (!session) {
+    return Response.json(
+      { error: "Acesso negado. Autenticação obrigatória para consultar talhões." },
+      { status: 401 }
+    );
+  }
+
+  // Clientes não possuem permissão para consultar a base mestra global de talhões de terceiros
+  if (session.role === "client") {
+    return Response.json(
+      { error: "Acesso restrito à equipe operacional e administradores." },
+      { status: 403 }
+    );
+  }
+
   const { searchParams } = new URL(request.url);
   const query = (searchParams.get("query") || searchParams.get("plotId") || "").trim().toUpperCase();
 
@@ -57,6 +73,21 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const session = await getAuthenticatedSession(request);
+    if (!session) {
+      return Response.json(
+        { error: "Acesso negado. Autenticação obrigatória." },
+        { status: 401 }
+      );
+    }
+
+    if (session.role !== "admin" && session.role !== "user") {
+      return Response.json(
+        { error: "Acesso proibido. Apenas administradores e equipe operacional podem cadastrar ou editar talhões." },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { plotId, farm = "", producer = "", supplier = "", region = "", hectares = 0 } = body;
 

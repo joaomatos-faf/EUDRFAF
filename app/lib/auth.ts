@@ -227,6 +227,32 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
 }
 
 /**
+ * Extracts session token from Cookie header or Authorization Bearer header
+ */
+export function extractSessionToken(request: Request): string | null {
+  const cookieHeader = request.headers.get("cookie");
+  if (cookieHeader) {
+    const match = cookieHeader.match(new RegExp(`(^|;\\s*)${SESSION_COOKIE_NAME}=([^;]+)`));
+    if (match && match[2]) return match[2];
+  }
+  const authHeader = request.headers.get("authorization");
+  if (authHeader && authHeader.toLowerCase().startsWith("bearer ")) {
+    const bearer = authHeader.substring(7).trim();
+    if (bearer) return bearer;
+  }
+  return null;
+}
+
+/**
+ * Authenticates request and returns SessionPayload or null
+ */
+export async function getAuthenticatedSession(request: Request): Promise<SessionPayload | null> {
+  const token = extractSessionToken(request);
+  if (!token) return null;
+  return verifySessionToken(token);
+}
+
+/**
  * Multi-Tenant & RBAC Storage Access Control with Segment-Based Validation
  * - mode: "read" | "write"
  * - Admins can read & write anywhere.

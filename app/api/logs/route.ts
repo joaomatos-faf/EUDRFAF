@@ -1,3 +1,5 @@
+import { getAuthenticatedSession } from "@/app/lib/auth";
+
 export interface AuditLogEntry {
   id: string;
   timestamp: string;
@@ -41,8 +43,23 @@ export async function OPTIONS() {
   return new Response(null, { status: 204, headers: corsHeaders });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const session = await getAuthenticatedSession(request);
+    if (!session) {
+      return Response.json(
+        { error: "Acesso negado. Autenticação obrigatória para consultar logs." },
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    if (session.role !== "admin" && session.role !== "user") {
+      return Response.json(
+        { error: "Acesso proibido. Apenas administradores e operadores podem acessar logs de auditoria." },
+        { status: 403, headers: corsHeaders }
+      );
+    }
+
     const cfEnv = await getCloudflareEnv();
     if (cfEnv?.USERS_KV && typeof cfEnv.USERS_KV.get === "function") {
       const data = await cfEnv.USERS_KV.get("faf_eudr_audit_logs", { type: "json" });
@@ -59,7 +76,22 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const session = await getAuthenticatedSession(request);
     const payload = (await request.json()) as { log?: AuditLogEntry; logs?: AuditLogEntry[] };
+
+    // Se não houver sessão ativa, apenas eventos legítimos de autenticação (LOGIN/LOGOUT) são permitidos
+    if (!session) {
+      const isAuthAction =
+        (payload.log && (payload.log.action === "LOGIN" || payload.log.action === "LOGOUT")) ||
+        (Array.isArray(payload.logs) && payload.logs.every((l) => l.action === "LOGIN" || l.action === "LOGOUT"));
+
+      if (!isAuthAction) {
+        return Response.json(
+          { error: "Acesso negado. Autenticação obrigatória para gravar logs de auditoria." },
+          { status: 401, headers: corsHeaders }
+        );
+      }
+    }
     let currentLogs: AuditLogEntry[] = [];
 
     const cfEnv = await getCloudflareEnv();

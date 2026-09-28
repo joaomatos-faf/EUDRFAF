@@ -2,6 +2,7 @@ import { listR2Objects } from "@/app/lib/r2";
 import { getContracts, loadContractsFromR2 } from "@/app/lib/contractStore";
 import { getPublishedPlots, loadPublishedPlotsFromR2 } from "@/app/lib/clientPortalStore";
 import { getMasterList } from "@/app/lib/plotMasterData";
+import { getAuthenticatedSession, isAuthorizedForStorageKey } from "@/app/lib/auth";
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -61,6 +62,14 @@ function categorizeFile(key: string, ext: string): string {
 
 export async function GET(request: Request) {
   try {
+    const session = await getAuthenticatedSession(request);
+    if (!session) {
+      return Response.json(
+        { error: "Acesso negado. Autenticação obrigatória para consultar arquivos." },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const prefix = searchParams.get("prefix") || "";
     const filterExt = searchParams.get("ext")?.toLowerCase() || "";
@@ -224,44 +233,36 @@ export async function GET(request: Request) {
       }
     }
 
-    // 4. Excel Spreadsheets and Master Datasets
-    const spreadsheets = [
-      { key: "database/Lista IDPLOT geojson.xlsx", size: 20916 },
-      { key: "database/Lista clientes.xlsx", size: 12574 },
-    ];
-    for (const sheet of spreadsheets) {
-      if (!filesMap.has(sheet.key)) {
-        filesMap.set(sheet.key, {
-          key: sheet.key,
-          size: sheet.size,
-          lastModified: "2026-08-03T18:00:00.000Z",
-        });
+    // 5. System Database & Index Files in Cloud Storage (only for admin and staff)
+    if (session.role === "admin" || session.role === "user") {
+      const systemKnownKeys = [
+        "contratos_clientes/contracts_index.json",
+        "contratos_clientes/published_plots_index.json",
+        "users_mgmt/users_database.json",
+        "audit_logs/system_audit_logs.json",
+      ];
+      for (const sk of systemKnownKeys) {
+        if (!filesMap.has(sk)) {
+          filesMap.set(sk, {
+            key: sk,
+            size: 14280,
+            lastModified: new Date().toISOString(),
+          });
+        }
       }
     }
 
-    // 5. System Database & Index Files in Cloud Storage
-    const systemKnownKeys = [
-      "contratos_clientes/contracts_index.json",
-      "contratos_clientes/published_plots_index.json",
-      "users_mgmt/users_database.json",
-      "audit_logs/system_audit_logs.json",
-    ];
-    for (const sk of systemKnownKeys) {
-      if (!filesMap.has(sk)) {
-        filesMap.set(sk, {
-          key: sk,
-          size: 14280,
-          lastModified: new Date().toISOString(),
-        });
-      }
-    }
+    // Multi-tenant RBAC filter: each role only sees authorized keys
+    const authorizedItems = Array.from(filesMap.values()).filter((item) =>
+      isAuthorizedForStorageKey(session.role, session.clientName, item.key, "read")
+    );
 
     let totalBytes = 0;
     const categoriesCount: Record<string, number> = {};
     const extensionsCount: Record<string, number> = {};
     const foldersSet = new Set<string>();
 
-    const files = Array.from(filesMap.values()).map((item) => {
+    const files = authorizedItems.map((item) => {
       totalBytes += item.size;
       const parts = item.key.split("/");
       const filename = parts.pop() || item.key;

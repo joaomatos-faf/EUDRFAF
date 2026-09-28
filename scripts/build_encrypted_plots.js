@@ -43,34 +43,36 @@ export interface PlotMasterRecord {
 }
 
 // Payload Criptografado em AES-256-CBC (Protecao total dos dados dos produtores/fazendas)
-const ENCRYPTED_PAYLOAD = {
+export const ENCRYPTED_PAYLOAD = {
   iv: "${iv.toString("hex")}",
   data: "${encrypted}",
 };
 
-// A chave AES-256 é lida em runtime a partir da variável FAF_EUDR_SECRET_KEY.
-// Configure-a em .dev.vars (local) ou via `npx wrangler secret put FAF_EUDR_SECRET_KEY` (produção).
-const _rawKey = process.env.FAF_EUDR_SECRET_KEY;
-if (!_rawKey) {
-  throw new Error("[plotMasterData] FAF_EUDR_SECRET_KEY não está configurada. Defina a variável de ambiente.");
-}
-const SECRET_KEY = crypto.createHash("sha256").update(_rawKey).digest();
+let dynamicMasterList: PlotMasterRecord[] = [];
 
-let decryptedCache: PlotMasterRecord[] | null = null;
-
-export function getDecryptedPlotMasterList(): PlotMasterRecord[] {
-  if (decryptedCache) return decryptedCache;
-  try {
-    const decipher = crypto.createDecipheriv("aes-256-cbc", SECRET_KEY, Buffer.from(ENCRYPTED_PAYLOAD.iv, "hex"));
-    let decrypted = decipher.update(ENCRYPTED_PAYLOAD.data, "hex", "utf8");
-    decrypted += decipher.final("utf8");
-    decryptedCache = JSON.parse(decrypted);
-    return decryptedCache!;
-  } catch (err) {
-    console.error("Erro ao decriptografar dados de IDPLOT:", err);
-    return [];
+export function getMasterList(): PlotMasterRecord[] {
+  if (dynamicMasterList.length === 0) {
+    const rawKey =
+      (typeof process !== "undefined" && process.env?.FAF_EUDR_SECRET_KEY) ||
+      "";
+    if (!rawKey) {
+      return [];
+    }
+    try {
+      const secretKey = crypto.createHash("sha256").update(rawKey).digest();
+      const decipher = crypto.createDecipheriv("aes-256-cbc", secretKey, Buffer.from(ENCRYPTED_PAYLOAD.iv, "hex"));
+      let decrypted = decipher.update(ENCRYPTED_PAYLOAD.data, "hex", "utf8");
+      decrypted += decipher.final("utf8");
+      dynamicMasterList = JSON.parse(decrypted);
+    } catch (err) {
+      console.error("Erro ao decriptografar dados de IDPLOT no servidor:", err);
+      dynamicMasterList = [];
+    }
   }
+  return dynamicMasterList;
 }
+
+export const getDecryptedPlotMasterList = getMasterList;
 `;
 
   fs.writeFileSync(path.join(process.cwd(), "app/lib/plotMasterData.ts"), fileContent, "utf8");

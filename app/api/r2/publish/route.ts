@@ -1,5 +1,6 @@
 import { uploadToR2 } from "@/app/lib/r2";
 import { addPublishedPlot, PublishedPlotRecord } from "@/app/lib/clientPortalStore";
+import { getAuthenticatedSession } from "@/app/lib/auth";
 
 function sanitizePathSegment(value: string, fallback: string): string {
   if (!value || !value.trim()) return fallback;
@@ -14,6 +15,21 @@ function sanitizePathSegment(value: string, fallback: string): string {
 
 export async function POST(request: Request) {
   try {
+    const session = await getAuthenticatedSession(request);
+    if (!session) {
+      return Response.json(
+        { error: "Acesso negado. Autenticação obrigatória para publicar talhões." },
+        { status: 401 }
+      );
+    }
+
+    if (session.role !== "admin" && session.role !== "user") {
+      return Response.json(
+        { error: "Acesso proibido. Apenas administradores e operadores podem publicar talhões." },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const {
       plotId,
@@ -26,7 +42,7 @@ export async function POST(request: Request) {
       state = "",
       area = 0,
       compliance = "CONFORME",
-      publishedBy = "usuario.faf",
+      publishedBy = session.fullName || session.userKey,
       geojsonContent = "",
     } = body;
 

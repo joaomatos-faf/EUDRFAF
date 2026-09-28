@@ -1,10 +1,10 @@
 import crypto from "node:crypto";
 
 // Retrieve Cloudflare R2 credentials from environment variables. Ensure these are defined in .env.local and not hardcoded.
-const ACCOUNT_ID = process.env.CLOUDFLARE_R2_ACCOUNT_ID;
-const ACCESS_KEY_ID = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID;
-const SECRET_ACCESS_KEY = process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY;
-const BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME;
+const ACCOUNT_ID = process.env.CLOUDFLARE_R2_ACCOUNT_ID || "";
+const ACCESS_KEY_ID = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || "";
+const SECRET_ACCESS_KEY = process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY || "";
+const BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME || "";
 
 export interface R2ObjectItem {
   key: string;

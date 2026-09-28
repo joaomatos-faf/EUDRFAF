@@ -73,8 +73,19 @@ function checkRateLimit(ip: string): { allowed: boolean; remaining: number; retr
   return { allowed: true, remaining: RATE_LIMIT_MAX - record.count, retryAfter: 0 };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const cookieHeader = request.headers.get("cookie");
+    const sessionToken = extractCookieValue(cookieHeader, SESSION_COOKIE_NAME);
+    const session = sessionToken ? await verifySessionToken(sessionToken) : null;
+
+    if (!session || session.role !== "admin") {
+      return Response.json(
+        { error: "Acesso negado. Apenas administradores autenticados podem visualizar a lista de usuários." },
+        { status: 403 }
+      );
+    }
+
     const cfEnv = await getCloudflareEnv();
     let currentUsers: Record<string, UserProfile> = { ...DEFAULT_USERS_DATA };
 

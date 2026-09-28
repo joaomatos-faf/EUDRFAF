@@ -1,8 +1,17 @@
 import { deleteObjectFromR2 } from "@/app/lib/r2";
-import { deleteContract, getContracts, saveContractsToR2 } from "@/app/lib/contractStore";
+import { deleteContract, saveContractsToR2 } from "@/app/lib/contractStore";
+import { getAuthenticatedSession, isAuthorizedForStorageKey } from "@/app/lib/auth";
 
 export async function POST(request: Request) {
   try {
+    const session = await getAuthenticatedSession(request);
+    if (!session) {
+      return Response.json(
+        { error: "Acesso negado. Autenticação obrigatória para exclusão de arquivos." },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const key = body.key as string | undefined;
     const keys = (body.keys as string[] | undefined) || (key ? [key] : []);
@@ -12,6 +21,31 @@ export async function POST(request: Request) {
         JSON.stringify({ error: "Nenhum arquivo especificado para exclusão." }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
+    }
+
+    // Valida permissão de escrita/exclusão em todos os arquivos solicitados
+    for (const targetKey of keys) {
+      if (!targetKey || typeof targetKey !== "string") continue;
+
+      if (
+        targetKey.includes("..") ||
+        targetKey.includes("\\") ||
+        targetKey.includes("\0") ||
+        targetKey.startsWith("/")
+      ) {
+        return Response.json(
+          { error: `Caminho de arquivo inválido ou suspeito: "${targetKey}".` },
+          { status: 400 }
+        );
+      }
+
+      const authorized = isAuthorizedForStorageKey(session.role, session.clientName, targetKey, "write");
+      if (!authorized) {
+        return Response.json(
+          { error: `Acesso proibido. Você não possui permissão para excluir o arquivo "${targetKey}".` },
+          { status: 403 }
+        );
+      }
     }
 
     const deleted: string[] = [];

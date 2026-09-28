@@ -1,6 +1,7 @@
 import { uploadToR2 } from "@/app/lib/r2";
 import { addContract, updateContract, deleteContract, loadContractsFromR2, saveContractsToR2, ContractRecord, ContractLotItem, ContractPlotItem } from "@/app/lib/contractStore";
 import { getPublishedPlots } from "@/app/lib/clientPortalStore";
+import { getAuthenticatedSession } from "@/app/lib/auth";
 
 function sanitizeSegment(value: string, fallback: string): string {
   if (!value || !value.trim()) return fallback;
@@ -15,12 +16,27 @@ function sanitizeSegment(value: string, fallback: string): string {
 
 export async function POST(request: Request) {
   try {
+    const session = await getAuthenticatedSession(request);
+    if (!session) {
+      return Response.json(
+        { error: "Acesso negado. Autenticação obrigatória." },
+        { status: 401 }
+      );
+    }
+
+    if (session.role !== "admin" && session.role !== "user") {
+      return Response.json(
+        { error: "Acesso proibido. Apenas administradores e equipe operacional podem criar contratos." },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const {
       contractCode = "",
       clientName = "",
       lots = [],
-      createdBy = "joao.matos",
+      createdBy = session.fullName || session.userKey,
     } = body;
 
     if (!contractCode.trim() || !clientName.trim() || !Array.isArray(lots) || lots.length === 0) {
@@ -167,13 +183,28 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    const session = await getAuthenticatedSession(request);
+    if (!session) {
+      return Response.json(
+        { error: "Acesso negado. Autenticação obrigatória." },
+        { status: 401 }
+      );
+    }
+
+    if (session.role !== "admin" && session.role !== "user") {
+      return Response.json(
+        { error: "Acesso proibido. Apenas administradores e equipe operacional podem atualizar contratos." },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const {
       id = "",
       contractCode = "",
       clientName = "",
       lots = [],
-      createdBy = "joao.matos",
+      createdBy = session.fullName || session.userKey,
     } = body;
 
     if (!id || !contractCode.trim() || !clientName.trim() || !Array.isArray(lots) || lots.length === 0) {
@@ -307,16 +338,56 @@ export async function PUT(request: Request) {
   }
 }
 
-export async function GET() {
-  const contracts = await loadContractsFromR2();
-  return new Response(JSON.stringify({ contracts }), {
-    status: 200,
-    headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" },
-  });
+export async function GET(request: Request) {
+  try {
+    const session = await getAuthenticatedSession(request);
+    if (!session) {
+      return Response.json(
+        { error: "Acesso negado. Autenticação obrigatória para consultar contratos." },
+        { status: 401 }
+      );
+    }
+
+    const allContracts = await loadContractsFromR2();
+    let visibleContracts = allContracts;
+
+    if (session.role === "client") {
+      if (!session.clientName) {
+        return Response.json({ contracts: [] });
+      }
+      const clientUpper = session.clientName.trim().toUpperCase();
+      visibleContracts = allContracts.filter(
+        (c) => c.clientName.trim().toUpperCase() === clientUpper
+      );
+    }
+
+    return new Response(JSON.stringify({ contracts: visibleContracts }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" },
+    });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Erro ao carregar contratos.";
+    return Response.json({ error: msg }, { status: 500 });
+  }
 }
 
 export async function DELETE(request: Request) {
   try {
+    const session = await getAuthenticatedSession(request);
+    if (!session) {
+      return Response.json(
+        { error: "Acesso negado. Autenticação obrigatória." },
+        { status: 401 }
+      );
+    }
+
+    if (session.role !== "admin" && session.role !== "user") {
+      return Response.json(
+        { error: "Acesso proibido. Apenas administradores e equipe operacional podem excluir contratos." },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id") || "";
 

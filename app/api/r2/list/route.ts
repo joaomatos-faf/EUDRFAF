@@ -1,11 +1,34 @@
 import { getAllCloudR2Plots, loadPublishedPlotsFromR2 } from "@/app/lib/clientPortalStore";
 import { loadContractsFromR2 } from "@/app/lib/contractStore";
+import { getAuthenticatedSession } from "@/app/lib/auth";
 
 export async function GET(request: Request) {
   try {
+    const session = await getAuthenticatedSession(request);
+    if (!session) {
+      return Response.json(
+        { error: "Acesso negado. Autenticação obrigatória para consultar talhões publicados." },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const contractId = searchParams.get("contractId") || undefined;
-    const clientName = searchParams.get("clientName") || undefined;
+    let clientName = searchParams.get("clientName") || undefined;
+
+    // Isolamento multi-tenant: se o usuário for cliente, restringe estritamente aos seus dados
+    if (session.role === "client") {
+      if (!session.clientName) {
+        return Response.json({
+          success: true,
+          total: 0,
+          contractFilter: contractId || "TODOS",
+          clientFilter: "NENHUM",
+          plots: [],
+        });
+      }
+      clientName = session.clientName;
+    }
     
     await loadContractsFromR2();
     await loadPublishedPlotsFromR2();

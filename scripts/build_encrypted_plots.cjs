@@ -49,7 +49,9 @@ function buildEncryptedFile() {
   let encrypted = cipher.update(JSON.stringify(cleanRows), "utf8", "hex");
   encrypted += cipher.final("hex");
 
-  const fileContent = `export interface PlotMasterRecord {
+  const fileContent = `import crypto from "node:crypto";
+
+export interface PlotMasterRecord {
   plotId: string;
   farm: string;
   producer: string;
@@ -63,6 +65,32 @@ export const ENCRYPTED_PAYLOAD = {
   iv: "${iv.toString("hex")}",
   data: "${encrypted}",
 };
+
+let dynamicMasterList: PlotMasterRecord[] = [];
+
+export function getMasterList(): PlotMasterRecord[] {
+  if (dynamicMasterList.length === 0) {
+    const rawKey =
+      (typeof process !== "undefined" && process.env?.FAF_EUDR_SECRET_KEY) ||
+      "";
+    if (!rawKey) {
+      return [];
+    }
+    try {
+      const secretKey = crypto.createHash("sha256").update(rawKey).digest();
+      const decipher = crypto.createDecipheriv("aes-256-cbc", secretKey, Buffer.from(ENCRYPTED_PAYLOAD.iv, "hex"));
+      let decrypted = decipher.update(ENCRYPTED_PAYLOAD.data, "hex", "utf8");
+      decrypted += decipher.final("utf8");
+      dynamicMasterList = JSON.parse(decrypted);
+    } catch (err) {
+      console.error("Erro ao decriptografar dados de IDPLOT no servidor:", err);
+      dynamicMasterList = [];
+    }
+  }
+  return dynamicMasterList;
+}
+
+export const getDecryptedPlotMasterList = getMasterList;
 `;
 
   fs.writeFileSync(path.join(process.cwd(), "app/lib/plotMasterData.ts"), fileContent, "utf8");
