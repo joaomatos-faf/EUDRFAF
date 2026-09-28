@@ -41,16 +41,21 @@ function applySecurityHeaders(res: NextResponse): NextResponse {
 }
 
 export function middleware(request: NextRequest) {
-  const hostname =
+  const urlHostname = request.nextUrl.hostname || "";
+  const headerHostname =
     request.headers.get("x-forwarded-host") ||
     request.headers.get("host") ||
     "";
+  const hostname = headerHostname || urlHostname;
   const pathname = request.nextUrl.pathname;
   const proto = request.headers.get("x-forwarded-proto");
   const isLocal =
     hostname.includes("localhost") ||
     hostname.includes("127.0.0.1") ||
-    hostname.includes("::1");
+    hostname.includes("::1") ||
+    urlHostname === "localhost" ||
+    urlHostname === "127.0.0.1" ||
+    urlHostname.includes("localhost");
 
   // Redirecionamento obrigatório de HTTP para HTTPS em produção
   if (!isLocal && (proto === "http" || request.nextUrl.protocol === "http:")) {
