@@ -128,3 +128,22 @@ test("PENTEST SIMULATION - OWASP A07: Authentication & Credential Stuffing Defen
   // 3. Autenticação correta apenas com a senha exata
   assert.equal(await checkPasswordMatch(realPassword, validHash), true, "Senha correta deve ser aprovada");
 });
+
+test("PENTEST SIMULATION - OWASP A04: Insecure Design & Rate Limiting Abuse Defense", async () => {
+  const { checkRouteRateLimit } = await import("../app/lib/rateLimit.ts");
+  const attackerIp = "198.51.100.42";
+  const scope = "test_analysis_abuse";
+  const limit = 5;
+
+  // 1. Primeiras 5 requisições devem ser aceitas
+  for (let i = 1; i <= limit; i++) {
+    const res = checkRouteRateLimit(scope, attackerIp, limit, 60_000);
+    assert.equal(res.allowed, true, `Requisição ${i} dentro do limite deve ser permitida`);
+  }
+
+  // 2. A 6ª requisição deve ser sumariamente bloqueada com 429
+  const blocked = checkRouteRateLimit(scope, attackerIp, limit, 60_000);
+  assert.equal(blocked.allowed, false, "ALERTA DE SEGURANÇA: Requisição excedente deve ser BLOQUEADA (429)");
+  assert.ok(blocked.retryAfter > 0, "Deve informar Retry-After em segundos");
+  assert.equal(blocked.remaining, 0, "Saldo restante deve ser 0");
+});

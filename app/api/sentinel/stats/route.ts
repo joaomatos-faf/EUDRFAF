@@ -12,6 +12,8 @@ import {
   parseNdviMean,
   type NdviWindow,
 } from "../../../lib/sentinelStats";
+import { getClientIp, checkRouteRateLimit } from "@/app/lib/rateLimit";
+import { getAuthenticatedSession } from "@/app/lib/auth";
 
 const MAX_POINTS = 100_000;
 
@@ -138,9 +140,43 @@ async function queryNdvi(token: string, geometry: GeometryData, window: NdviWind
 }
 
 export async function POST(request: Request) {
+  // 1. Rate Limiting por IP (15 req/min público, 60 req/min autenticado)
+  const clientIp = getClientIp(request);
+  const session = await getAuthenticatedSession(request);
+  const maxRequests = session ? 60 : 15;
+  const rateLimit = checkRouteRateLimit("sentinel_stats", clientIp, maxRequests, 60_000);
+
+  if (!rateLimit.allowed) {
+    return Response.json(
+      { error: `Limite de consultas Sentinel excedido. Aguarde ${rateLimit.retryAfter} segundos.` },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimit.retryAfter),
+          "X-RateLimit-Limit": String(rateLimit.limit),
+          "X-RateLimit-Remaining": "0",
+        },
+      }
+    );
+  }
+
+  // 2. Validação estrita de entrada (retorna 400 se JSON ou geometria forem inválidos)
+  let body: { geometry?: unknown };
   try {
-    const body = (await request.json()) as { geometry?: unknown };
-    const geometry = validateGeometry(body.geometry);
+    body = (await request.json()) as { geometry?: unknown };
+  } catch {
+    return responseError("JSON inválido no corpo da requisição.", 400);
+  }
+
+  let geometry: GeometryData;
+  try {
+    geometry = validateGeometry(body?.geometry);
+  } catch (valErr) {
+    const msg = valErr instanceof Error ? valErr.message : "Geometria inválida.";
+    return responseError(msg, 400);
+  }
+
+  try {
     const { clientId, clientSecret } = await getSentinelCredentials();
     const periods = eudrNdviPeriods();
     const areaHa = Number(calculateAreaHectares(geometry).toFixed(2));

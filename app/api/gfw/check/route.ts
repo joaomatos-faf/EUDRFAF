@@ -5,6 +5,8 @@ import {
   type GeometryData,
   type ShapefileAttributes,
 } from "../../../lib/eudr";
+import { getClientIp, checkRouteRateLimit } from "@/app/lib/rateLimit";
+import { getAuthenticatedSession } from "@/app/lib/auth";
 
 const GFW_API_HOST = "https://data-api.globalforestwatch.org";
 const START_YEAR = 2020;
@@ -249,11 +251,46 @@ async function queryTreeCoverLoss(geostoreId: string) {
 }
 
 export async function POST(request: Request) {
-  try {
-    const body = (await request.json()) as { geometry?: unknown; details?: unknown };
-    const geometry = validateGeometry(body.geometry);
-    const { plotId } = validateDetails(body.details);
+  // 1. Rate Limiting por IP (15 req/min público, 60 req/min autenticado)
+  const clientIp = getClientIp(request);
+  const session = await getAuthenticatedSession(request);
+  const maxRequests = session ? 60 : 15;
+  const rateLimit = checkRouteRateLimit("gfw_check", clientIp, maxRequests, 60_000);
 
+  if (!rateLimit.allowed) {
+    return Response.json(
+      { error: `Limite de consultas GFW excedido. Aguarde ${rateLimit.retryAfter} segundos.` },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimit.retryAfter),
+          "X-RateLimit-Limit": String(rateLimit.limit),
+          "X-RateLimit-Remaining": "0",
+        },
+      }
+    );
+  }
+
+  // 2. Validação estrita de entrada (retorna 400 se JSON ou geometria forem inválidos)
+  let body: { geometry?: unknown; details?: unknown };
+  try {
+    body = (await request.json()) as { geometry?: unknown; details?: unknown };
+  } catch {
+    return responseError("JSON inválido no corpo da requisição.", 400);
+  }
+
+  let geometry: GeometryData;
+  let plotId: string;
+  try {
+    geometry = validateGeometry(body?.geometry);
+    const validated = validateDetails(body?.details);
+    plotId = validated.plotId;
+  } catch (valErr) {
+    const msg = valErr instanceof Error ? valErr.message : "Geometria ou detalhes inválidos.";
+    return responseError(msg, 400);
+  }
+
+  try {
     const calculatedArea = calculateAreaHectares(geometry);
     const geostoreId = await createGeostore(geometry, plotId);
     const changes = await queryTreeCoverLoss(geostoreId);
