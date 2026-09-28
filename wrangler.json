@@ -9,9 +9,8 @@
     { "pattern": "cloud.fafeu.online", "custom_domain": true },
     { "pattern": "verify.fafeu.online", "custom_domain": true }
   ],
-  "vars": {
-    "SESSION_SECRET": "faf_eudr_prod_hmac_secret_2026_cf_vault"
-  },
+  "vars": {},
+
   "kv_namespaces": [
     {
       "binding": "USERS_KV",

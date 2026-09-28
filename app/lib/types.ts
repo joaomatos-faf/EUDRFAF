@@ -67,6 +67,14 @@ export type MapbiomasCheck = {
   inpeUrl?: string;
   sicarUrl?: string;
   ibamaUrl?: string;
+  sentinelNdvi?: {
+    configured: boolean;
+    ndvi2020: number | null;
+    ndviRecent: number | null;
+    delta: number | null;
+    status: "clear" | "attention" | "insufficient";
+    reason: string;
+  };
   changes: Array<{
     fromYear: number;
     toYear: number;

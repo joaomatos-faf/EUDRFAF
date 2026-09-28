@@ -4,6 +4,7 @@ export const APP_CONFIG = {
   apis: {
     ibgeMunicipalities: "https://servicodados.ibge.gov.br/api/v1/localidades/municipios?view=nivelado&orderBy=nome",
     gfwBase: "https://data-api.globalforestwatch.org",
+    sentinelStats: "/api/sentinel/stats",
   },
   limits: {
     maxGeometryPoints: 100000,

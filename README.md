@@ -53,6 +53,28 @@ npx wrangler deploy
 
 ---
 
+## 🔑 Segredos das APIs de satélite
+
+As chaves ficam no Cloudflare (nunca no Git). Localmente, copie `.dev.vars.example` para `.dev.vars`.
+
+| Variável | Uso | Onde gerar |
+|---|---|---|
+| `GFW_API_KEY` | `/api/gfw/check` | [globalforestwatch.org](https://www.globalforestwatch.org/) → MyGFW → API key |
+| `MAPBIOMAS_TOKEN` | `/api/mapbiomas/check` | [plataforma.brasil.mapbiomas.org](https://plataforma.brasil.mapbiomas.org/) |
+| `SH_CLIENT_ID` | `/api/sentinel/stats` (NDVI 2020 vs recente) | [dataspace.copernicus.eu](https://dataspace.copernicus.eu/) → [OAuth clients](https://shapps.dataspace.copernicus.eu/dashboard/#/) |
+| `SH_CLIENT_SECRET` | `/api/sentinel/stats` | Mesmo dashboard (copie o secret na criação) |
+
+```bash
+npx wrangler secret put GFW_API_KEY
+npx wrangler secret put MAPBIOMAS_TOKEN
+npx wrangler secret put SH_CLIENT_ID
+npx wrangler secret put SH_CLIENT_SECRET
+```
+
+O Quick Verify (`verify.fafeu.online`) chama MapBiomas/GFW e, em paralelo, o NDVI Sentinel-2. Sem `SH_CLIENT_*` a checagem de cobertura continua; o NDVI só fica pendente.
+
+---
+
 ## 🧪 Testes Automatizados
 
 A suíte de testes (`tests/*.test.mjs`) valida:

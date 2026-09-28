@@ -1,7 +1,13 @@
 import crypto from "node:crypto";
 import { ENCRYPTED_PAYLOAD, PlotMasterRecord } from "@/app/lib/plotMasterData";
 
-const SECRET_KEY = crypto.createHash("sha256").update("[REDACTED_SECRET_KEY]").digest();
+// A chave AES-256 é derivada da variável de ambiente FAF_EUDR_SECRET_KEY.
+// Configure-a em .dev.vars (local) ou via `npx wrangler secret put FAF_EUDR_SECRET_KEY` (produção).
+const _rawKey = process.env.FAF_EUDR_SECRET_KEY;
+if (!_rawKey) {
+  throw new Error("[plot-lookup] FAF_EUDR_SECRET_KEY não está configurada. Defina a variável de ambiente antes de iniciar o servidor.");
+}
+const SECRET_KEY = crypto.createHash("sha256").update(_rawKey).digest();
 
 let dynamicMasterList: PlotMasterRecord[] = [];
 

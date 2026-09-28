@@ -1,0 +1,19 @@
+# Copie este arquivo para .dev.vars (não versionado).
+# Produção: npx wrangler secret put <NOME>
+# NUNCA coloque valores reais neste arquivo — ele é versionado.
+
+GFW_API_KEY=
+MAPBIOMAS_TOKEN=
+SH_CLIENT_ID=
+SH_CLIENT_SECRET=
+SESSION_SECRET=
+
+# Chave mestre AES-256 para encriptação/decriptação dos dados de talhões (IDPLOT).
+# Use uma string longa e aleatória. Regenere o plotMasterData.ts após trocar esta chave.
+FAF_EUDR_SECRET_KEY=
+
+# Credenciais do Cloudflare R2 (armazenamento de arquivos).
+CLOUDFLARE_R2_ACCOUNT_ID=
+CLOUDFLARE_R2_ACCESS_KEY_ID=
+CLOUDFLARE_R2_SECRET_ACCESS_KEY=
+CLOUDFLARE_R2_BUCKET_NAME=

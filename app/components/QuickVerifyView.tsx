@@ -101,36 +101,54 @@ export function QuickVerifyView({
     setIsLoadingCheck(true);
     setErrorMessage("");
     try {
-      const res = await fetch("/api/mapbiomas/check", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          geometry: geoData,
-          details: {
-            plotId: "VERIFY-KML",
-            supplier: "Verificação Rápida",
-            municipality: "Consulta Direta",
-            state: "BR",
-            mappedBy: userName || "Operador FAF",
-          },
-        }),
-      });
+      const details = {
+        plotId: "VERIFY-KML",
+        supplier: "Verificação Rápida",
+        municipality: "Consulta Direta",
+        state: "BR",
+        mappedBy: userName || "Operador FAF",
+      };
 
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
+      const [mapRes, sentinelRes] = await Promise.all([
+        fetch("/api/mapbiomas/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ geometry: geoData, details }),
+        }),
+        fetch("/api/sentinel/stats", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ geometry: geoData }),
+        }).catch(() => null),
+      ]);
+
+      if (!mapRes.ok) {
+        const errJson = await mapRes.json().catch(() => ({}));
         throw new Error(errJson.error || "Erro ao consultar bases de desmatamento.");
       }
 
-      const data = await res.json();
-      const hasChanges = Boolean(data.hasChanges || (data.changes && data.changes.length > 0));
+      const data = await mapRes.json();
+      const sentinelData = sentinelRes && sentinelRes.ok ? await sentinelRes.json().catch(() => null) : null;
+      const hasCoverageChange = Boolean(data.hasChanges || (data.changes && data.changes.length > 0));
+      const ndviDrop = sentinelData?.status === "attention";
+      const hasChanges = hasCoverageChange || ndviDrop;
+
+      const coverageMessage = hasCoverageChange
+        ? "Alerta: Identificada supressão florestal pós-2020 ou alteração de cobertura."
+        : "Cobertura MapBiomas/GFW sem indício de desmate após 31/12/2020.";
+      const ndviMessage = ndviDrop
+        ? ` NDVI Sentinel-2: ${sentinelData.reason}`
+        : sentinelData?.configured
+          ? ` NDVI 2020 ${sentinelData.ndvi2020 ?? "—"} → recente ${sentinelData.ndviRecent ?? "—"}.`
+          : "";
 
       setCheckResult({
         status: hasChanges ? "attention" : "clear",
         areaHa: data.areaHa || calculateAreaHectares(geoData),
         checkedAt: data.checkedAt || new Date().toISOString(),
         message: hasChanges
-          ? "Alerta: Identificada supressão florestal pós-2020 ou alteração de cobertura."
-          : "100% Conforme EUDR: Nenhum indício de desmatamento detectado após 31/12/2020.",
+          ? `${coverageMessage}${ndviMessage}`
+          : `100% Conforme EUDR: Nenhum indício de desmatamento detectado após 31/12/2020.${ndviMessage}`,
         verificationUrl: data.verificationUrl || "",
         mapbiomasUrl: data.mapbiomasUrl,
         mapbiomasAlertaUrl: data.mapbiomasAlertaUrl,
@@ -141,6 +159,16 @@ export function QuickVerifyView({
         inpeUrl: data.inpeUrl,
         sicarUrl: data.sicarUrl,
         ibamaUrl: data.ibamaUrl,
+        sentinelNdvi: sentinelData
+          ? {
+              configured: Boolean(sentinelData.configured),
+              ndvi2020: sentinelData.ndvi2020 ?? null,
+              ndviRecent: sentinelData.ndviRecent ?? null,
+              delta: sentinelData.delta ?? null,
+              status: sentinelData.status || "insufficient",
+              reason: sentinelData.reason || "",
+            }
+          : undefined,
         changes: data.changes || [],
       });
     } catch (err) {
@@ -312,7 +340,7 @@ export function QuickVerifyView({
       requiresUploadNote: "",
       apiName: "Copernicus Data Space",
       apiStatus: "Acesso Aberto & APIs REST",
-      apiHowTo: "Acesse dataspace.copernicus.eu e cadastre-se para obter credenciais OAuth de consumo automatizado de imagens.",
+      apiHowTo: "Conta em dataspace.copernicus.eu → shapps.dataspace.copernicus.eu/dashboard → OAuth clients (Client credentials). Grave SH_CLIENT_ID e SH_CLIENT_SECRET com wrangler secret put.",
     },
     {
       id: "google_sat",
@@ -901,6 +929,57 @@ export function QuickVerifyView({
                   <p style={{ fontSize: "13px", margin: 0, color: "var(--text-secondary)" }}>
                     {checkResult.message}
                   </p>
+                  {checkResult.sentinelNdvi && (
+                    <div
+                      style={{
+                        marginTop: "12px",
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "10px",
+                        fontSize: "12px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          padding: "4px 8px",
+                          borderRadius: "6px",
+                          background: "var(--surface)",
+                          border: "1px solid var(--line)",
+                        }}
+                      >
+                        NDVI 2020: <strong>{checkResult.sentinelNdvi.ndvi2020 ?? "—"}</strong>
+                      </span>
+                      <span
+                        style={{
+                          padding: "4px 8px",
+                          borderRadius: "6px",
+                          background: "var(--surface)",
+                          border: "1px solid var(--line)",
+                        }}
+                      >
+                        NDVI recente: <strong>{checkResult.sentinelNdvi.ndviRecent ?? "—"}</strong>
+                      </span>
+                      <span
+                        style={{
+                          padding: "4px 8px",
+                          borderRadius: "6px",
+                          background: "var(--surface)",
+                          border: "1px solid var(--line)",
+                          color:
+                            checkResult.sentinelNdvi.status === "attention"
+                              ? "#f59e0b"
+                              : "var(--text-secondary)",
+                        }}
+                      >
+                        Δ: <strong>{checkResult.sentinelNdvi.delta ?? "—"}</strong>
+                      </span>
+                      {!checkResult.sentinelNdvi.configured && (
+                        <span style={{ color: "var(--text-tertiary)" }}>
+                          Configure SH_CLIENT_ID e SH_CLIENT_SECRET para NDVI automático.
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

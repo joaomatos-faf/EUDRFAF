@@ -20,7 +20,12 @@ function buildEncryptedFile() {
     }))
     .filter((r) => r.plotId.length > 0);
 
-  const SECRET_KEY = crypto.createHash("sha256").update("[REDACTED_SECRET_KEY]").digest();
+  const rawKey = process.env.FAF_EUDR_SECRET_KEY;
+  if (!rawKey) {
+    console.error("❌ FAF_EUDR_SECRET_KEY não definida. Configure a variável de ambiente antes de executar este script.");
+    process.exit(1);
+  }
+  const SECRET_KEY = crypto.createHash("sha256").update(rawKey).digest();
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv("aes-256-cbc", SECRET_KEY, iv);
   let encrypted = cipher.update(JSON.stringify(cleanRows), "utf8", "hex");
@@ -43,7 +48,13 @@ const ENCRYPTED_PAYLOAD = {
   data: "${encrypted}",
 };
 
-const SECRET_KEY = crypto.createHash("sha256").update("[REDACTED_SECRET_KEY]").digest();
+// A chave AES-256 é lida em runtime a partir da variável FAF_EUDR_SECRET_KEY.
+// Configure-a em .dev.vars (local) ou via `npx wrangler secret put FAF_EUDR_SECRET_KEY` (produção).
+const _rawKey = process.env.FAF_EUDR_SECRET_KEY;
+if (!_rawKey) {
+  throw new Error("[plotMasterData] FAF_EUDR_SECRET_KEY não está configurada. Defina a variável de ambiente.");
+}
+const SECRET_KEY = crypto.createHash("sha256").update(_rawKey).digest();
 
 let decryptedCache: PlotMasterRecord[] | null = null;
 
