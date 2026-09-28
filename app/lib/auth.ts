@@ -267,6 +267,13 @@ export function isAuthorizedForStorageKey(
   targetKey: string,
   mode: "read" | "write" = "read"
 ): boolean {
+  if (!targetKey || typeof targetKey !== "string") return false;
+
+  // Defense-in-depth: Rejeita path traversal, null bytes e sequências maliciosas
+  if (targetKey.includes("..") || targetKey.includes("\0") || targetKey.includes("//")) {
+    return false;
+  }
+
   if (userRole === "admin") return true;
 
   const normalizedKey = targetKey.replace(/\\/g, "/").replace(/^\/+/, "");

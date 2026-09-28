@@ -113,9 +113,9 @@ export async function GET(request: Request) {
     // Security: NEVER return password hashes or plaintext in GET
     const publicUsers = sanitizeUsersForPublic(currentUsers);
     return Response.json({ success: true, users: publicUsers });
-  } catch {
-    const publicUsers = sanitizeUsersForPublic(memoryUsersStore || DEFAULT_USERS_DATA);
-    return Response.json({ success: true, users: publicUsers });
+  } catch (error) {
+    console.error("Erro ao listar usuários:", error);
+    return Response.json({ error: "Erro interno ao processar requisição." }, { status: 500 });
   }
 }
 
